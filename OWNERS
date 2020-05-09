@@ -1,0 +1,12 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+approvers:
+- CarlJi
+- memoryliu
+- e06084
+- lyyyuna
+reviewers:
+- CarlJi
+- memoryliu
+- e06084
+- lyyyuna
