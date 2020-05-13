@@ -1,5 +1,5 @@
 # goc
-A Comprehensive Coverage Testing Tool for The Go Programming Language
+A Comprehensive Coverage Testing System for The Go Programming Language
 
 > **Note:**
 >

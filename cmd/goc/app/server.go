@@ -16,14 +16,22 @@
 
 package app
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/qiniu/goc/pkg/cover"
+	"github.com/spf13/cobra"
+)
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "start a server to host all services",
-	Run:   func(cmd *cobra.Command, args []string) {},
+	Run: func(cmd *cobra.Command, args []string) {
+		cover.StartServer(port)
+	},
 }
 
+var port string
+
 func init() {
+	serverCmd.Flags().StringVarP(&port, "port", "", ":7777", "listen port to start a coverage host center")
 	rootCmd.AddCommand(serverCmd)
 }
