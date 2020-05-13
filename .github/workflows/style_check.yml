@@ -26,6 +26,8 @@ jobs:
       # This step checks out a copy of your repository.
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: ls test
+        run: ls
       - name: Go vet check
         run: |
           go vet ./...
