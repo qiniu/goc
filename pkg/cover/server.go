@@ -160,7 +160,6 @@ func initSystem(c *gin.Context) {
 		return
 	}
 
-	// TODO: 需要让目标被测服务，重新注册吗？如果需要的话，还需要提供接口？会不会考虑的过于复杂了？
 	c.JSON(http.StatusOK, "")
 }
 
