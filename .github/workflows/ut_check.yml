@@ -12,7 +12,7 @@ on:
       - '**.md'
 jobs:
   run:
-    name: go test
+    name: test
     strategy:
       matrix:
         go-version: [1.13.x, 1.14.x]
