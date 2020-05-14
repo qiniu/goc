@@ -1,3 +1,6 @@
+![](https://github.com/qiniu/goc/workflows/ut-check/badge.svg)
+![](https://github.com/qiniu/goc/workflows/style-check/badge.svg)
+
 # goc
 A Comprehensive Coverage Testing System for The Go Programming Language
 
