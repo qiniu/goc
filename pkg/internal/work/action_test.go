@@ -14,34 +14,18 @@
  limitations under the License.
 */
 
-package app
+package work
 
 import (
-	"log"
-
-	"github.com/spf13/cobra"
+	"os"
+	"path/filepath"
+	"testing"
 )
 
-// These are general "build flags" used by build and other commands.
-var (
-	BuildMod  string // -mod flag
-	BuildI    bool   // -i flag
-	BuildN    bool   // -n flag
-	BuildO    string // -o flag
-	BuildRace bool   // -race flag
-	BuildV    bool   // -v flag
-	BuildWork bool   // -work flag
-	BuildX    bool   // -x flag
-)
-
-var rootCmd = &cobra.Command{
-	Use:   "goc",
-	Short: "goc is the comprehensive coverage testing tool for go language",
-}
-
-// Execute the goc tool
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		log.Fatalln(err)
+func TestAction(t *testing.T) {
+	a := NewAction()
+	defer os.RemoveAll(a.WorkDir)
+	if a.WorkDir == "" || !filepath.IsAbs(a.WorkDir) {
+		t.Error("goc: create action failed")
 	}
 }

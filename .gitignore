@@ -3,3 +3,9 @@
 
 # ignore log file
 **/goc.log
+
+# goc binary
+**/goc 
+
+# goc server test file
+**/_svrs_address.txt
