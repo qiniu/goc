@@ -49,7 +49,7 @@ func MvProjectsToTmp(target string, args []string) (newgopath string, newWorking
 }
 
 func mvProjectsToTmp(pkgs map[string]*cover.Package) (string, string, bool) {
-	tmpBuildDir := os.TempDir() + tmpFolderName()
+	tmpBuildDir := filepath.Join(os.TempDir(), tmpFolderName())
 
 	// Delete previous tmp folder and its content
 	os.RemoveAll(tmpBuildDir)

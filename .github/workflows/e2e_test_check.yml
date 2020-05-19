@@ -34,22 +34,25 @@ jobs:
     needs: job_1
     strategy:
       matrix:
-        go-version: [1.13.x]
+        go-version: [1.11.x, 1.12.x, 1.13.x, 1.14.x]
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v2
       - name: Download built binary
         uses: actions/download-artifact@v1
         with:
           name: goc
-      - name: Prepare test env
-        run: |
-          mv goc /usr/local/bin/
-          go env -w GO111MODULE="auto"
+          path: /home/runner/tools/bin
       - name: Do test
         run: |
+          pwd
+          chmod +x /home/runner/tools/bin/goc
+          export PATH=/home/runner/tools/bin:$PATH
+          go env -w GO111MODULE="auto"
           cd tests/samples/simple_project
           goc build
