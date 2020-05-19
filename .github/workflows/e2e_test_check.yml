@@ -53,6 +53,6 @@ jobs:
           pwd
           chmod +x /home/runner/tools/bin/goc
           export PATH=/home/runner/tools/bin:$PATH
-          go env -w GO111MODULE="auto"
+          export GO111MODULE="auto"
           cd tests/samples/simple_project
           goc build

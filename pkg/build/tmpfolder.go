@@ -60,12 +60,14 @@ func mvProjectsToTmp(pkgs map[string]*cover.Package) (string, string, bool) {
 	}
 	log.Printf("Temp project generated in: %v", tmpBuildDir)
 
-	tmpWorkingDir := getTmpwd(tmpBuildDir, pkgs)
 	isMod := false
+	var tmpWorkingDir string
 	if checkIfLegacyProject(pkgs) {
 		cpLegacyProject(tmpBuildDir, pkgs)
+		tmpWorkingDir = getTmpwd(tmpBuildDir, pkgs, false)
 	} else {
 		cpGoModulesProject(tmpBuildDir, pkgs)
+		tmpWorkingDir = getTmpwd(tmpBuildDir, pkgs, true)
 		isMod = true
 	}
 
@@ -99,13 +101,20 @@ func checkIfLegacyProject(pkgs map[string]*cover.Package) bool {
 	return false
 }
 
-func getTmpwd(tmpBuildDir string, pkgs map[string]*cover.Package) string {
+func getTmpwd(tmpBuildDir string, pkgs map[string]*cover.Package, isMod bool) string {
 	for _, pkg := range pkgs {
 		path, err := os.Getwd()
 		if err != nil {
 			log.Fatalf("Cannot get current working directoy, the error is: %v", err)
 		}
-		index := strings.Index(path, pkg.Root)
+
+		index := -1
+		if isMod == false {
+			index = strings.Index(path, pkg.Root)
+		} else {
+			index = strings.Index(path, pkg.Module.Dir)
+		}
+
 		if index == -1 {
 			log.Fatalf("goc install not executed in project directory.")
 		}

@@ -30,7 +30,7 @@ func MvBinaryToOri(pkgs map[string]*cover.Package, newgopath string) {
 		if pkg.Name == "main" {
 			_, binaryTarget := filepath.Split(pkg.Target)
 
-			binaryTmpPath := filepath.Join(getTmpwd(newgopath, pkgs), binaryTarget)
+			binaryTmpPath := filepath.Join(getTmpwd(newgopath, pkgs, !checkIfLegacyProject(pkgs)), binaryTarget)
 
 			if false == checkIfFileExist(binaryTmpPath) {
 				continue
