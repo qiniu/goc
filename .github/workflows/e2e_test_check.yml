@@ -1,0 +1,32 @@
+name: e2e-test
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the master branch
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+jobs:
+  job_1:
+    name: Build goc binary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.14.x
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Go build
+        run: |
+          cd cmd/goc
+          go build
+      - name: Upload binary result for job 1
+        uses: actions/upload-artifact@v1
+        with:
+          name: goc
+          path: cmd/goc/goc
