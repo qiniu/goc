@@ -109,16 +109,19 @@ func getTmpwd(tmpBuildDir string, pkgs map[string]*cover.Package, isMod bool) st
 		}
 
 		index := -1
+		var parentPath string
 		if isMod == false {
 			index = strings.Index(path, pkg.Root)
+			parentPath = pkg.Root
 		} else {
 			index = strings.Index(path, pkg.Module.Dir)
+			parentPath = pkg.Module.Dir
 		}
 
 		if index == -1 {
 			log.Fatalf("goc install not executed in project directory.")
 		}
-		tmpwd := filepath.Join(tmpBuildDir, path[len(pkg.Root):])
+		tmpwd := filepath.Join(tmpBuildDir, path[len(parentPath):])
 		// log.Printf("New building directory in: %v", tmpwd)
 		return tmpwd
 	}

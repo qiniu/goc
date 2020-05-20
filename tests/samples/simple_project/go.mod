@@ -1,3 +1,3 @@
 module example.com/simple-project
 
-go 1.14
+go 1.11
