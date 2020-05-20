@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -65,7 +66,7 @@ func doBuild(args []string, newgopath string, newworkingdir string) {
 
 	if newgopath != "" {
 		// Change to temp GOPATH for go install command
-		cmd.Env = append(cmd.Env, fmt.Sprintf("GOPATH=%v", newgopath))
+		cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", newgopath))
 	}
 
 	out, err := cmd.CombinedOutput()
