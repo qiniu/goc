@@ -108,11 +108,3 @@ func TestModProjectJudgement(t *testing.T) {
 		t.Fatalf("Expected %v, but got %v.", expect, got)
 	}
 }
-
-func TestTempName(t *testing.T) {
-	first := tmpFolderName()
-	second := tmpFolderName()
-	if first != second {
-		t.Fatalf("Same current directory should always generate same name, %v, %v", first, second)
-	}
-}

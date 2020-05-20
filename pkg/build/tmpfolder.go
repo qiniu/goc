@@ -49,12 +49,16 @@ func MvProjectsToTmp(target string, args []string) (newgopath string, newWorking
 }
 
 func mvProjectsToTmp(pkgs map[string]*cover.Package) (string, string, bool) {
-	tmpBuildDir := filepath.Join(os.TempDir(), tmpFolderName())
+	path, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("Cannot get current working directoy, the error is: %v", err)
+	}
+	tmpBuildDir := filepath.Join(os.TempDir(), TmpFolderName(path))
 
 	// Delete previous tmp folder and its content
 	os.RemoveAll(tmpBuildDir)
 	// Create a new tmp folder
-	err := os.MkdirAll(filepath.Join(tmpBuildDir, "src"), os.ModePerm)
+	err = os.MkdirAll(filepath.Join(tmpBuildDir, "src"), os.ModePerm)
 	if err != nil {
 		log.Fatalf("Fail to create the temporary build directory. The err is: %v", err)
 	}
@@ -75,11 +79,7 @@ func mvProjectsToTmp(pkgs map[string]*cover.Package) (string, string, bool) {
 	return tmpBuildDir, tmpWorkingDir, isMod
 }
 
-func tmpFolderName() string {
-	path, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("Cannot get current working directoy, the error is: %v", err)
-	}
+func TmpFolderName(path string) string {
 	sum := sha256.Sum256([]byte(path))
 	h := fmt.Sprintf("%x", sum[:6])
 

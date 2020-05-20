@@ -23,11 +23,21 @@ jobs:
         run: |
           cd cmd/goc
           go build
+      - name: Go build test binary
+        run: |
+          cd tests/e2e
+          go get -u github.com/onsi/ginkgo/ginkgo 
+          ginkgo build ./...
       - name: Upload binary result for job 1
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: goc
           path: cmd/goc/goc
+      - name: Upload binary result for job 1
+        uses: actions/upload-artifact@v2
+        with:
+          name: e2e.test
+          path: tests/e2e/e2e.test
 
   job_2:
     name: E2E test
@@ -44,15 +54,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Download built binary
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v2
         with:
-          name: goc
-          path: /home/runner/tools/bin
+          path: /home/runner/tools
       - name: Do test
         run: |
-          pwd
-          chmod +x /home/runner/tools/bin/goc
-          export PATH=/home/runner/tools/bin:$PATH
-          export GO111MODULE="auto"
-          cd tests/samples/simple_project
-          goc build
+          cd tests
+          ./run-ci-actions.sh
