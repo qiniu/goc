@@ -17,10 +17,9 @@ import (
 var TESTS_ROOT string
 
 var _ = BeforeSuite(func() {
-	TESTS_ROOT = os.Getenv("TESTS_ROOT")
-	if TESTS_ROOT == "" {
-		panic("Please set TESTS_ROOT env, or run in GitHub Actions!")
-	}
+	TESTS_ROOT, _ = os.Getwd()
+	By("Current working directory: " + TESTS_ROOT)
+	TESTS_ROOT = filepath.Join(TESTS_ROOT, "..")
 })
 
 var _ = Describe("E2E", func() {

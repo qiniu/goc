@@ -26,4 +26,4 @@ jobs:
       - name: Go test
         run: |
           export DEFAULT_EXCEPT_PKGS=e2e
-          go test $(go list ./... | grep -v -E $DEFAULT_EXCEPT_PKGS)
+          go test -p 1 -cover $(go list ./... | grep -v -E $DEFAULT_EXCEPT_PKGS)
