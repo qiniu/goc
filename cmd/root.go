@@ -14,10 +14,22 @@
  limitations under the License.
 */
 
-package main
+package cmd
 
-import "github.com/qiniu/goc/cmd/goc/app"
+import (
+	"log"
 
-func main() {
-	app.Execute()
+	"github.com/spf13/cobra"
+)
+
+var rootCmd = &cobra.Command{
+	Use:   "goc",
+	Short: "goc is a comprehensive coverage testing tool for go language",
+}
+
+// Execute the goc tool
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatalln(err)
+	}
 }
