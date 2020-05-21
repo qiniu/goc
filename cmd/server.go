@@ -14,22 +14,24 @@
  limitations under the License.
 */
 
-package app
+package cmd
 
 import (
-	"log"
-
+	"github.com/qiniu/goc/pkg/cover"
 	"github.com/spf13/cobra"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "goc",
-	Short: "goc is the comprehensive coverage testing tool for go language",
+var serverCmd = &cobra.Command{
+	Use:   "server",
+	Short: "Start a server to host all services",
+	Run: func(cmd *cobra.Command, args []string) {
+		cover.StartServer(port)
+	},
 }
 
-// Execute the goc tool
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		log.Fatalln(err)
-	}
+var port string
+
+func init() {
+	serverCmd.Flags().StringVarP(&port, "port", "", ":7777", "listen port to start a coverage host center")
+	rootCmd.AddCommand(serverCmd)
 }

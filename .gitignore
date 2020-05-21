@@ -3,3 +3,6 @@
 
 # ignore log file
 **/goc.log
+
+# binary
+goc
