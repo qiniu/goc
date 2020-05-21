@@ -18,6 +18,10 @@ package build
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/qiniu/goc/pkg/cover"
@@ -106,5 +110,24 @@ func TestModProjectJudgement(t *testing.T) {
 	pkgs[pkg.ImportPath] = pkg
 	if expect, got := false, checkIfLegacyProject(pkgs); expect != got {
 		t.Fatalf("Expected %v, but got %v.", expect, got)
+	}
+}
+
+func TestNewDirParseInLegacyProject(t *testing.T) {
+	workingDir := "../../tests/samples/simple_gopath_project/src/qiniu.com/simple_gopath_project"
+	gopath, _ := filepath.Abs("../../tests/samples/simple_gopath_project")
+
+	os.Chdir(workingDir)
+	fmt.Println(gopath)
+	os.Setenv("GOPATH", gopath)
+	os.Setenv("GO111MODULE", "off")
+
+	newgopath, newwd, tmpdir, _ := MvProjectsToTmp(".", nil)
+	if -1 == strings.Index(newwd, tmpdir) {
+		t.Fatalf("Directory parse error. newwd: %v, tmpdir: %v", newwd, tmpdir)
+	}
+
+	if -1 == strings.Index(newgopath, ":") || -1 == strings.Index(newgopath, tmpdir) {
+		t.Fatalf("The New GOPATH is wrong. newgopath: %v, tmpdir: %v", newgopath, tmpdir)
 	}
 }
