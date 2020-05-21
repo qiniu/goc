@@ -14,35 +14,24 @@
  limitations under the License.
 */
 
-package app
+package cmd
 
 import (
+	"github.com/qiniu/goc/pkg/cover"
 	"github.com/spf13/cobra"
 )
 
-var runCmd = &cobra.Command{
-	Use:   "run",
-	Short: "cover and run Go program",
-	Long: `usage: goc run [flags] . [arguments...]
-
-Run uses 'go tool cover' to cover the .go source files for the package, then compiles and runs the named main Go package like pure 'go run .' command.
-if the arguments are given, 'goc' invokes the covered binary like 'go run . [arguments...]'`,
+var serverCmd = &cobra.Command{
+	Use:   "server",
+	Short: "Start a server to host all services",
 	Run: func(cmd *cobra.Command, args []string) {
-		// init workspace
-
-		// list packages
-
-		// cover code
-
-		// inject apis
-
-		// use go run . to run main package
+		cover.StartServer(port)
 	},
 }
 
-var arguments []string
+var port string
 
 func init() {
-	runCmd.Flags().BoolVarP(&BuildWork, "work", "", false, "do not delete the temporary work directory when exiting")
-	rootCmd.AddCommand(runCmd)
+	serverCmd.Flags().StringVarP(&port, "port", "", ":7777", "listen port to start a coverage host center")
+	rootCmd.AddCommand(serverCmd)
 }

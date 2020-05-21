@@ -16,8 +16,8 @@
 
 package main
 
-import "github.com/qiniu/goc/cmd/goc/app"
+import "github.com/qiniu/goc/cmd"
 
 func main() {
-	app.Execute()
+	cmd.Execute()
 }
