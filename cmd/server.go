@@ -23,7 +23,7 @@ import (
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "Start a server to host all services",
+	Short: "Start a service registry center",
 	Run: func(cmd *cobra.Command, args []string) {
 		cover.StartServer(port)
 	},
