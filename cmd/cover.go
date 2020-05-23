@@ -55,10 +55,6 @@ func doCover(cmd *cobra.Command, args []string, newgopath string, newtarget stri
 		log.Fatalf("target directory %s not exist", target)
 	}
 
-	//
-	//
-
-	//
 	listArgs := []string{"list", "-json"}
 	if len(args) != 0 {
 		listArgs = append(listArgs, args...)
@@ -66,12 +62,9 @@ func doCover(cmd *cobra.Command, args []string, newgopath string, newtarget stri
 	listArgs = append(listArgs, "./...")
 	pkgs := cover.ListPackages(target, listArgs, newgopath)
 
-	//
-	//
 	var seen = make(map[string]*cover.PackageCover)
 	var seenCache = make(map[string]*cover.PackageCover)
 	for _, pkg := range pkgs {
-		//
 		if pkg.Name == "main" {
 			log.Printf("handle package: %v", pkg.ImportPath)
 			// inject the main package
