@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/qiniu/goc/branch/master/graph/badge.svg)](https://codecov.io/gh/qiniu/goc)
 [![GoDoc](https://godoc.org/github.com/qiniu/goc?status.svg)](https://godoc.org/github.com/qiniu/goc)
 
-goc is a comprehensive coverage testing system for The Go Programming Language, especially for some complex scanrios，like system testing code coverage collecting and
+goc is a comprehensive coverage testing system for The Go Programming Language, especially for some complex scenarios，like system testing code coverage collection and
 accurate testing.
 
 > **Note:**
@@ -28,7 +28,7 @@ Goc can collect code coverages at runtime for your long-run golang applications.
     ```
     ➜  simple-go-server git:(master) ✗ goc server
     ```
-2. use `goc build` to build the target service, and run the generated binary. Here let's take the [simeple-go-server](https://github.com/CarlJi/simple-go-server) project as example:
+2. use `goc build` to build the target service, and run the generated binary. Here let's take the [simple-go-server](https://github.com/CarlJi/simple-go-server) project as example:
     ```
     ➜  simple-go-server git:(master) ✗ goc build .
     ... // omit logs
@@ -50,7 +50,7 @@ Goc can collect code coverages at runtime for your long-run golang applications.
 ## RoadMap
 - [x] Support code coverage collection for system testing.
 - [ ] Support develop mode towards accurate testing.
-- [ ] Support code coverage diff based on Pull Requst.
+- [ ] Support code coverage diff based on Pull Request.
 - [ ] Support code coverage counters clear for the services under test at runtime.
 - [ ] Optimize the performance costed by code coverage counters.
 
