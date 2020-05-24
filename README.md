@@ -22,7 +22,7 @@ To install goc tool, you need to install Go first (**version 1.11+ is required**
 You can use goc tool in many scenarios.
 
 ### Code Coverage Collection for your Golang System Tests
-Goc can collect code coverages at run time for your long-run golang applications. To do that, normally just need three steps:
+Goc can collect code coverages at runtime for your long-run golang applications. To do that, normally just need three steps:
 
 1. use `goc server` to start a service registry center:
     ```
@@ -51,7 +51,7 @@ Goc can collect code coverages at run time for your long-run golang applications
 - [x] Support code coverage collection for system testing.
 - [ ] Support develop mode towards accurate testing.
 - [ ] Support code coverage diff based on Pull Requst.
-- [ ] Support code coverage counters clear for the services under test in runtime.
+- [ ] Support code coverage counters clear for the services under test at runtime.
 - [ ] Optimize the performance costed by code coverage counters.
 
 ## Contributing
