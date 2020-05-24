@@ -58,4 +58,4 @@ Goc can collect code coverages at runtime for your long-run golang applications.
 We welcome all kinds of contribution, including bug reports, feature requests, documentation improvements, UI refinements, etc. 
 
 ## License
-Goc is released under the Apache 2.0 license. See [LICENSE.txt](https://github.com/qiniu/goc/blob/master/LICENSE.txt)
+Goc is released under the Apache 2.0 license. See [LICENSE.txt](https://github.com/qiniu/goc/blob/master/LICENSE)
