@@ -17,6 +17,12 @@
 package cover
 
 import (
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -94,4 +100,115 @@ func TestCovList(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "100.0%", covF.Percentage())
 	assert.Equal(t, "0.0%", covF1.Percentage())
+}
+
+func TestBuildCoverCmd(t *testing.T) {
+	var testCases = []struct {
+		name      string
+		file      string
+		coverVar  *FileVar
+		pkg       *Package
+		mode      string
+		newgopath string
+		expectCmd *exec.Cmd
+	}{
+		{
+			name: "normal",
+			file: "c.go",
+			coverVar: &FileVar{
+				File: "example/b/c/c.go",
+				Var:  "GoCover_0_643131623532653536333031",
+			},
+			pkg: &Package{
+				Dir: "/go/src/goc/cmd/example-project/b/c",
+			},
+			mode:      "count",
+			newgopath: "",
+			expectCmd: &exec.Cmd{
+				Path: lookCmdPath("go"),
+				Args: []string{"go", "tool", "cover", "-mode", "count", "-var", "GoCover_0_643131623532653536333031", "-o",
+					"/go/src/goc/cmd/example-project/b/c/c.go", "/go/src/goc/cmd/example-project/b/c/c.go"},
+			},
+		},
+		{
+			name: "normal with gopath",
+			file: "c.go",
+			coverVar: &FileVar{
+				File: "example/b/c/c.go",
+				Var:  "GoCover_0_643131623532653536333031",
+			},
+			pkg: &Package{
+				Dir: "/go/src/goc/cmd/example-project/b/c",
+			},
+			mode:      "set",
+			newgopath: "/go/src/goc",
+			expectCmd: &exec.Cmd{
+				Path: lookCmdPath("go"),
+				Args: []string{"go", "tool", "cover", "-mode", "set", "-var", "GoCover_0_643131623532653536333031", "-o",
+					"/go/src/goc/cmd/example-project/b/c/c.go", "/go/src/goc/cmd/example-project/b/c/c.go"},
+				Env: append(os.Environ(), fmt.Sprintf("GOPATH=%v", "/go/src/goc")),
+			},
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			cmd := buildCoverCmd(testCase.file, testCase.coverVar, testCase.pkg, testCase.mode, testCase.newgopath)
+			if !reflect.DeepEqual(cmd, testCase.expectCmd) {
+				t.Errorf("generated incorrect commands:\nGot: %#v\nExpected:%#v", cmd, testCase.expectCmd)
+			}
+		})
+	}
+
+}
+
+func lookCmdPath(name string) string {
+	if filepath.Base(name) == name {
+		if lp, err := exec.LookPath(name); err != nil {
+			log.Fatalf("find exec %s err: %v", name, err)
+		} else {
+			return lp
+		}
+	}
+	return ""
+}
+
+func TestDeclareCoverVars(t *testing.T) {
+	var testCases = []struct {
+		name           string
+		pkg            *Package
+		expectCoverVar map[string]*FileVar
+	}{
+		{
+			name: "normal",
+			pkg: &Package{
+				Dir:        "/go/src/goc/cmd/example-project/b/c",
+				GoFiles:    []string{"c.go"},
+				ImportPath: "example/b/c",
+			},
+			expectCoverVar: map[string]*FileVar{
+				"c.go": {File: "example/b/c/c.go", Var: "GoCover_0_643131623532653536333031"},
+			},
+		},
+		{
+			name: "more go files",
+			pkg: &Package{
+				Dir:        "/go/src/goc/cmd/example-project/a/b",
+				GoFiles:    []string{"printf.go", "printf1.go"},
+				ImportPath: "example/a/b",
+			},
+			expectCoverVar: map[string]*FileVar{
+				"printf.go":  {File: "example/a/b/printf.go", Var: "GoCover_0_326535623364613565313464"},
+				"printf1.go": {File: "example/a/b/printf1.go", Var: "GoCover_1_326535623364613565313464"},
+			},
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			coverVar := declareCoverVars(testCase.pkg)
+			if !reflect.DeepEqual(coverVar, testCase.expectCoverVar) {
+				t.Errorf("generated incorrect cover vars:\nGot: %#v\nExpected:%#v", coverVar, testCase.expectCoverVar)
+			}
+		})
+	}
+
 }
