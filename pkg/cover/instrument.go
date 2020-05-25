@@ -116,6 +116,32 @@ func loadFileCover(coverCounters map[string][]uint32, coverBlocks map[string][]t
 	coverBlocks[fileName] = block
 }
 
+func clearValues() {
+
+	{{range $i, $pkgCover := .DepsCover}}
+	{{range $file, $cover := $pkgCover.Vars}}
+	clearFileCover(_cover{{$i}}.{{$cover.Var}}.Count[:])
+	{{end}}
+	{{end}}
+
+	{{range $file, $cover := .MainPkgCover.Vars}}
+	clearFileCover({{$cover.Var}}.Count[:])
+	{{end}}
+
+	{{range $k, $pkgCover := .CacheCover}}
+	{{range $v, $cover := $pkgCover.Vars}}
+	clearFileCover({{$pkgCover.Package.Name}}.{{$v}}.Count[:])
+	{{end}}
+	{{end}}
+
+}
+
+func clearFileCover(counter []uint32) {
+	for i := range counter {
+		counter[i] = 0
+	}
+}
+
 func registerHandlers() {
 	ln, host, err := listen()
 	if err != nil {
@@ -127,12 +153,15 @@ func registerHandlers() {
 		log.Fatalf("register address %v failed, err: %v, response: %v", profileAddr, err, string(resp))
 	}
 	go genProfileAddr(host)
-
+	//clear and profile is mutex,
+	var lock atomic.Value
 	mux := http.NewServeMux()
 	// Coverage reports the current code coverage as a fraction in the range [0, 1].
 	// If coverage is not enabled, Coverage returns 0.
 	mux.HandleFunc("/v1/cover/coverage", func(w http.ResponseWriter, r *http.Request) {
+		lock.Store(false)
 		counters, _ := loadValues()
+		lock.Store(true)
 
 		var n, d int64
 		for _, counter := range counters {
@@ -152,9 +181,11 @@ func registerHandlers() {
 
 	// coverprofile reports a coverage profile with the coverage percentage
 	mux.HandleFunc("/v1/cover/profile", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "mode: atomic\n")
+		fmt.Fprint(w, "mode: {{.Mode }} \n")
+		lock.Store(false)
 		counters, blocks := loadValues()
 
+		lock.Store(true)
 		var active, total int64
 		var count uint32
 		for name, counts := range counters {
@@ -180,7 +211,14 @@ func registerHandlers() {
 	})
 
 	mux.HandleFunc("/v1/cover/clear", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "TO BE IMPLEMENTED!\n")
+		f := lock.Load().(bool)
+		if f {
+			clearValues()
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintln(w,"clear call successfully")
+		}else {
+			http.Error(w, "clear call failed cause by coverage profile dump", http.StatusExpectationFailed)
+		}
 	})
 
 	log.Fatal(http.Serve(ln, mux))

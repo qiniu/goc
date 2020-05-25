@@ -145,13 +145,14 @@ func ListPackages(dir string, args []string, newgopath string) map[string]*Packa
 }
 
 // AddCounters add counters for all go files under the package
-func AddCounters(pkg *Package, newgopath string) (*PackageCover, error) {
+func AddCounters(pkg *Package, mode, newgopath string) (*PackageCover, error) {
 	coverVarMap := declareCoverVars(pkg)
 
 	// to construct: go tool cover -mode=atomic -o dest src (note: dest==src)
-	var args = []string{"tool", "cover", "-mode=atomic"}
+	var args = []string{"tool", "cover"}
 	for file, coverVar := range coverVarMap {
 		var newArgs = args
+		newArgs = append(newArgs, "-mode", mode)
 		newArgs = append(newArgs, "-var", coverVar.Var)
 		longPath := path.Join(pkg.Dir, file)
 		newArgs = append(newArgs, "-o", longPath, longPath)

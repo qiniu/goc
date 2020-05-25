@@ -142,16 +142,17 @@ func profile(c *gin.Context) {
 }
 
 func clear(c *gin.Context) {
-	if err := LocalStore.Init(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	svrsUnderTest := LocalStore.GetAll()
+	for svc, addrs := range svrsUnderTest {
+		for _, addr := range addrs {
+			pp, err := Client.Clear(addr)
+			if err != nil {
+				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+				return
+			}
+			fmt.Fprintf(c.Writer, "Register service %s: %s coverage counter %s", svc, addr, string(pp))
+		}
 	}
-
-	if err := Client.Clear(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, "TO BE IMPLEMENTED")
 }
 
 func initSystem(c *gin.Context) {
