@@ -145,23 +145,14 @@ func ListPackages(dir string, args []string, newgopath string) map[string]*Packa
 }
 
 // AddCounters add counters for all go files under the package
-func AddCounters(pkg *Package, newgopath string) (*PackageCover, error) {
+func AddCounters(pkg *Package, mode, newgopath string) (*PackageCover, error) {
 	coverVarMap := declareCoverVars(pkg)
 
-	// to construct: go tool cover -mode=atomic -o dest src (note: dest==src)
-	var args = []string{"tool", "cover", "-mode=atomic"}
 	for file, coverVar := range coverVarMap {
-		var newArgs = args
-		newArgs = append(newArgs, "-var", coverVar.Var)
-		longPath := path.Join(pkg.Dir, file)
-		newArgs = append(newArgs, "-o", longPath, longPath)
-		cmd := exec.Command("go", newArgs...)
-		if newgopath != "" {
-			cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", newgopath))
-		}
+		cmd := buildCoverCmd(file, coverVar, pkg, mode, newgopath)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return nil, fmt.Errorf("execuate go tool cover -mode=atomic -var %s -o %s %s failed, err: %v, out: %s", coverVar.Var, longPath, longPath, err, string(out))
+			return nil, fmt.Errorf("execuate go tool cover -mode=atomic -var %s -o %s/%s failed, err: %v, out: %s", coverVar.Var, pkg.Dir, file, err, string(out))
 		}
 	}
 
@@ -169,6 +160,20 @@ func AddCounters(pkg *Package, newgopath string) (*PackageCover, error) {
 		Package: pkg,
 		Vars:    coverVarMap,
 	}, nil
+}
+
+func buildCoverCmd(file string, coverVar *FileVar, pkg *Package, mode, newgopath string) *exec.Cmd {
+	// to construct: go tool cover -mode=atomic -o dest src (note: dest==src)
+	var newArgs = []string{"tool", "cover"}
+	newArgs = append(newArgs, "-mode", mode)
+	newArgs = append(newArgs, "-var", coverVar.Var)
+	longPath := path.Join(pkg.Dir, file)
+	newArgs = append(newArgs, "-o", longPath, longPath)
+	cmd := exec.Command("go", newArgs...)
+	if newgopath != "" {
+		cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", newgopath))
+	}
+	return cmd
 }
 
 // declareCoverVars attaches the required cover variables names

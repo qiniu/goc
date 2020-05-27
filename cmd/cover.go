@@ -30,6 +30,13 @@ var coverCmd = &cobra.Command{
 	Use:   "cover",
 	Short: "do cover for the target source ",
 	Run: func(cmd *cobra.Command, args []string) {
+		if mode == "" {
+			log.Fatalf("Error: flag needs an argument: -mode %v", mode)
+		}
+		if mode != "set" && mode != "count" && mode != "atomic" {
+			log.Fatalf("unknown -mode %v", mode)
+		}
+
 		doCover(cmd, args, "", "")
 	},
 }
@@ -37,11 +44,13 @@ var coverCmd = &cobra.Command{
 var (
 	target string
 	center string
+	mode   string
 )
 
 func init() {
 	coverCmd.Flags().StringVarP(&center, "center", "", "http://127.0.0.1:7777", "cover profile host center")
 	coverCmd.Flags().StringVarP(&target, "target", "", ".", "target folder to cover")
+	coverCmd.Flags().StringVarP(&mode, "mode", "", "count", "coverage mode: set, count, atomic")
 
 	rootCmd.AddCommand(coverCmd)
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -68,14 +77,14 @@ func doCover(cmd *cobra.Command, args []string, newgopath string, newtarget stri
 		if pkg.Name == "main" {
 			log.Printf("handle package: %v", pkg.ImportPath)
 			// inject the main package
-			mainCover, err := cover.AddCounters(pkg, newgopath)
+			mainCover, err := cover.AddCounters(pkg, mode, newgopath)
 			if err != nil {
 				log.Fatalf("failed to add counters for pkg %s, err: %v", pkg.ImportPath, err)
 			}
 
 			// new a testcover for this service
 			tc := cover.TestCover{
-				Mode:         "atomic",
+				Mode:         mode,
 				Center:       center,
 				MainPkgCover: mainCover,
 			}
@@ -103,7 +112,7 @@ func doCover(cmd *cobra.Command, args []string, newgopath string, newtarget stri
 						}
 
 						// add counter for internal package
-						inPkgCover, err := cover.AddCounters(depPkg, newgopath)
+						inPkgCover, err := cover.AddCounters(depPkg, mode, newgopath)
 						if err != nil {
 							log.Fatalf("failed to add counters for internal pkg %s, err: %v", depPkg.ImportPath, err)
 						}
@@ -149,7 +158,7 @@ func doCover(cmd *cobra.Command, args []string, newgopath string, newtarget stri
 						continue
 					}
 
-					packageCover, err := cover.AddCounters(depPkg, newgopath)
+					packageCover, err := cover.AddCounters(depPkg, mode, newgopath)
 					if err != nil {
 						log.Fatalf("failed to add counters for pkg %s, err: %v", depPkg.ImportPath, err)
 					}

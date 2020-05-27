@@ -27,7 +27,7 @@ import (
 // Action provides methods to contact with the coverd service under test
 type Action interface {
 	Profile(host string) ([]byte, error)
-	Clear() error
+	Clear(host string) ([]byte, error)
 	InitSystem(host string) ([]byte, error)
 }
 
@@ -61,7 +61,14 @@ func (w *client) Profile(host string) ([]byte, error) {
 	return profile, err
 }
 
-func (w *client) Clear() error { return nil }
+func (w *client) Clear(host string) ([]byte, error) {
+	u := fmt.Sprintf("%s%s", host, CoverProfileClearAPI)
+	resp, err := w.do("POST", u, nil)
+	if err != nil && isNetworkError(err) {
+		resp, err = w.do("POST", u, nil)
+	}
+	return resp, err
+}
 
 func (w *client) InitSystem(host string) ([]byte, error) {
 	u := fmt.Sprintf("%s%s", host, CoverInitSystemAPI)
