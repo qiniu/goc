@@ -6,6 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.6.3
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/julienschmidt/httprouter v1.2.0
+	github.com/magiconair/properties v1.8.1
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/onsi/ginkgo v1.11.0

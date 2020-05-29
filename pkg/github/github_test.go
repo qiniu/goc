@@ -23,7 +23,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/google/go-github/github"
@@ -108,10 +107,8 @@ func TestCreateGithubComment(t *testing.T) {
 	router.HandlerFunc("POST", "/repos/qiniu/goc/issues/1/comments", func(w http.ResponseWriter, r *http.Request) {
 		v := new(github.IssueComment)
 		json.NewDecoder(r.Body).Decode(v)
+		assert.Equal(t, v, comment)
 
-		if !reflect.DeepEqual(v, comment) {
-			t.Errorf("Request body = %+v, want %+v", v, comment)
-		}
 		fmt.Fprint(w, `{"id":1}`)
 	})
 
@@ -160,6 +157,6 @@ func TestGetPrChangedFiles(t *testing.T) {
 		GithubClient:  client,
 	}
 	changedFiles, err := p.GetPrChangedFiles()
-	assert.Nil(t, err)
-	assert.True(t, reflect.DeepEqual(changedFiles, expectFiles))
+	assert.Equal(t, err, nil)
+	assert.Equal(t, changedFiles, expectFiles)
 }

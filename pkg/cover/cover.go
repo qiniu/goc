@@ -272,7 +272,7 @@ type codeBlock struct {
 }
 
 //convert profile to CoverageList struct
-func CovList(f io.Reader) (g *CoverageList, err error) {
+func CovList(f io.Reader) (g CoverageList, err error) {
 	scanner := bufio.NewScanner(f)
 	scanner.Scan() // discard first line
 	g = NewCoverageList()
@@ -283,13 +283,13 @@ func CovList(f io.Reader) (g *CoverageList, err error) {
 		if err != nil {
 			return nil, err
 		}
-		blk.addToGroupCov(g)
+		blk.addToGroupCov(&g)
 	}
 	return
 }
 
 // covert profile file to CoverageList struct
-func ReadFileToCoverList(path string) (g *CoverageList, err error) {
+func ReadFileToCoverList(path string) (g CoverageList, err error) {
 	f, err := ioutil.ReadFile(path)
 	if err != nil {
 		logrus.Errorf("Open file %s failed!", path)
@@ -300,8 +300,8 @@ func ReadFileToCoverList(path string) (g *CoverageList, err error) {
 }
 
 // NewCoverageList return empty CoverageList
-func NewCoverageList() *CoverageList {
-	return &CoverageList{}
+func NewCoverageList() CoverageList {
+	return CoverageList{}
 
 }
 
@@ -339,12 +339,12 @@ func (blk *codeBlock) addToGroupCov(g *CoverageList) {
 	}
 }
 
-func (g *CoverageList) size() int {
-	return len(*g)
+func (g CoverageList) size() int {
+	return len(g)
 }
 
-func (g *CoverageList) lastElement() *Coverage {
-	return &(*g)[(*g).size()-1]
+func (g CoverageList) lastElement() *Coverage {
+	return &g[g.size()-1]
 }
 
 func (g *CoverageList) append(c *Coverage) {
@@ -352,13 +352,13 @@ func (g *CoverageList) append(c *Coverage) {
 }
 
 // sort CoverageList with filenames
-func (g *CoverageList) Sort() {
+func (g CoverageList) Sort() {
 	sort.SliceStable(g, func(i, j int) bool {
-		return (*g)[i].Name() < (*g)[j].Name()
+		return g[i].Name() < g[j].Name()
 	})
 }
 
-func (g *CoverageList) TotalPercentage() string {
+func (g CoverageList) TotalPercentage() string {
 	ratio, err := g.TotalRatio()
 	if err == nil {
 		return PercentStr(ratio)
@@ -366,9 +366,9 @@ func (g *CoverageList) TotalPercentage() string {
 	return "N/A"
 }
 
-func (g *CoverageList) TotalRatio() (ratio float32, err error) {
+func (g CoverageList) TotalRatio() (ratio float32, err error) {
 	var total Coverage
-	for _, c := range *g {
+	for _, c := range g {
 		total.NCoveredStmts += c.NCoveredStmts
 		total.NAllStmts += c.NAllStmts
 	}
@@ -377,9 +377,9 @@ func (g *CoverageList) TotalRatio() (ratio float32, err error) {
 
 // Map returns maps the file name to its coverage for faster retrieval
 // & membership check
-func (g *CoverageList) Map() map[string]Coverage {
+func (g CoverageList) Map() map[string]Coverage {
 	m := make(map[string]Coverage)
-	for _, c := range *g {
+	for _, c := range g {
 		m[c.Name()] = c
 	}
 	return m

@@ -130,6 +130,10 @@ func (j *Job) RunPresubmit() error {
 	if j.GithubComment.CommentFlag != "" {
 		commentPrefix = fmt.Sprintf("**%s** ", j.GithubComment.CommentFlag) + commentPrefix
 	}
+	if len(deltaCovList) > 0 {
+		totalDelta := cover.PercentStr(cover.TotalDelta(localP, baseP))
+		deltaCovList = append(deltaCovList, cover.DeltaCov{FileName: "Total", BasePer: baseP.TotalPercentage(), NewPer: localP.TotalPercentage(), DeltaPer: totalDelta})
+	}
 	err = j.GithubComment.CreateGithubComment(commentPrefix, deltaCovList)
 	if err != nil {
 		logrus.WithError(err).Fatalf("Post comment to github failed.")

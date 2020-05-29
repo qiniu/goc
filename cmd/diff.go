@@ -118,7 +118,7 @@ func doDiffForLocalProfiles(cmd *cobra.Command, args []string) {
 	for _, row := range rows {
 		table.Append([]string{row.FileName, row.BasePer, row.NewPer, row.DeltaPer})
 	}
-	totalDelta := cover.PercentStr(cover.TotalDelta(*localP, *baseP))
+	totalDelta := cover.PercentStr(cover.TotalDelta(localP, baseP))
 	table.Append([]string{"Total", baseP.TotalPercentage(), localP.TotalPercentage(), totalDelta})
 	table.Render()
 }

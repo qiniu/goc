@@ -42,7 +42,7 @@ func TestCoverageRatio(t *testing.T) {
 func TestRatioErr(t *testing.T) {
 	c := &Coverage{FileName: "fake-coverage", NCoveredStmts: 200, NAllStmts: 0}
 	_, err := c.Ratio()
-	assert.NotNil(t, err)
+	assert.NotEqual(t, err, nil)
 }
 
 func TestPercentageNA(t *testing.T) {
@@ -83,8 +83,8 @@ func TestCovList(t *testing.T) {
 		r := strings.NewReader(tc.profile)
 		c, err := CovList(r)
 		c.Sort()
-		assert.Nil(t, err)
-		for k, v := range *c {
+		assert.Equal(t, err, nil)
+		for k, v := range c {
 			assert.Equal(t, tc.expectPer[k], v.Percentage())
 		}
 	}

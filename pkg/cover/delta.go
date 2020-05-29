@@ -29,7 +29,7 @@ type DeltaCov struct {
 type DeltaCovList []DeltaCov
 
 // get full delta coverage between new and base profile
-func GetFullDeltaCov(newList *CoverageList, baseList *CoverageList) (delta DeltaCovList) {
+func GetFullDeltaCov(newList CoverageList, baseList CoverageList) (delta DeltaCovList) {
 	newMap := newList.Map()
 	baseMap := baseList.Map()
 
@@ -65,7 +65,7 @@ func GetFullDeltaCov(newList *CoverageList, baseList *CoverageList) (delta Delta
 }
 
 //get two profile diff cov
-func GetDeltaCov(newList *CoverageList, baseList *CoverageList) (delta DeltaCovList) {
+func GetDeltaCov(newList CoverageList, baseList CoverageList) (delta DeltaCovList) {
 	d := GetFullDeltaCov(newList, baseList)
 	for _, v := range d {
 		if v.DeltaPer == "0.0%" {
@@ -77,7 +77,7 @@ func GetDeltaCov(newList *CoverageList, baseList *CoverageList) (delta DeltaCovL
 }
 
 //get two profile diff cov of changed files
-func GetChFileDeltaCov(newList *CoverageList, baseList *CoverageList, changedFiles []string) (list DeltaCovList) {
+func GetChFileDeltaCov(newList CoverageList, baseList CoverageList, changedFiles []string) (list DeltaCovList) {
 	d := GetFullDeltaCov(newList, baseList)
 	dMap := d.Map()
 	for _, file := range changedFiles {
@@ -103,18 +103,18 @@ func TotalDelta(new CoverageList, base CoverageList) float32 {
 }
 
 // Map returns maps the file name to its DeltaCov for faster retrieval & membership check
-func (d *DeltaCovList) Map() map[string]DeltaCov {
+func (d DeltaCovList) Map() map[string]DeltaCov {
 	m := make(map[string]DeltaCov)
-	for _, c := range *d {
+	for _, c := range d {
 		m[c.FileName] = c
 	}
 	return m
 }
 
 // sort DeltaCovList with filenames
-func (d *DeltaCovList) Sort() {
+func (d DeltaCovList) Sort() {
 	sort.SliceStable(d, func(i, j int) bool {
-		return (*d)[i].Name() < (*d)[j].Name()
+		return d[i].Name() < d[j].Name()
 	})
 }
 

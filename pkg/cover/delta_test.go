@@ -17,7 +17,6 @@
 package cover
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,37 +24,37 @@ import (
 
 func TestGetDeltaCov(t *testing.T) {
 	items := []struct {
-		newList     *CoverageList
-		baseList    *CoverageList
+		newList     CoverageList
+		baseList    CoverageList
 		expectDelta DeltaCovList
 		rows        int
 	}{
 		//coverage increase
 		{
-			newList:     &CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20}},
-			baseList:    &CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 10, NAllStmts: 20}},
+			newList:     CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20}},
+			baseList:    CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 10, NAllStmts: 20}},
 			expectDelta: DeltaCovList{{FileName: "fake-coverage", BasePer: "50.0%", NewPer: "75.0%", DeltaPer: "25.0%"}},
 			rows:        1,
 		},
 		//coverage decrease
 		{
-			newList:     &CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20}},
-			baseList:    &CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 20, NAllStmts: 20}},
+			newList:     CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20}},
+			baseList:    CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 20, NAllStmts: 20}},
 			expectDelta: DeltaCovList{{FileName: "fake-coverage", BasePer: "100.0%", NewPer: "75.0%", DeltaPer: "-25.0%"}},
 			rows:        1,
 		},
 		//diff file
 		{
-			newList:  &CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20}},
-			baseList: &CoverageList{Coverage{FileName: "fake-coverage-v1", NCoveredStmts: 10, NAllStmts: 20}},
+			newList:  CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20}},
+			baseList: CoverageList{Coverage{FileName: "fake-coverage-v1", NCoveredStmts: 10, NAllStmts: 20}},
 			expectDelta: DeltaCovList{{FileName: "fake-coverage", BasePer: "None", NewPer: "75.0%", DeltaPer: "75.0%"},
 				{FileName: "fake-coverage-v1", BasePer: "50.0%", NewPer: "None", DeltaPer: "-50.0%"}},
 			rows: 2,
 		},
 		//one file has same coverage rate
 		{
-			newList: &CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20}},
-			baseList: &CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20},
+			newList: CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20}},
+			baseList: CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20},
 				Coverage{FileName: "fake-coverage-v1", NCoveredStmts: 10, NAllStmts: 20}},
 			expectDelta: DeltaCovList{{FileName: "fake-coverage-v1", BasePer: "50.0%", NewPer: "None", DeltaPer: "-50.0%"}},
 			rows:        1,
@@ -71,14 +70,14 @@ func TestGetDeltaCov(t *testing.T) {
 
 func TestGetChFileDeltaCov(t *testing.T) {
 	items := []struct {
-		newList      *CoverageList
-		baseList     *CoverageList
+		newList      CoverageList
+		baseList     CoverageList
 		changedFiles []string
 		expectDelta  DeltaCovList
 	}{
 		{
-			newList:      &CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20}},
-			baseList:     &CoverageList{Coverage{FileName: "fake-coverage-v1", NCoveredStmts: 10, NAllStmts: 20}},
+			newList:      CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20}},
+			baseList:     CoverageList{Coverage{FileName: "fake-coverage-v1", NCoveredStmts: 10, NAllStmts: 20}},
 			changedFiles: []string{"fake-coverage"},
 			expectDelta:  DeltaCovList{{FileName: "fake-coverage", BasePer: "None", NewPer: "75.0%", DeltaPer: "75.0%"}},
 		},
@@ -125,9 +124,10 @@ func TestMapAndSort(t *testing.T) {
 	}
 
 	for _, tc := range items {
-		assert.True(t, reflect.DeepEqual(tc.expectMap, tc.dList.Map()))
+		assert.Equal(t, tc.expectMap, tc.dList.Map())
 		tc.dList.Sort()
-		assert.True(t, reflect.DeepEqual(tc.expectSort, tc.dList))
+		assert.Equal(t, tc.expectSort, tc.dList)
+
 	}
 
 }
