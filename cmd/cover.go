@@ -28,7 +28,18 @@ import (
 
 var coverCmd = &cobra.Command{
 	Use:   "cover",
-	Short: "do cover for the target source ",
+	Short: "Do cover for the target source",
+	Long:  `Do cover for the target source. You can select different cover mode (set, count, atomic), default: count`,
+	Example: `
+# Do cover for the current path, default center: http://127.0.0.1:7777,  default cover mode: count.
+goc cover
+
+# Do cover for the current path, default cover mode: count.
+goc cover --center=http://127.0.0.1:7777
+
+# Do cover for the target path,  cover mode: atomic.
+goc cover --center=http://127.0.0.1:7777 --target=/path/to/target --mode=atomic
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if mode == "" {
 			log.Fatalf("Error: flag needs an argument: -mode %v", mode)
