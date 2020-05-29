@@ -24,6 +24,17 @@ import (
 var serverCmd = &cobra.Command{
 	Use:   "server",
 	Short: "Start a service registry center",
+	Long:  `Start a service registry center.`,
+	Example: `
+# Start a service registry center, default port :7777.
+goc server
+
+# Start a service registry center with port :8080.
+goc server --port=:8080
+
+# Start a service registry center with localhost:8080.
+goc server --port=localhost:8080
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cover.StartServer(port)
 	},

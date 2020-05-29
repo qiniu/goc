@@ -28,12 +28,14 @@ import (
 var clearCmd = &cobra.Command{
 	Use:   "clear",
 	Short: "Clear code coverage counters of all the registered services",
-	Long: `Clear code coverage counters for the services under test at runtime.
+	Long:  `Clear code coverage counters for the services under test at runtime.`,
+	Example: `
+# Clear coverage counter from default register center http://127.0.0.1:7777.
+goc clear
 
-Examples:
-# clear coverage counter by special service url
-goc clear --center=http://127.0.0.1:7777`,
-
+# Clear coverage counter from specified register center.
+goc clear --center=http://192.168.1.1:8080
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		res, err := cover.NewWorker().Clear(center)
 		if err != nil {

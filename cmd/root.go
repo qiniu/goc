@@ -25,6 +25,11 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "goc",
 	Short: "goc is a comprehensive coverage testing tool for go language",
+	Long: `goc is a comprehensive coverage testing tool for go language.
+
+Find more information at:
+ https://github.com/qbox/goc
+`,
 }
 
 // Execute the goc tool
