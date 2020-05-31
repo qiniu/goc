@@ -104,3 +104,7 @@ func TestDoDiffForLocalProfiles(t *testing.T) {
 	}
 
 }
+
+func TestDoDiffUnderProw(t *testing.T) {
+
+}

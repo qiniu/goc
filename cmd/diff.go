@@ -22,13 +22,13 @@ import (
 	"os"
 
 	"github.com/olekukonko/tablewriter"
-	"github.com/qiniu/goc/pkg/cover"
-	"github.com/qiniu/goc/pkg/prow"
-	"github.com/qiniu/goc/pkg/qiniu"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/qiniu/goc/pkg/cover"
 	"github.com/qiniu/goc/pkg/github"
+	"github.com/qiniu/goc/pkg/prow"
+	"github.com/qiniu/goc/pkg/qiniu"
 )
 
 var diffCmd = &cobra.Command{
