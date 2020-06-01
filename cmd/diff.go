@@ -34,14 +34,23 @@ import (
 var diffCmd = &cobra.Command{
 	Use:   "diff",
 	Short: "do coverage profile diff analysis, it can also work with prow and post comments to github pull request if needed",
-	Example: `	goc diff --new-profile=<xxxx> --base-profile=<xxxx> // diff two local coverage profile and display
-	goc diff --prow-postsubmit-job=<xxx> --new-profile=<xxx> // diff local coverage profile with the remote one in prow job using default qiniu-credential 
-	goc diff --prow-postsubmit-job=<xxx> --new-profile=<xxx> --full-diff=true // calculate and display full diff coverage between new-profile and base-profile, not concerned github changed files
+	Example: `	# Diff two local coverage profile and display
+	goc diff --new-profile=<xxxx> --base-profile=<xxxx> 
+
+	# Diff local coverage profile with the remote one in prow job using default qiniu-credential
+	goc diff --prow-postsubmit-job=<xxx> --new-profile=<xxx> 
+
+	# Calculate and display full diff coverage between new-profile and base-profile, not concerned github changed files
+	goc diff --prow-postsubmit-job=<xxx> --new-profile=<xxx> --full-diff=true 
+
+	# Diff local coverage profile with the remote one in prow job
 	goc diff --prow-postsubmit-job=<xxx> --prow-remote-profile-name=<xxx> 
-    		 --qiniu-credential=<xxx> --new-profile=<xxxx> // diff local coverage profile with the remote one in prow job
+    		 --qiniu-credential=<xxx> --new-profile=<xxxx> 
+
+	# Diff coverage profile with the remote one in prow job, and post comments to github PR
 	goc diff --prow-postsubmit-job=<xxx> --prow-profile=<xxx> 
     		 --github-token=<xxx> --github-user=<xxx> --github-comment-prefix=<xxx> 
-    		 --qiniu-credential=<xxx> --coverage-threshold-percentage=<xxx> --new-profile=<xxxx> // diff coverage profile with the remote one in prow job, and post comments to github PR
+    		 --qiniu-credential=<xxx> --coverage-threshold-percentage=<xxx> --new-profile=<xxxx> 
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if baseProfile != "" {
