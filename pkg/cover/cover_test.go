@@ -42,7 +42,7 @@ func TestCoverageRatio(t *testing.T) {
 func TestRatioErr(t *testing.T) {
 	c := &Coverage{FileName: "fake-coverage", NCoveredStmts: 200, NAllStmts: 0}
 	_, err := c.Ratio()
-	assert.NotNil(t, err)
+	assert.NotEqual(t, err, nil)
 }
 
 func TestPercentageNA(t *testing.T) {
@@ -50,56 +50,69 @@ func TestPercentageNA(t *testing.T) {
 	assert.Equal(t, "N/A", c.Percentage())
 }
 
-func TestGenLocalCoverDiffReport(t *testing.T) {
-	//coverage increase
-	newList := &CoverageList{Groups: []Coverage{{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20}}}
-	baseList := &CoverageList{Groups: []Coverage{{FileName: "fake-coverage", NCoveredStmts: 10, NAllStmts: 20}}}
-	rows := GenLocalCoverDiffReport(newList, baseList)
-	assert.Equal(t, 1, len(rows))
-	assert.Equal(t, []string{"fake-coverage", "50.0%", "75.0%", "25.0%"}, rows[0])
-
-	//coverage decrease
-	baseList = &CoverageList{Groups: []Coverage{{FileName: "fake-coverage", NCoveredStmts: 20, NAllStmts: 20}}}
-	rows = GenLocalCoverDiffReport(newList, baseList)
-	assert.Equal(t, []string{"fake-coverage", "100.0%", "75.0%", "-25.0%"}, rows[0])
-
-	//diff file
-	baseList = &CoverageList{Groups: []Coverage{{FileName: "fake-coverage-v1", NCoveredStmts: 10, NAllStmts: 20}}}
-	rows = GenLocalCoverDiffReport(newList, baseList)
-	assert.Equal(t, []string{"fake-coverage", "None", "75.0%", "75.0%"}, rows[0])
-}
-
 func TestCovList(t *testing.T) {
 	fileName := "qiniu.com/kodo/apiserver/server/main.go"
-
-	// percentage is 100%
-	p := strings.NewReader("mode: atomic\n" +
-		fileName + ":32.49,33.13 1 30\n")
-	covL, err := CovList(p)
-	covF := covL.Map()[fileName]
-	assert.Nil(t, err)
-	assert.Equal(t, "100.0%", covF.Percentage())
-
-	// percentage is 50%
-	p = strings.NewReader("mode: atomic\n" +
-		fileName + ":32.49,33.13 1 30\n" +
-		fileName + ":42.49,43.13 1 0\n")
-	covL, err = CovList(p)
-	covF = covL.Map()[fileName]
-	assert.Nil(t, err)
-	assert.Equal(t, "50.0%", covF.Percentage())
-
-	// two files
 	fileName1 := "qiniu.com/kodo/apiserver/server/svr.go"
-	p = strings.NewReader("mode: atomic\n" +
-		fileName + ":32.49,33.13 1 30\n" +
-		fileName1 + ":42.49,43.13 1 0\n")
-	covL, err = CovList(p)
-	covF = covL.Map()[fileName]
-	covF1 := covL.Map()[fileName1]
-	assert.Nil(t, err)
-	assert.Equal(t, "100.0%", covF.Percentage())
-	assert.Equal(t, "0.0%", covF1.Percentage())
+
+	items := []struct {
+		profile   string
+		expectPer []string
+	}{
+		// percentage is 100%
+		{
+			profile: "mode: atomic\n" +
+				fileName + ":32.49,33.13 1 30\n",
+			expectPer: []string{"100.0%"},
+		},
+		// percentage is 50%
+		{profile: "mode: atomic\n" +
+			fileName + ":32.49,33.13 1 30\n" +
+			fileName + ":42.49,43.13 1 0\n",
+			expectPer: []string{"50.0%"},
+		},
+		// two files
+		{
+			profile: "mode: atomic\n" +
+				fileName + ":32.49,33.13 1 30\n" +
+				fileName1 + ":42.49,43.13 1 0\n",
+			expectPer: []string{"100.0%", "0.0%"},
+		},
+	}
+
+	for _, tc := range items {
+		r := strings.NewReader(tc.profile)
+		c, err := CovList(r)
+		c.Sort()
+		assert.Equal(t, err, nil)
+		for k, v := range c {
+			assert.Equal(t, tc.expectPer[k], v.Percentage())
+		}
+	}
+}
+
+func TestTotalPercentage(t *testing.T) {
+	items := []struct {
+		list      CoverageList
+		expectPer string
+	}{
+		{
+			list:      CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 0}},
+			expectPer: "N/A",
+		},
+		{
+			list:      CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20}},
+			expectPer: "75.0%",
+		},
+		{
+			list: CoverageList{Coverage{FileName: "fake-coverage", NCoveredStmts: 15, NAllStmts: 20},
+				Coverage{FileName: "fake-coverage-1", NCoveredStmts: 10, NAllStmts: 30}},
+			expectPer: "50.0%",
+		},
+	}
+
+	for _, tc := range items {
+		assert.Equal(t, tc.expectPer, tc.list.TotalPercentage())
+	}
 }
 
 func TestBuildCoverCmd(t *testing.T) {

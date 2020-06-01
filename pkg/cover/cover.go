@@ -23,13 +23,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // TestCover is a collection of all counters
@@ -251,12 +255,7 @@ func AddCacheCover(pkg *Package, in *PackageCover) *PackageCover {
 }
 
 // CoverageList is a collection and summary over multiple file Coverage objects
-type CoverageList struct {
-	*Coverage
-	Groups          []Coverage
-	ConcernedFiles  map[string]bool
-	CovThresholdInt int
-}
+type CoverageList []Coverage
 
 // Coverage stores test coverage summary data for one file
 type Coverage struct {
@@ -272,10 +271,11 @@ type codeBlock struct {
 	coverageCount int    // number of times the block is covered
 }
 
-func CovList(f io.Reader) (g *CoverageList, err error) {
+//convert profile to CoverageList struct
+func CovList(f io.Reader) (g CoverageList, err error) {
 	scanner := bufio.NewScanner(f)
 	scanner.Scan() // discard first line
-	g = NewCoverageList("", map[string]bool{}, 0)
+	g = NewCoverageList()
 
 	for scanner.Scan() {
 		row := scanner.Text()
@@ -283,19 +283,26 @@ func CovList(f io.Reader) (g *CoverageList, err error) {
 		if err != nil {
 			return nil, err
 		}
-		blk.addToGroupCov(g)
+		blk.addToGroupCov(&g)
 	}
 	return
 }
 
-// NewCoverageList constructs new (file) group Coverage
-func NewCoverageList(name string, concernedFiles map[string]bool, covThresholdInt int) *CoverageList {
-	return &CoverageList{
-		Coverage:        newCoverage(name),
-		Groups:          []Coverage{},
-		ConcernedFiles:  concernedFiles,
-		CovThresholdInt: covThresholdInt,
+// covert profile file to CoverageList struct
+func ReadFileToCoverList(path string) (g CoverageList, err error) {
+	f, err := ioutil.ReadFile(path)
+	if err != nil {
+		logrus.Errorf("Open file %s failed!", path)
+		return nil, err
 	}
+	g, err = CovList(bytes.NewReader(f))
+	return
+}
+
+// NewCoverageList return empty CoverageList
+func NewCoverageList() CoverageList {
+	return CoverageList{}
+
 }
 
 func newCoverage(name string) *Coverage {
@@ -332,28 +339,47 @@ func (blk *codeBlock) addToGroupCov(g *CoverageList) {
 	}
 }
 
-func (g *CoverageList) size() int {
-	return len(g.Groups)
+func (g CoverageList) size() int {
+	return len(g)
 }
 
-func (g *CoverageList) lastElement() *Coverage {
-	return &g.Groups[g.size()-1]
+func (g CoverageList) lastElement() *Coverage {
+	return &g[g.size()-1]
 }
 
 func (g *CoverageList) append(c *Coverage) {
-	g.Groups = append(g.Groups, *c)
+	*g = append(*g, *c)
 }
 
-// Group returns the collection of file Coverage objects
-func (g *CoverageList) Group() *[]Coverage {
-	return &g.Groups
+// sort CoverageList with filenames
+func (g CoverageList) Sort() {
+	sort.SliceStable(g, func(i, j int) bool {
+		return g[i].Name() < g[j].Name()
+	})
+}
+
+func (g CoverageList) TotalPercentage() string {
+	ratio, err := g.TotalRatio()
+	if err == nil {
+		return PercentStr(ratio)
+	}
+	return "N/A"
+}
+
+func (g CoverageList) TotalRatio() (ratio float32, err error) {
+	var total Coverage
+	for _, c := range g {
+		total.NCoveredStmts += c.NCoveredStmts
+		total.NAllStmts += c.NAllStmts
+	}
+	return total.Ratio()
 }
 
 // Map returns maps the file name to its coverage for faster retrieval
 // & membership check
-func (g *CoverageList) Map() map[string]Coverage {
+func (g CoverageList) Map() map[string]Coverage {
 	m := make(map[string]Coverage)
-	for _, c := range g.Groups {
+	for _, c := range g {
 		m[c.Name()] = c
 	}
 	return m
@@ -370,7 +396,6 @@ func (c *Coverage) Percentage() string {
 	if err == nil {
 		return PercentStr(ratio)
 	}
-
 	return "N/A"
 }
 
