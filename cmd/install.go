@@ -40,10 +40,10 @@ To pass origial go build flags to goc command, place them after "--", see exampl
 # Install all binaries with cover variables injected. The binary will be installed in $GOPATH/bin or $HOME/go/bin if directory existed.
 goc install -- ./...
 
-# Install the current binary with cover variables injected, and set the registry center to http://127.0.0.1:7777
+# Install the current binary with cover variables injected, and set the registry center to http://127.0.0.1:7777.
 goc install --center=http://127.0.0.1:7777 
 
-# Install the current binary with cover variables injected, and set necessary build flags: -ldflags "-extldflags -static" -tags="embed kodo"
+# Install the current binary with cover variables injected, and set necessary build flags: -ldflags "-extldflags -static" -tags="embed kodo".
 goc build -- -ldflags "-extldflags -static" -tags="embed kodo"
 `,
 	Run: func(cmd *cobra.Command, args []string) {

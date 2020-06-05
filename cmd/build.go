@@ -41,13 +41,13 @@ To pass origial go build flags to goc command, place them after "--", see exampl
 # Build the current binary with cover variables injected. The binary will be generated in the current folder.
 goc build
 
-# Build the current binary with cover variables injected, and set the registry center to http://127.0.0.1:7777
+# Build the current binary with cover variables injected, and set the registry center to http://127.0.0.1:7777.
 goc build --center=http://127.0.0.1:7777 
 
-# Build the current binary with cover variables injected, and redirect output to /to/this/path
+# Build the current binary with cover variables injected, and redirect output to /to/this/path.
 goc build -- -o /to/this/path
 
-# Build the current binary with cover variables injected, and set necessary build flags: -ldflags "-extldflags -static" -tags="embed kodo"
+# Build the current binary with cover variables injected, and set necessary build flags: -ldflags "-extldflags -static" -tags="embed kodo".
 goc build -- -ldflags "-extldflags -static" -tags="embed kodo"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
