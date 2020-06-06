@@ -78,7 +78,7 @@ var (
 	qiniuCredential string
 
 	robotName string
-	fullDiff  bool
+	fullDiff  string
 )
 
 func init() {
@@ -93,7 +93,7 @@ func init() {
 	diffCmd.Flags().StringVarP(&githubCommentPrefix, "github-comment-prefix", "", "", "specific comment flag you provided")
 	diffCmd.Flags().StringVarP(&qiniuCredential, "qiniu-credential", "", "/etc/qiniuconfig/qiniu.json", "path to credential file to access qiniu cloud")
 	diffCmd.Flags().StringVarP(&robotName, "robot-name", "", "qiniu-bot", "github user name for coverage robot")
-	diffCmd.Flags().BoolVarP(&fullDiff, "full-diff", "", false, "when set true,calculate and display full diff coverage between new-profile and base-profile")
+	diffCmd.Flags().StringVarP(&fullDiff, "full-diff", "", "", "empty means set false, not empty means set true. When set true, will calculate and display full diff coverage between new-profile and base-profile")
 
 	rootCmd.AddCommand(diffCmd)
 }
@@ -143,6 +143,7 @@ func doDiffUnderProw(cmd *cobra.Command, args []string) {
 		jobName   = os.Getenv("JOB_NAME")
 		buildStr  = os.Getenv("BUILD_NUMBER")
 		artifacts = os.Getenv("ARTIFACTS")
+		fd        bool
 	)
 	logrus.Printf("Running coverage for PR = %s; PR commit SHA = %s;base SHA = %s", prNumStr, pullSha, baseSha)
 
@@ -186,6 +187,10 @@ func doDiffUnderProw(cmd *cobra.Command, args []string) {
 			ChangedProfileName: qiniu.ChangedProfileName,
 		}
 
+		if fullDiff != "" {
+			fd = true
+		}
+
 		job := prow.Job{
 			JobName:                jobName,
 			BuildId:                buildStr,
@@ -198,7 +203,7 @@ func doDiffUnderProw(cmd *cobra.Command, args []string) {
 			QiniuClient:            qc,
 			LocalArtifacts:         &localArtifacts,
 			GithubComment:          prClient,
-			FullDiff:               fullDiff,
+			FullDiff:               fd,
 		}
 		if err := job.RunPresubmit(); err != nil {
 			logrus.Fatalf("run presubmit job failed, err: %v", err)

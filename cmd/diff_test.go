@@ -106,5 +106,5 @@ func TestDoDiffForLocalProfiles(t *testing.T) {
 }
 
 func TestDoDiffUnderProw(t *testing.T) {
-
+	diffCmd.Flags().Set("full-diff", "test")
 }
