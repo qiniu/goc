@@ -27,7 +27,7 @@ import (
 	"github.com/qiniu/goc/pkg/cover"
 )
 
-func MvProjectsToTmp(target string, args []string) (newgopath string, newWorkingDir string, tmpBuildDir string, pkgs map[string]*cover.Package) {
+func MvProjectsToTmp(target string, args []string) (newGopath string, newWorkingDir string, tmpBuildDir string, pkgs map[string]*cover.Package) {
 	listArgs := []string{"list", "-json"}
 	if len(args) != 0 {
 		listArgs = append(listArgs, args...)
@@ -36,15 +36,15 @@ func MvProjectsToTmp(target string, args []string) (newgopath string, newWorking
 	pkgs = cover.ListPackages(target, listArgs, "")
 
 	tmpBuildDir, newWorkingDir, isMod := mvProjectsToTmp(pkgs)
-	origopath := os.Getenv("GOPATH")
+	oriGopath := os.Getenv("GOPATH")
 	if isMod == true {
-		newgopath = ""
-	} else if origopath == "" {
-		newgopath = tmpBuildDir
+		newGopath = ""
+	} else if oriGopath == "" {
+		newGopath = tmpBuildDir
 	} else {
-		newgopath = fmt.Sprintf("%v:%v", tmpBuildDir, origopath)
+		newGopath = fmt.Sprintf("%v:%v", tmpBuildDir, oriGopath)
 	}
-	log.Printf("New GOPATH: %v", newgopath)
+	log.Printf("New GOPATH: %v", newGopath)
 	return
 }
 
@@ -88,10 +88,9 @@ func TmpFolderName(path string) string {
 
 // Check if it is go module project
 // true legacy
-// flase go mod
+// false go mod
 func checkIfLegacyProject(pkgs map[string]*cover.Package) bool {
 	for _, v := range pkgs {
-
 		if v.Module == nil {
 			return true
 		}
@@ -105,7 +104,7 @@ func getTmpwd(tmpBuildDir string, pkgs map[string]*cover.Package, isMod bool) st
 	for _, pkg := range pkgs {
 		path, err := os.Getwd()
 		if err != nil {
-			log.Fatalf("Cannot get current working directoy, the error is: %v", err)
+			log.Fatalf("Cannot get current working directory, the error is: %v", err)
 		}
 
 		index := -1

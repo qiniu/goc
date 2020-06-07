@@ -30,13 +30,13 @@ type Store interface {
 	// Add adds the given service to store
 	Add(s Service) error
 
-	// Get returns the registered service informations with the given service's name
+	// Get returns the registered service information with the given service's name
 	Get(name string) []string
 
-	// Get returns all the registered service informations as a map
+	// Get returns all the registered service information as a map
 	GetAll() map[string][]string
 
-	// Init cleanup all the registered service informations
+	// Init cleanup all the registered service information
 	Init() error
 }
 
@@ -68,25 +68,25 @@ func (l *localStore) Add(s Service) error {
 		l.servicesMap[s.Name] = []string{s.Address}
 	}
 
-	// persistent to local sotre
+	// persistent to local store
 	return l.appendToFile(s)
 }
 
-// Get returns the registered service informations with the given name
+// Get returns the registered service information with the given name
 func (l *localStore) Get(name string) []string {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	return l.servicesMap[name]
 }
 
-// Get returns all the registered service informations
+// Get returns all the registered service information
 func (l *localStore) GetAll() map[string][]string {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	return l.servicesMap
 }
 
-// Init cleanup all the registered service informations
+// Init cleanup all the registered service information
 // and the local persistent file
 func (l *localStore) Init() error {
 	l.mu.Lock()
@@ -99,7 +99,7 @@ func (l *localStore) Init() error {
 	return nil
 }
 
-// load all registered servcie from file to memory
+// load all registered service from file to memory
 func (l *localStore) load() (map[string][]string, error) {
 	var svrsMap = make(map[string][]string, 0)
 
