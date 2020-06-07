@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/github"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
@@ -46,9 +47,13 @@ type PrComment struct {
 	GithubClient  *github.Client
 }
 
+// NewPrClient creates an Client which be able to comment on Github Pull Request
 func NewPrClient(githubTokenPath, repoOwner, repoName, prNumStr, botUserName, commentFlag string) *PrComment {
 	var client *github.Client
-	var ctx = context.Background()
+
+	// performs automatic retries when connection error occurs or a 500-range response code received (except 501)
+	retryClient := retryablehttp.NewClient()
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, retryClient.StandardClient())
 
 	prNum, err := strconv.Atoi(prNumStr)
 	if err != nil {
@@ -133,7 +138,7 @@ func (c *PrComment) EraseHistoryComment(commentPrefix string) error {
 	return nil
 }
 
-//get github pull request changes file list
+//GetPrChangedFiles get github pull request changes file list
 func (c *PrComment) GetPrChangedFiles() (files []string, err error) {
 	var commitFiles []*github.CommitFile
 	for {
