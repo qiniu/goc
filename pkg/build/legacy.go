@@ -26,9 +26,7 @@ import (
 )
 
 func cpLegacyProject(tmpBuildDir string, pkgs map[string]*cover.Package) {
-
 	visited := make(map[string]bool)
-
 	for k, v := range pkgs {
 		dst := filepath.Join(tmpBuildDir, "src", k)
 		src := v.Dir
