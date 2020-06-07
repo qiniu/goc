@@ -35,7 +35,7 @@ var buildCmd = &cobra.Command{
 	Long: `
 First of all, this build command will copy the project code and its necessary dependencies to a temporary directory, then do cover for the target in this temporary directory, finally go build command will be executed and binaries generated to their original place.
 
-To pass origial go build flags to goc command, place them after "--", see examples below for reference.
+To pass original go build flags to goc command, place them after "--", see examples below for reference.
 	`,
 	Example: `
 # Build the current binary with cover variables injected. The binary will be generated in the current folder.
