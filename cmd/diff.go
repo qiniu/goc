@@ -33,7 +33,7 @@ import (
 
 var diffCmd = &cobra.Command{
 	Use:   "diff",
-	Short: "do coverage profile diff analysis, it can also work with prow and post comments to github pull request if needed",
+	Short: "Do coverage profile diff analysis, it can also work with prow and post comments to github pull request if needed",
 	Example: `	# Diff two local coverage profile and display
 	goc diff --new-profile=<xxxx> --base-profile=<xxxx> 
 
