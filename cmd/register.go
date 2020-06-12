@@ -25,23 +25,36 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "Lists all the registered services",
-	Long:  "Lists all the registered services",
+var registerCmd = &cobra.Command{
+	Use:   "register",
+	Short: "Register a service into service center",
+	Long:  "Register a service into service center",
 	Example: `
-goc list [flags]
+goc register [flags] 
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		res, err := cover.NewWorker(center).ListServices()
+		s := cover.Service{
+			Name:    name,
+			Address: address,
+		}
+		res, err := cover.NewWorker(center).RegisterService(s)
 		if err != nil {
-			log.Fatalf("list failed, err: %v", err)
+			log.Fatalf("register service failed, err: %v", err)
 		}
 		fmt.Fprint(os.Stdout, string(res))
 	},
 }
 
+var (
+	name    string
+	address string
+)
+
 func init() {
-	listCmd.Flags().StringVarP(&center, "center", "", "http://127.0.0.1:7777", "cover profile host center")
-	rootCmd.AddCommand(listCmd)
+	registerCmd.Flags().StringVarP(&center, "center", "", "http://127.0.0.1:7777", "cover profile host center")
+	registerCmd.Flags().StringVarP(&name, "name", "n", "", "service name")
+	registerCmd.Flags().StringVarP(&address, "address", "a", "", "service address")
+	registerCmd.MarkFlagRequired("name")
+	registerCmd.MarkFlagRequired("address")
+	rootCmd.AddCommand(registerCmd)
 }

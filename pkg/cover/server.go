@@ -35,25 +35,30 @@ import (
 // LocalStore implements the IPersistence interface
 var LocalStore Store
 
-// Client implements the Action interface
-var Client Action
-
 // LogFile a file to save log.
 const LogFile = "goc.log"
 
-// StartServer starts coverage host center
-func StartServer(port string) {
+func init() {
 	LocalStore = NewStore()
-	Client = NewWorker()
+}
 
+// Run starts coverage host center
+func Run(port string) {
 	f, err := os.Create(LogFile)
 	if err != nil {
 		log.Fatalf("failed to create log file %s, err: %v", LogFile, err)
 	}
+	r := GocServer(f)
+	log.Fatal(r.Run(port))
+}
 
-	gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
+// GocServer init goc server engine
+func GocServer(w io.Writer) *gin.Engine {
+	if w != nil && w != os.Stdout {
+		gin.DefaultWriter = io.MultiWriter(w, os.Stdout)
+	}
+
 	r := gin.Default()
-
 	// api to show the registered services
 	r.StaticFile(PersistenceFile, "./"+PersistenceFile)
 
@@ -66,7 +71,7 @@ func StartServer(port string) {
 		v1.GET("/cover/list", listServices)
 	}
 
-	log.Fatal(r.Run(port))
+	return r
 }
 
 // Service is a entry under being tested
@@ -109,7 +114,7 @@ func registerService(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"name": service.Name, "address": service.Address})
+	c.JSON(http.StatusOK, gin.H{"result": "success"})
 }
 
 func profile(c *gin.Context) {
@@ -117,7 +122,7 @@ func profile(c *gin.Context) {
 	var mergedProfiles = make([][]*cover.Profile, len(svrsUnderTest))
 	for _, addrs := range svrsUnderTest {
 		for _, addr := range addrs {
-			pp, err := Client.Profile(addr)
+			pp, err := NewWorker(addr).Profile()
 			if err != nil {
 				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 				return
@@ -152,7 +157,7 @@ func clear(c *gin.Context) {
 	svrsUnderTest := LocalStore.GetAll()
 	for svc, addrs := range svrsUnderTest {
 		for _, addr := range addrs {
-			pp, err := Client.Clear(addr)
+			pp, err := NewWorker(addr).Clear()
 			if err != nil {
 				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 				return

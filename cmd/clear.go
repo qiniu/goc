@@ -37,7 +37,7 @@ goc clear
 goc clear --center=http://192.168.1.1:8080
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		res, err := cover.NewWorker().Clear(center)
+		res, err := cover.NewWorker(center).Clear()
 		if err != nil {
 			log.Fatalf("call host %v failed, err: %v, response: %v", center, err, string(res))
 		}
