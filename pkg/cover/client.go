@@ -24,21 +24,24 @@ import (
 	"net/http"
 )
 
-// Action provides methods to contact with the coverd service under test
+// Action provides methods to contact with the covered service under test
 type Action interface {
 	Profile(host string) ([]byte, error)
 	Clear(host string) ([]byte, error)
 	InitSystem(host string) ([]byte, error)
+	ListServices(host string) ([]byte, error)
 }
 
-// CoverProfileAPI is provided by the covered service to get profiles
-const CoverProfileAPI = "/v1/cover/profile"
-
-// CoverProfileClearAPI is provided by the covered service to clear profiles
-const CoverProfileClearAPI = "/v1/cover/clear"
-
-// CoverInitSystemAPI prepare a new round of testing
-const CoverInitSystemAPI = "/v1/cover/init"
+const (
+	//CoverInitSystemAPI prepare a new round of testing
+	CoverInitSystemAPI = "/v1/cover/init"
+	//CoverProfileAPI is provided by the covered service to get profiles
+	CoverProfileAPI = "/v1/cover/profile"
+	//CoverProfileClearAPI is provided by the covered service to clear profiles
+	CoverProfileClearAPI = "/v1/cover/clear"
+	//CoverServicesListAPI list all the registered services
+	CoverServicesListAPI = "/v1/cover/list"
+)
 
 type client struct {
 	client *http.Client
@@ -51,36 +54,46 @@ func NewWorker() Action {
 	}
 }
 
-func (w *client) Profile(host string) ([]byte, error) {
-	u := fmt.Sprintf("%s%s", host, CoverProfileAPI)
-	profile, err := w.do("GET", u, nil)
+func (c *client) ListServices(host string) ([]byte, error) {
+	u := fmt.Sprintf("%s%s", host, CoverServicesListAPI)
+	services, err := c.do("GET", u, nil)
 	if err != nil && isNetworkError(err) {
-		profile, err = w.do("GET", u, nil)
+		services, err = c.do("GET", u, nil)
+	}
+
+	return services, err
+}
+
+func (c *client) Profile(host string) ([]byte, error) {
+	u := fmt.Sprintf("%s%s", host, CoverProfileAPI)
+	profile, err := c.do("GET", u, nil)
+	if err != nil && isNetworkError(err) {
+		profile, err = c.do("GET", u, nil)
 	}
 
 	return profile, err
 }
 
-func (w *client) Clear(host string) ([]byte, error) {
+func (c *client) Clear(host string) ([]byte, error) {
 	u := fmt.Sprintf("%s%s", host, CoverProfileClearAPI)
-	resp, err := w.do("POST", u, nil)
+	resp, err := c.do("POST", u, nil)
 	if err != nil && isNetworkError(err) {
-		resp, err = w.do("POST", u, nil)
+		resp, err = c.do("POST", u, nil)
 	}
 	return resp, err
 }
 
-func (w *client) InitSystem(host string) ([]byte, error) {
+func (c *client) InitSystem(host string) ([]byte, error) {
 	u := fmt.Sprintf("%s%s", host, CoverInitSystemAPI)
-	return w.do("POST", u, nil)
+	return c.do("POST", u, nil)
 }
 
-func (w *client) do(method, url string, body io.Reader) ([]byte, error) {
+func (c *client) do(method, url string, body io.Reader) ([]byte, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
-	res, err := w.client.Do(req)
+	res, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
 	}

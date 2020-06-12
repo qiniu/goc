@@ -58,7 +58,7 @@ type FileVar struct {
 }
 
 // Package map a package output by go list
-// this is subset of pakcage struct in: https://github.com/golang/go/blob/master/src/cmd/go/internal/load/pkg.go#L58
+// this is subset of package struct in: https://github.com/golang/go/blob/master/src/cmd/go/internal/load/pkg.go#L58
 type Package struct {
 	Dir        string `json:"Dir"`        // directory containing package sources
 	ImportPath string `json:"ImportPath"` // import path of package in dir
@@ -157,7 +157,7 @@ func AddCounters(pkg *Package, mode, newgopath string) (*PackageCover, error) {
 		cmd := buildCoverCmd(file, coverVar, pkg, mode, newgopath)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return nil, fmt.Errorf("execuate go tool cover -mode=atomic -var %s -o %s/%s failed, err: %v, out: %s", coverVar.Var, pkg.Dir, file, err, string(out))
+			return nil, fmt.Errorf("execute go tool cover -mode=atomic -var %s -o %s/%s failed, err: %v, out: %s", coverVar.Var, pkg.Dir, file, err, string(out))
 		}
 	}
 

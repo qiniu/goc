@@ -54,7 +54,7 @@ func StartServer(port string) {
 	gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
 	r := gin.Default()
 
-	// api to show the registerd services
+	// api to show the registered services
 	r.StaticFile(PersistenceFile, "./"+PersistenceFile)
 
 	v1 := r.Group("/v1")
@@ -63,6 +63,7 @@ func StartServer(port string) {
 		v1.GET("/cover/profile", profile)
 		v1.POST("/cover/clear", clear)
 		v1.POST("/cover/init", initSystem)
+		v1.GET("/cover/list", listServices)
 	}
 
 	log.Fatal(r.Run(port))
@@ -72,6 +73,12 @@ func StartServer(port string) {
 type Service struct {
 	Name    string `form:"name" json:"name" binding:"required"`
 	Address string `form:"address" json:"address" binding:"required"`
+}
+
+//listServices list all the registered services
+func listServices(c *gin.Context) {
+	services := LocalStore.GetAll()
+	c.JSON(http.StatusOK, services)
 }
 
 func registerService(c *gin.Context) {
