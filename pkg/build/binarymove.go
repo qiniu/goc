@@ -25,12 +25,12 @@ import (
 	"github.com/qiniu/goc/pkg/cover"
 )
 
-func MvBinaryToOri(pkgs map[string]*cover.Package, newgopath string) {
-	for _, pkg := range pkgs {
+func (b *Build) MvBinaryToOri(pkgs map[string]*cover.Package) {
+	for _, pkg := range b.Pkgs {
 		if pkg.Name == "main" {
 			_, binaryTarget := filepath.Split(pkg.Target)
 
-			binaryTmpPath := filepath.Join(getTmpwd(newgopath, pkgs, !checkIfLegacyProject(pkgs)), binaryTarget)
+			binaryTmpPath := filepath.Join(b.TmpWorkingDir)
 
 			if false == checkIfFileExist(binaryTmpPath) {
 				continue

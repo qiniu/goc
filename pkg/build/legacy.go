@@ -25,10 +25,10 @@ import (
 	"github.com/qiniu/goc/pkg/cover"
 )
 
-func cpLegacyProject(tmpBuildDir string, pkgs map[string]*cover.Package) {
+func (b *Build) cpLegacyProject() {
 	visited := make(map[string]bool)
-	for k, v := range pkgs {
-		dst := filepath.Join(tmpBuildDir, "src", k)
+	for k, v := range b.Pkgs {
+		dst := filepath.Join(b.TmpDir, "src", k)
 		src := v.Dir
 
 		if _, ok := visited[src]; ok {
@@ -42,13 +42,13 @@ func cpLegacyProject(tmpBuildDir string, pkgs map[string]*cover.Package) {
 
 		visited[src] = true
 
-		cpDepPackages(tmpBuildDir, v, visited)
+		b.cpDepPackages(v, visited)
 	}
 }
 
 // only cp dependency in root(current gopath),
 // skip deps in other GOPATHs
-func cpDepPackages(tmpBuildDir string, pkg *cover.Package, visited map[string]bool) {
+func (b *Build) cpDepPackages( pkg *cover.Package, visited map[string]bool) {
 	/*
 		oriGOPATH := os.Getenv("GOPATH")
 		if oriGOPATH == "" {
@@ -70,7 +70,7 @@ func cpDepPackages(tmpBuildDir string, pkg *cover.Package, visited map[string]bo
 			continue
 		}
 
-		dst := filepath.Join(tmpBuildDir, "src", dep)
+		dst := filepath.Join(b.TmpDir, "src", dep)
 
 		if err := copy.Copy(src, dst); err != nil {
 			log.Printf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)

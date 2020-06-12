@@ -25,7 +25,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/qiniu/goc/pkg/build"
 	"github.com/spf13/cobra"
 )
 
@@ -51,8 +50,12 @@ goc build -- -o /to/this/path
 goc build -- -ldflags "-extldflags -static" -tags="embed kodo"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		newgopath, newwd, tmpdir, pkgs := build.MvProjectsToTmp(target, args)
-		doCover(cmd, args, newgopath, tmpdir)
+
+		return
+		/*
+		gocbuild := build.NewInstall(buildFlags, packages)
+		newgopath, newwd, tmpdir, _ := gocbuild.MvProjectsToTmp()
+		doCover("args", newgopath, tmpdir)
 		newArgs, modified := modifyOutputArg(args)
 		doBuild(newArgs, newgopath, newwd)
 
@@ -60,14 +63,15 @@ goc build -- -ldflags "-extldflags -static" -tags="embed kodo"
 		// find the binary in temp build dir
 		// and copy them into original dir
 		if false == modified {
-			build.MvBinaryToOri(pkgs, tmpdir)
+			// build.MvBinaryToOri(pkgs, tmpdir)
 		}
+
+		 */
 	},
 }
 
 func init() {
-	buildCmd.Flags().StringVarP(&center, "center", "", "http://127.0.0.1:7777", "cover profile host center")
-
+	addBuildFlags(buildCmd.Flags())
 	rootCmd.AddCommand(buildCmd)
 }
 

@@ -63,7 +63,7 @@ var _ = Describe("E2E", func() {
 
 			By("goc install")
 			testProjDir = filepath.Join(TESTS_ROOT, "samples/simple_project")
-			cmd = exec.Command("goc", "install", "./...")
+			cmd = exec.Command("goc", "install", "--debuggoc")
 			cmd.Dir = testProjDir
 
 			out, err = cmd.CombinedOutput()
@@ -124,7 +124,7 @@ var _ = Describe("E2E", func() {
 
 			By("goc install")
 			testProjDir = filepath.Join(TESTS_ROOT, "samples/simple_gopath_project")
-			cmd = exec.Command("goc", "install", "./...")
+			cmd = exec.Command("goc", "install", "--debuggoc")
 			cmd.Dir = filepath.Join(testProjDir, "src/qiniu.com/simple_gopath_project")
 			// use GOPATH mode to compile project
 			cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", testProjDir), "GO111MODULE=off")

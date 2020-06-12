@@ -17,14 +17,7 @@
 package cmd
 
 import (
-	"fmt"
-	"log"
-	"os"
-	"os/exec"
-	"strings"
-
 	"github.com/qiniu/goc/pkg/build"
-	"github.com/qiniu/goc/pkg/cover"
 	"github.com/spf13/cobra"
 )
 
@@ -38,44 +31,26 @@ To pass origial go build flags to goc command, place them after "--", see exampl
 `,
 	Example: `
 # Install all binaries with cover variables injected. The binary will be installed in $GOPATH/bin or $HOME/go/bin if directory existed.
-goc install -- ./...
+goc install --packages="./..."
 
 # Install the current binary with cover variables injected, and set the registry center to http://127.0.0.1:7777.
 goc install --center=http://127.0.0.1:7777 
 
 # Install the current binary with cover variables injected, and set necessary build flags: -ldflags "-extldflags -static" -tags="embed kodo".
-goc build -- -ldflags "-extldflags -static" -tags="embed kodo"
+goc build --buildflags="-ldflags '-extldflags -static' -tags='embed kodo'"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		newgopath, newwd, tmpdir, pkgs := build.MvProjectsToTmp(target, args)
-		doCover(cmd, args, newgopath, tmpdir)
-		doInstall(args, newgopath, newwd, pkgs)
+		gocbuild := build.NewInstall(buildFlags, packages)
+		gocbuild.MvProjectsToTmp()
+		// doCover with original buildFlags, with new GOPATH( tmp:original )
+		// in the tmp directory
+		doCover(buildFlags, gocbuild.NewGOPATH, gocbuild.TmpDir)
+		//
+		gocbuild.Install()
 	},
 }
 
 func init() {
-	installCmd.Flags().StringVarP(&center, "center", "", "http://127.0.0.1:7777", "cover profile host center")
-
+	addBuildFlags(installCmd.Flags())
 	rootCmd.AddCommand(installCmd)
-}
-
-func doInstall(args []string, newgopath string, newworkingdir string, pkgs map[string]*cover.Package) {
-	log.Println("Go building in temp...")
-	newArgs := []string{"install"}
-	newArgs = append(newArgs, args...)
-	cmd := exec.Command("go", newArgs...)
-	cmd.Dir = newworkingdir
-
-	// Change the temp GOBIN, to force binary install to original place
-	cmd.Env = append(os.Environ(), fmt.Sprintf("GOBIN=%v", build.FindWhereToInstall(pkgs)))
-	if newgopath != "" {
-		// Change to temp GOPATH for go install command
-		cmd.Env = append(cmd.Env, fmt.Sprintf("GOPATH=%v", newgopath))
-	}
-
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatalf("Fail to execute: go install %v. The error is: %v, the stdout/stderr is: %v", strings.Join(args, " "), err, string(out))
-	}
-	log.Printf("Go install successful. Binary installed in: %v", build.FindWhereToInstall(pkgs))
 }

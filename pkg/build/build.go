@@ -16,24 +16,25 @@
 
 package build
 
-import (
-	"log"
+import "github.com/qiniu/goc/pkg/cover"
 
-	"github.com/otiai10/copy"
-)
+// Build is to describe the building/installing process of a goc build/install
+type Build struct {
+	Pkgs  map[string]*cover.Package //
+	NewGOPATH string
+	OriGOPATH string
+	TmpDir string
+	TmpWorkingDir string
+	IsMod bool
+	BuildFlags string
+	Packages string
+	Root string // Project Root
+}
 
-func (b *Build) cpGoModulesProject() {
-	for _, v := range b.Pkgs {
-		if v.Name == "main" {
-			dst := b.TmpDir
-			src := v.Module.Dir
-
-			if err := copy.Copy(src, dst); err != nil {
-				log.Printf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
-			}
-			break
-		} else {
-			continue
-		}
+func NewInstall(buildflags string, packages string) *Build {
+	return &Build{
+		BuildFlags: buildflags,
+		Packages: packages,
 	}
 }
+

@@ -34,6 +34,6 @@ var initCmd = &cobra.Command{
 }
 
 func init() {
-	initCmd.Flags().StringVarP(&center, "center", "", "http://127.0.0.1:7777", "cover profile host center")
+	addBasicFlags(initCmd.Flags())
 	rootCmd.AddCommand(initCmd)
 }

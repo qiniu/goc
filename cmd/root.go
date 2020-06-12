@@ -17,6 +17,7 @@
 package cmd
 
 import (
+	"io/ioutil"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -28,8 +29,20 @@ var rootCmd = &cobra.Command{
 	Long: `goc is a comprehensive coverage testing tool for go language.
 
 Find more information at:
- https://github.com/qbox/goc
+ https://github.com/qiniu/goc
 `,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		log.SetFlags(log.LstdFlags | log.Lshortfile)
+		if debugGoc == false {
+			// we only need log in debug mode
+			log.SetOutput(ioutil.Discard)
+		}
+	},
+}
+
+func init() {
+	rootCmd.PersistentFlags().BoolVar(&debugGoc, "debuggoc", false, "turn goc into debug mode")
+	rootCmd.PersistentFlags().MarkHidden("debuggoc")
 }
 
 // Execute the goc tool
