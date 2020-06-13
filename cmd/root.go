@@ -17,10 +17,13 @@
 package cmd
 
 import (
-	"io/ioutil"
-	"log"
-
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"io/ioutil"
+	"path/filepath"
+	"runtime"
+	"strconv"
 )
 
 var rootCmd = &cobra.Command{
@@ -32,7 +35,17 @@ Find more information at:
  https://github.com/qiniu/goc
 `,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		log.SetFlags(log.LstdFlags | log.Lshortfile)
+		log.SetReportCaller(true)
+		log.SetFormatter(&log.TextFormatter{
+			FullTimestamp: true,
+			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+				dirname, filename := filepath.Split(f.File)
+				lastelem := filepath.Base(dirname)
+				filename = filepath.Join(lastelem, filename)
+				line := strconv.Itoa(f.Line)
+				return "", "[" + filename + ":" + line + "]"
+			},
+		})
 		if debugGoc == false {
 			// we only need log in debug mode
 			log.SetOutput(ioutil.Discard)
@@ -43,6 +56,7 @@ Find more information at:
 func init() {
 	rootCmd.PersistentFlags().BoolVar(&debugGoc, "debuggoc", false, "turn goc into debug mode")
 	rootCmd.PersistentFlags().MarkHidden("debuggoc")
+	viper.BindPFlags(rootCmd.PersistentFlags())
 }
 
 // Execute the goc tool

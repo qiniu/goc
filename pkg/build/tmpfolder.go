@@ -19,7 +19,8 @@ package build
 import (
 	"crypto/sha256"
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,7 +28,7 @@ import (
 	"github.com/qiniu/goc/pkg/cover"
 )
 
-func (b *Build) MvProjectsToTmp() (newGopath string, newWorkingDir string, tmpBuildDir string, pkgs map[string]*cover.Package) {
+func (b *Build) MvProjectsToTmp() {
 	listArgs := []string{"-json"}
 	if len(b.BuildFlags) != 0 {
 		listArgs = append(listArgs, b.BuildFlags)
@@ -36,13 +37,13 @@ func (b *Build) MvProjectsToTmp() (newGopath string, newWorkingDir string, tmpBu
 	b.Pkgs = cover.ListPackages(".", strings.Join(listArgs, " "), "")
 
 	b.mvProjectsToTmp()
-	oriGopath := os.Getenv("GOPATH")
+	b.OriGOPATH = os.Getenv("GOPATH")
 	if b.IsMod == true {
 		b.NewGOPATH = ""
-	} else if oriGopath == "" {
+	} else if b.OriGOPATH == "" {
 		b.NewGOPATH = b.TmpDir
 	} else {
-		b.NewGOPATH = fmt.Sprintf("%v:%v", b.TmpDir, oriGopath)
+		b.NewGOPATH = fmt.Sprintf("%v:%v", b.TmpDir, b.OriGOPATH)
 	}
 	log.Printf("New GOPATH: %v", b.NewGOPATH)
 	return
@@ -88,6 +89,8 @@ func TmpFolderName(path string) string {
 // false go mod
 func (b *Build) checkIfLegacyProject() bool {
 	for _, v := range b.Pkgs {
+		// get root
+		b.Root = v.Root
 		if v.Module == nil {
 			return true
 		}
@@ -144,4 +147,13 @@ func (b *Build) findWhereToInstall() string {
 		return filepath.Join(strings.Split(GOPATH, ":")[0], "bin")
 	}
 	return filepath.Join(os.Getenv("HOME"), "go", "bin")
+}
+
+func (b *Build) RemoveTmpDir() {
+	debuggoc := viper.GetBool("debuggoc")
+	if debuggoc == false {
+		if b.TmpDir != "" {
+			os.RemoveAll(b.TmpDir)
+		}
+	}
 }

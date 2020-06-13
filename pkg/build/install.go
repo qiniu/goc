@@ -18,14 +18,27 @@ package build
 
 import (
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
 )
 
+// NewInstall creates a Build struct which can install from goc temporary directory
+func NewInstall(buildflags string, packages string) *Build {
+	b := &Build{
+		BuildFlags: buildflags,
+		Packages:   packages,
+	}
+	if false == b.validatePackageForInstall() {
+		log.Fatalln("packages only support . and ./...")
+	}
+	b.MvProjectsToTmp()
+	return b
+}
+
 func (b *Build) Install() {
 	log.Println("Go building in temp...")
-	cmd := exec.Command("/bin/bash", "-c", "go install " + b.BuildFlags + " " + b.Packages)
+	cmd := exec.Command("/bin/bash", "-c", "go install "+b.BuildFlags+" "+b.Packages)
 	cmd.Dir = b.TmpWorkingDir
 
 	// Change the temp GOBIN, to force binary install to original place
@@ -41,4 +54,12 @@ func (b *Build) Install() {
 		log.Fatalf("Fail to execute: %v. The error is: %v, the stdout/stderr is: %v", cmd.Args, err, string(out))
 	}
 	log.Printf("Go install successful. Binary installed in: %v", b.findWhereToInstall())
+}
+
+func (b *Build) validatePackageForInstall() bool {
+	if b.Packages == "." || b.Packages == "./..." {
+		return true
+	} else {
+		return false
+	}
 }

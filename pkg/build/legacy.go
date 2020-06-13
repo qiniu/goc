@@ -17,7 +17,7 @@
 package build
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 

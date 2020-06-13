@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net"
 	"net/http"
 	"net/url"

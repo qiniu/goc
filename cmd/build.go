@@ -17,14 +17,7 @@
 package cmd
 
 import (
-	"flag"
-	"fmt"
-	"log"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-
+	"github.com/qiniu/goc/pkg/build"
 	"github.com/spf13/cobra"
 )
 
@@ -50,74 +43,22 @@ goc build -- -o /to/this/path
 goc build -- -ldflags "-extldflags -static" -tags="embed kodo"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-
+		gocbuild := build.NewBuild(buildFlags, packages, buildOutput)
+		// remove temporary directory if needed
+		defer gocbuild.RemoveTmpDir()
+		// doCover with original buildFlags, with new GOPATH( tmp:original )
+		// in the tmp directory
+		doCover(buildFlags, gocbuild.NewGOPATH, gocbuild.TmpDir)
+		// do install in the temporary directory
+		gocbuild.Build()
 		return
-		/*
-		gocbuild := build.NewInstall(buildFlags, packages)
-		newgopath, newwd, tmpdir, _ := gocbuild.MvProjectsToTmp()
-		doCover("args", newgopath, tmpdir)
-		newArgs, modified := modifyOutputArg(args)
-		doBuild(newArgs, newgopath, newwd)
-
-		// if not modified
-		// find the binary in temp build dir
-		// and copy them into original dir
-		if false == modified {
-			// build.MvBinaryToOri(pkgs, tmpdir)
-		}
-
-		 */
 	},
 }
 
+var buildOutput string
+
 func init() {
 	addBuildFlags(buildCmd.Flags())
+	buildCmd.Flags().StringVar(&buildOutput, "output", "", "it forces build to write the resulting executable or object to the named output file or directory")
 	rootCmd.AddCommand(buildCmd)
-}
-
-func doBuild(args []string, newgopath string, newworkingdir string) {
-	log.Println("Go building in temp...")
-	newArgs := []string{"build"}
-	newArgs = append(newArgs, args...)
-	cmd := exec.Command("go", newArgs...)
-	cmd.Dir = newworkingdir
-
-	if newgopath != "" {
-		// Change to temp GOPATH for go install command
-		cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", newgopath))
-	}
-
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatalf("Fail to execute: go build %v. The error is: %v, the stdout/stderr is: %v", strings.Join(args, " "), err, string(out))
-	}
-	log.Println("Go build exit successful.")
-}
-
-// As we build in the temp build dir, we have to modify the "-o output",
-// if output is a relative path, transform it to abspath
-func modifyOutputArg(args []string) (newArgs []string, modified bool) {
-	var output string
-	fs := flag.NewFlagSet("goc-build", flag.PanicOnError)
-	fs.StringVar(&output, "o", "", "output dir")
-
-	// parse the go args after "--"
-	fs.Parse(args)
-
-	// skip if output is not present
-	if output == "" {
-		modified = false
-		newArgs = args
-		return
-	}
-
-	abs, err := filepath.Abs(output)
-	if err != nil {
-		log.Fatalf("Fail to transform the path: %v to absolute path, the error is: %v", output, err)
-	}
-
-	// the second -o arg will overwrite the first one
-	newArgs = append(args, "-o", abs)
-	modified = true
-	return
 }
