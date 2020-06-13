@@ -19,9 +19,9 @@ package cover
 import (
 	"bytes"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
-	log "github.com/sirupsen/logrus"
 	"net"
 	"net/http"
 	"net/url"

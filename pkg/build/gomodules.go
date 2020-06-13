@@ -19,7 +19,6 @@ package build
 import (
 	log "github.com/sirupsen/logrus"
 
-
 	"github.com/otiai10/copy"
 )
 

@@ -19,8 +19,8 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"io"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"os"
 
 	"github.com/qiniu/goc/pkg/cover"

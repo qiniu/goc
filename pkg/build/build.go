@@ -18,12 +18,13 @@ package build
 
 import (
 	"fmt"
-	"github.com/qiniu/goc/pkg/cover"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/qiniu/goc/pkg/cover"
+	log "github.com/sirupsen/logrus"
 )
 
 // Build is to describe the building/installing process of a goc build/install
@@ -51,8 +52,8 @@ func NewBuild(buildflags string, packages string, outputDir string) *Build {
 	if false == b.validatePackageForBuild() {
 		log.Fatalln("packages only support \".\"")
 	}
-	b.Target = b.determineOutputDir(outputDir)
 	b.MvProjectsToTmp()
+	b.Target = b.determineOutputDir(outputDir)
 	return b
 }
 
@@ -79,6 +80,9 @@ func (b *Build) Build() {
 // determineOutputDir, as we only allow . as package name,
 // the binary name is always same as the directory name of current directory
 func (b *Build) determineOutputDir(outputDir string) string {
+	if b.TmpDir == "" {
+		log.Fatalln("Can only be called after Build.MvProjectsToTmp().")
+	}
 	curWorkingDir, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("Cannot get current working directory, the err: %v.", err)
@@ -86,8 +90,11 @@ func (b *Build) determineOutputDir(outputDir string) string {
 	// if
 	if outputDir == "" {
 		_, last := filepath.Split(curWorkingDir)
-		// replace "_" with "-" in the import path
-		last = strings.ReplaceAll(last, "_", "-")
+		if b.IsMod {
+			// in mod, special rule
+			// replace "_" with "-" in the import path
+			last = strings.ReplaceAll(last, "_", "-")
+		}
 		return filepath.Join(curWorkingDir, last)
 	}
 	abs, err := filepath.Abs(outputDir)
