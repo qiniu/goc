@@ -145,7 +145,7 @@ var _ = Describe("E2E", func() {
 			By("check generated binary")
 			objects := []string{GOPATH + "/bin", oriWorkingDir}
 			for _, dir := range objects {
-				obj := filepath.Join(dir, "simple_gopath_project")
+				obj := filepath.Join(dir, "simple-gopath-project")
 				fInfo, err := os.Lstat(obj)
 				Expect(err).To(BeNil())
 				Expect(startTime.Before(fInfo.ModTime())).To(Equal(true), "new binary should be generated, not the old one")
