@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // Build is to describe the building/installing process of a goc build/install
@@ -67,6 +68,7 @@ func (b *Build) Build() {
 		cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", b.NewGOPATH))
 	}
 
+	log.Printf("go build cmd is: %v", cmd.Args)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatalf("Fail to execute: %v. The error is: %v, the stdout/stderr is: %v", cmd.Args, err, string(out))
@@ -83,7 +85,10 @@ func (b *Build) determineOutputDir(outputDir string) string {
 	}
 	// if
 	if outputDir == "" {
-		return curWorkingDir
+		_, last := filepath.Split(curWorkingDir)
+		// replace "_" with "-" in the import path
+		last = strings.ReplaceAll(last, "_", "-")
+		return filepath.Join(curWorkingDir, last)
 	}
 	abs, err := filepath.Abs(outputDir)
 	if err != nil {
