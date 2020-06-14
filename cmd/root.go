@@ -17,9 +17,13 @@
 package cmd
 
 import (
-	"log"
-
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"io/ioutil"
+	"path/filepath"
+	"runtime"
+	"strconv"
 )
 
 var rootCmd = &cobra.Command{
@@ -28,8 +32,31 @@ var rootCmd = &cobra.Command{
 	Long: `goc is a comprehensive coverage testing tool for go language.
 
 Find more information at:
- https://github.com/qbox/goc
+ https://github.com/qiniu/goc
 `,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		log.SetReportCaller(true)
+		log.SetFormatter(&log.TextFormatter{
+			FullTimestamp: true,
+			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+				dirname, filename := filepath.Split(f.File)
+				lastelem := filepath.Base(dirname)
+				filename = filepath.Join(lastelem, filename)
+				line := strconv.Itoa(f.Line)
+				return "", "[" + filename + ":" + line + "]"
+			},
+		})
+		if debugGoc == false {
+			// we only need log in debug mode
+			log.SetOutput(ioutil.Discard)
+		}
+	},
+}
+
+func init() {
+	rootCmd.PersistentFlags().BoolVar(&debugGoc, "debuggoc", false, "turn goc into debug mode")
+	rootCmd.PersistentFlags().MarkHidden("debuggoc")
+	viper.BindPFlags(rootCmd.PersistentFlags())
 }
 
 // Execute the goc tool

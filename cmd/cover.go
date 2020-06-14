@@ -18,7 +18,8 @@ package cmd
 
 import (
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"os"
 	"strings"
 
@@ -40,7 +41,10 @@ goc cover --center=http://127.0.0.1:7777
 # Do cover for the target path,  cover mode: atomic.
 goc cover --center=http://127.0.0.1:7777 --target=/path/to/target --mode=atomic
 `,
+	Hidden: true,
 	Run: func(cmd *cobra.Command, args []string) {
+		var buildFlags string
+		buildFlags = viper.GetString("buildflags")
 		if mode == "" {
 			log.Fatalf("Error: flag needs an argument: -mode %v", mode)
 		}
@@ -48,39 +52,27 @@ goc cover --center=http://127.0.0.1:7777 --target=/path/to/target --mode=atomic
 			log.Fatalf("unknown -mode %v", mode)
 		}
 
-		doCover(cmd, args, "", "")
+		doCover(buildFlags, "", target)
 	},
 }
 
-var (
-	target string
-	center string
-	mode   string
-)
-
 func init() {
-	coverCmd.Flags().StringVarP(&center, "center", "", "http://127.0.0.1:7777", "cover profile host center")
-	coverCmd.Flags().StringVarP(&target, "target", "", ".", "target folder to cover")
-	coverCmd.Flags().StringVarP(&mode, "mode", "", "count", "coverage mode: set, count, atomic")
-
+	coverCmd.Flags().StringVar(&target, "target", ".", "target folder to cover")
+	addCommonFlags(coverCmd.Flags())
 	rootCmd.AddCommand(coverCmd)
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
-func doCover(cmd *cobra.Command, args []string, newgopath string, newtarget string) {
-	if newtarget != "" {
-		target = newtarget
-	}
+func doCover(args string, newgopath string, target string) {
 	if !isDirExist(target) {
 		log.Fatalf("target directory %s not exist", target)
 	}
 
-	listArgs := []string{"list", "-json"}
+	listArgs := []string{"-json"}
 	if len(args) != 0 {
-		listArgs = append(listArgs, args...)
+		listArgs = append(listArgs, args)
 	}
 	listArgs = append(listArgs, "./...")
-	pkgs := cover.ListPackages(target, listArgs, newgopath)
+	pkgs := cover.ListPackages(target, strings.Join(listArgs, " "), newgopath)
 
 	var seen = make(map[string]*cover.PackageCover)
 	var seenCache = make(map[string]*cover.PackageCover)

@@ -17,16 +17,15 @@
 package build
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/otiai10/copy"
-	"github.com/qiniu/goc/pkg/cover"
 )
 
-func cpGoModulesProject(tmpBuildDir string, pkgs map[string]*cover.Package) {
-	for _, v := range pkgs {
+func (b *Build) cpGoModulesProject() {
+	for _, v := range b.Pkgs {
 		if v.Name == "main" {
-			dst := tmpBuildDir
+			dst := b.TmpDir
 			src := v.Module.Dir
 
 			if err := copy.Copy(src, dst); err != nil {

@@ -18,7 +18,7 @@ package cmd
 
 import (
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 
 	"github.com/qiniu/goc/pkg/cover"
@@ -46,6 +46,6 @@ goc clear --center=http://192.168.1.1:8080
 }
 
 func init() {
-	clearCmd.Flags().StringVarP(&center, "center", "", "http://127.0.0.1:7777", "cover profile host center")
+	addBasicFlags(clearCmd.Flags())
 	rootCmd.AddCommand(clearCmd)
 }

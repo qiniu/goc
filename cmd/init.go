@@ -17,7 +17,7 @@
 package cmd
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/qiniu/goc/pkg/cover"
 	"github.com/spf13/cobra"
@@ -34,6 +34,6 @@ var initCmd = &cobra.Command{
 }
 
 func init() {
-	initCmd.Flags().StringVarP(&center, "center", "", "http://127.0.0.1:7777", "cover profile host center")
+	addBasicFlags(initCmd.Flags())
 	rootCmd.AddCommand(initCmd)
 }

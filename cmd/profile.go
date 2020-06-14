@@ -19,8 +19,8 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io"
-	"log"
 	"os"
 
 	"github.com/qiniu/goc/pkg/cover"
@@ -70,6 +70,6 @@ var output string
 
 func init() {
 	profileCmd.Flags().StringVarP(&output, "output", "o", "", "download cover profile")
-	profileCmd.Flags().StringVarP(&center, "center", "", "http://127.0.0.1:7777", "cover profile host center")
+	addBasicFlags(profileCmd.Flags())
 	rootCmd.AddCommand(profileCmd)
 }

@@ -19,7 +19,8 @@ package build
 import (
 	"crypto/sha256"
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,56 +28,58 @@ import (
 	"github.com/qiniu/goc/pkg/cover"
 )
 
-func MvProjectsToTmp(target string, args []string) (newGopath string, newWorkingDir string, tmpBuildDir string, pkgs map[string]*cover.Package) {
-	listArgs := []string{"list", "-json"}
-	if len(args) != 0 {
-		listArgs = append(listArgs, args...)
+func (b *Build) MvProjectsToTmp() {
+	listArgs := []string{"-json"}
+	if len(b.BuildFlags) != 0 {
+		listArgs = append(listArgs, b.BuildFlags)
 	}
 	listArgs = append(listArgs, "./...")
-	pkgs = cover.ListPackages(target, listArgs, "")
+	b.Pkgs = cover.ListPackages(".", strings.Join(listArgs, " "), "")
 
-	tmpBuildDir, newWorkingDir, isMod := mvProjectsToTmp(pkgs)
-	oriGopath := os.Getenv("GOPATH")
-	if isMod == true {
-		newGopath = ""
-	} else if oriGopath == "" {
-		newGopath = tmpBuildDir
+	b.mvProjectsToTmp()
+	b.OriGOPATH = os.Getenv("GOPATH")
+	if b.IsMod == true {
+		b.NewGOPATH = ""
+	} else if b.OriGOPATH == "" {
+		b.NewGOPATH = b.TmpDir
 	} else {
-		newGopath = fmt.Sprintf("%v:%v", tmpBuildDir, oriGopath)
+		b.NewGOPATH = fmt.Sprintf("%v:%v", b.TmpDir, b.OriGOPATH)
 	}
-	log.Printf("New GOPATH: %v", newGopath)
+	// fix #14: unable to build project not in GOPATH in legacy mode
+	// this kind of project does not have a pkg.Root value
+	if b.Root == "" {
+		b.NewGOPATH = b.OriGOPATH
+	}
+	log.Printf("New GOPATH: %v", b.NewGOPATH)
 	return
 }
 
-func mvProjectsToTmp(pkgs map[string]*cover.Package) (string, string, bool) {
+func (b *Build) mvProjectsToTmp() {
 	path, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("Cannot get current working directoy, the error is: %v", err)
 	}
-	tmpBuildDir := filepath.Join(os.TempDir(), TmpFolderName(path))
+	b.TmpDir = filepath.Join(os.TempDir(), TmpFolderName(path))
 
 	// Delete previous tmp folder and its content
-	os.RemoveAll(tmpBuildDir)
+	os.RemoveAll(b.TmpDir)
 	// Create a new tmp folder
-	err = os.MkdirAll(filepath.Join(tmpBuildDir, "src"), os.ModePerm)
+	err = os.MkdirAll(filepath.Join(b.TmpDir, "src"), os.ModePerm)
 	if err != nil {
 		log.Fatalf("Fail to create the temporary build directory. The err is: %v", err)
 	}
-	log.Printf("Temp project generated in: %v", tmpBuildDir)
+	log.Printf("Tmp project generated in: %v", b.TmpDir)
 
-	isMod := false
-	var tmpWorkingDir string
-	if checkIfLegacyProject(pkgs) {
-		cpLegacyProject(tmpBuildDir, pkgs)
-		tmpWorkingDir = getTmpwd(tmpBuildDir, pkgs, false)
+	// set Build.IsMod flag, so we dont have to call checkIfLegacyProject another time
+	if b.checkIfLegacyProject() {
+		b.cpLegacyProject()
 	} else {
-		cpGoModulesProject(tmpBuildDir, pkgs)
-		tmpWorkingDir = getTmpwd(tmpBuildDir, pkgs, true)
-		isMod = true
+		b.IsMod = true
+		b.cpGoModulesProject()
 	}
+	b.getTmpwd()
 
-	log.Printf("New working/building directory in: %v", tmpWorkingDir)
-	return tmpBuildDir, tmpWorkingDir, isMod
+	log.Printf("New workingdir in tmp directory in: %v", b.TmpWorkingDir)
 }
 
 func TmpFolderName(path string) string {
@@ -86,11 +89,13 @@ func TmpFolderName(path string) string {
 	return "goc-" + h
 }
 
-// Check if it is go module project
+// checkIfLegacyProject Check if it is go module project
 // true legacy
 // false go mod
-func checkIfLegacyProject(pkgs map[string]*cover.Package) bool {
-	for _, v := range pkgs {
+func (b *Build) checkIfLegacyProject() bool {
+	for _, v := range b.Pkgs {
+		// get root
+		b.Root = v.Root
 		if v.Module == nil {
 			return true
 		}
@@ -100,8 +105,10 @@ func checkIfLegacyProject(pkgs map[string]*cover.Package) bool {
 	return false
 }
 
-func getTmpwd(tmpBuildDir string, pkgs map[string]*cover.Package, isMod bool) string {
-	for _, pkg := range pkgs {
+// getTmpwd get the corresponding working directory in the temporary working directory
+// and store it in the Build.tmpWorkdingDir
+func (b *Build) getTmpwd() {
+	for _, pkg := range b.Pkgs {
 		path, err := os.Getwd()
 		if err != nil {
 			log.Fatalf("Cannot get current working directory, the error is: %v", err)
@@ -109,7 +116,7 @@ func getTmpwd(tmpBuildDir string, pkgs map[string]*cover.Package, isMod bool) st
 
 		index := -1
 		var parentPath string
-		if isMod == false {
+		if b.IsMod == false {
 			index = strings.Index(path, pkg.Root)
 			parentPath = pkg.Root
 		} else {
@@ -120,24 +127,24 @@ func getTmpwd(tmpBuildDir string, pkgs map[string]*cover.Package, isMod bool) st
 		if index == -1 {
 			log.Fatalf("goc install not executed in project directory.")
 		}
-		tmpwd := filepath.Join(tmpBuildDir, path[len(parentPath):])
+		b.TmpWorkingDir = filepath.Join(b.TmpDir, path[len(parentPath):])
 		// log.Printf("New building directory in: %v", tmpwd)
-		return tmpwd
+		return
 	}
 
 	log.Fatalln("Should never be reached....")
-	return ""
+	return
 }
 
-func FindWhereToInstall(pkgs map[string]*cover.Package) string {
+func (b *Build) findWhereToInstall() string {
 	if GOBIN := os.Getenv("GOBIN"); GOBIN != "" {
 		return GOBIN
 	}
 
 	// old GOPATH dir
 	GOPATH := os.Getenv("GOPATH")
-	if true == checkIfLegacyProject(pkgs) {
-		for _, v := range pkgs {
+	if false == b.IsMod {
+		for _, v := range b.Pkgs {
 			return filepath.Join(v.Root, "bin")
 		}
 	}
@@ -145,4 +152,13 @@ func FindWhereToInstall(pkgs map[string]*cover.Package) string {
 		return filepath.Join(strings.Split(GOPATH, ":")[0], "bin")
 	}
 	return filepath.Join(os.Getenv("HOME"), "go", "bin")
+}
+
+func (b *Build) RemoveTmpDir() {
+	debuggoc := viper.GetBool("debuggoc")
+	if debuggoc == false {
+		if b.TmpDir != "" {
+			os.RemoveAll(b.TmpDir)
+		}
+	}
 }

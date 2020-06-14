@@ -22,9 +22,9 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -113,17 +113,18 @@ type PackageError struct {
 }
 
 // ListPackages list all packages under specific via go list command
-func ListPackages(dir string, args []string, newgopath string) map[string]*Package {
-	cmd := exec.Command("go", args...)
+// The argument newgopath is if you need to go list in a different GOPATH
+func ListPackages(dir string, args string, newgopath string) map[string]*Package {
+	cmd := exec.Command("/bin/bash", "-c", "go list "+args)
 	log.Printf("go list cmd is: %v", cmd.Args)
 	cmd.Dir = dir
 	if newgopath != "" {
 		cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", newgopath))
 	}
-	out, _ := cmd.Output()
-	// if err != nil {
-	//	 log.Fatalf("excute `go list -json ./...` command failed, err: %v, out: %v", err, string(out))
-	// }
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatalf("excute `go list -json ./...` command failed, err: %v, out: %v", err, string(out))
+	}
 
 	dec := json.NewDecoder(bytes.NewReader(out))
 	pkgs := make(map[string]*Package, 0)

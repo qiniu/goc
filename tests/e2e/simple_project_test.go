@@ -55,7 +55,7 @@ var _ = Describe("E2E", func() {
 
 			By("goc build")
 			testProjDir := filepath.Join(TESTS_ROOT, "samples/simple_project")
-			cmd := exec.Command("goc", "build")
+			cmd := exec.Command("goc", "build", "--debuggoc")
 			cmd.Dir = testProjDir
 
 			out, err := cmd.CombinedOutput()
@@ -63,7 +63,7 @@ var _ = Describe("E2E", func() {
 
 			By("goc install")
 			testProjDir = filepath.Join(TESTS_ROOT, "samples/simple_project")
-			cmd = exec.Command("goc", "install", "./...")
+			cmd = exec.Command("goc", "install", "--debuggoc")
 			cmd.Dir = testProjDir
 
 			out, err = cmd.CombinedOutput()
@@ -84,7 +84,7 @@ var _ = Describe("E2E", func() {
 				obj := filepath.Join(dir, "simple-project")
 				fInfo, err := os.Lstat(obj)
 				Expect(err).To(BeNil())
-				Expect(startTime.Before(fInfo.ModTime())).To(Equal(true), "new binary should be generated, not the old one")
+				Expect(startTime.Before(fInfo.ModTime())).To(Equal(true), obj+"new binary should be generated, not the old one")
 
 				cmd := exec.Command("go", "tool", "objdump", "simple-project")
 				cmd.Dir = dir
@@ -114,17 +114,18 @@ var _ = Describe("E2E", func() {
 			GOPATH = testProjDir
 
 			By("goc build")
-			cmd := exec.Command("goc", "build")
+			cmd := exec.Command("goc", "build", "--debuggoc")
 			cmd.Dir = oriWorkingDir
 			// use GOPATH mode to compile project
 			cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", GOPATH), "GO111MODULE=off")
 
 			out, err := cmd.CombinedOutput()
+			fmt.Println(string(out))
 			Expect(err).To(BeNil(), "goc build on this project should be successful", string(out), cmd.Dir)
 
 			By("goc install")
 			testProjDir = filepath.Join(TESTS_ROOT, "samples/simple_gopath_project")
-			cmd = exec.Command("goc", "install", "./...")
+			cmd = exec.Command("goc", "install", "--debuggoc")
 			cmd.Dir = filepath.Join(testProjDir, "src/qiniu.com/simple_gopath_project")
 			// use GOPATH mode to compile project
 			cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", testProjDir), "GO111MODULE=off")
