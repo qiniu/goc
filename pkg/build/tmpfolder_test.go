@@ -79,3 +79,18 @@ func TestNewDirParseInModProject(t *testing.T) {
 		t.Fatalf("The New GOPATH is wrong. newgopath: %v, tmpdir: %v", b.NewGOPATH, b.TmpDir)
 	}
 }
+
+// Test #14
+func TestLegacyProjectNotInGoPATH(t *testing.T) {
+	workingDir := "../../tests/samples/simple_gopath_project/src/qiniu.com/simple_gopath_project"
+	gopath := ""
+
+	os.Chdir(workingDir)
+	fmt.Println(gopath)
+	os.Setenv("GOPATH", gopath)
+	os.Setenv("GO111MODULE", "off")
+	b := NewBuild("", ".", "")
+	if b.OriGOPATH != b.NewGOPATH {
+		t.Fatalf("New GOPATH should be same with old GOPATH, for this kind of project. New: %v, old: %v", b.NewGOPATH, b.OriGOPATH)
+	}
+}

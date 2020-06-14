@@ -45,6 +45,11 @@ func (b *Build) MvProjectsToTmp() {
 	} else {
 		b.NewGOPATH = fmt.Sprintf("%v:%v", b.TmpDir, b.OriGOPATH)
 	}
+	// fix #14: unable to build project not in GOPATH in legacy mode
+	// this kind of project does not have a pkg.Root value
+	if b.Root == "" {
+		b.NewGOPATH = b.OriGOPATH
+	}
 	log.Printf("New GOPATH: %v", b.NewGOPATH)
 	return
 }
