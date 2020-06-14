@@ -87,7 +87,7 @@ func (b *Build) determineOutputDir(outputDir string) string {
 	if err != nil {
 		log.Fatalf("Cannot get current working directory, the err: %v.", err)
 	}
-	// if
+
 	if outputDir == "" {
 		_, last := filepath.Split(curWorkingDir)
 		if b.IsMod {

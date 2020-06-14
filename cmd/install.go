@@ -27,7 +27,7 @@ var installCmd = &cobra.Command{
 	Long: `
 First of all, this install command will copy the project code and its necessary dependencies to a temporary directory, then do cover for the target in this temporary directory, finally go install command will be executed and binaries generated to their original place.
 
-To pass origial go build flags to goc command, place them after "--", see examples below for reference.
+To pass original go build flags to goc command, place them after "--", see examples below for reference.
 `,
 	Example: `
 # Install all binaries with cover variables injected. The binary will be installed in $GOPATH/bin or $HOME/go/bin if directory existed.
@@ -40,14 +40,18 @@ goc install --center=http://127.0.0.1:7777
 goc build --buildflags="-ldflags '-extldflags -static' -tags='embed kodo'"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		gocbuild := build.NewInstall(buildFlags, packages)
+		gocBuild := build.NewInstall(buildFlags, packages)
 		// remove temporary directory if needed
-		defer gocbuild.RemoveTmpDir()
+		defer func() {
+			if !debugGoc {
+				gocBuild.Clean()
+			}
+		}()
 		// doCover with original buildFlags, with new GOPATH( tmp:original )
 		// in the tmp directory
-		doCover(buildFlags, gocbuild.NewGOPATH, gocbuild.TmpDir)
+		doCover(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir)
 		// do install in the temporary directory
-		gocbuild.Install()
+		gocBuild.Install()
 	},
 }
 

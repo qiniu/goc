@@ -20,10 +20,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
-
-	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -55,7 +54,7 @@ var _ = Describe("E2E", func() {
 
 			By("goc build")
 			testProjDir := filepath.Join(TESTS_ROOT, "samples/simple_project")
-			cmd := exec.Command("goc", "build", "--debuggoc")
+			cmd := exec.Command("goc", "build", "--debug")
 			cmd.Dir = testProjDir
 
 			out, err := cmd.CombinedOutput()
@@ -63,7 +62,7 @@ var _ = Describe("E2E", func() {
 
 			By("goc install")
 			testProjDir = filepath.Join(TESTS_ROOT, "samples/simple_project")
-			cmd = exec.Command("goc", "install", "--debuggoc")
+			cmd = exec.Command("goc", "install", "--debug")
 			cmd.Dir = testProjDir
 
 			out, err = cmd.CombinedOutput()
@@ -114,7 +113,7 @@ var _ = Describe("E2E", func() {
 			GOPATH = testProjDir
 
 			By("goc build")
-			cmd := exec.Command("goc", "build", "--debuggoc")
+			cmd := exec.Command("goc", "build", "--debug")
 			cmd.Dir = oriWorkingDir
 			// use GOPATH mode to compile project
 			cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", GOPATH), "GO111MODULE=off")
@@ -125,7 +124,7 @@ var _ = Describe("E2E", func() {
 
 			By("goc install")
 			testProjDir = filepath.Join(TESTS_ROOT, "samples/simple_gopath_project")
-			cmd = exec.Command("goc", "install", "--debuggoc")
+			cmd = exec.Command("goc", "install", "--debug")
 			cmd.Dir = filepath.Join(testProjDir, "src/qiniu.com/simple_gopath_project")
 			// use GOPATH mode to compile project
 			cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", testProjDir), "GO111MODULE=off")
@@ -157,7 +156,7 @@ var _ = Describe("E2E", func() {
 				Expect(err).To(BeNil(), "the binary cannot be disassembled")
 
 				cnt := strings.Count(string(out), "GoCover")
-				Expect(cnt).To(BeNumerically(">", 0), "GoCover varibale should be in the binary")
+				Expect(cnt).To(BeNumerically(">", 0), "GoCover variable should be in the binary")
 
 				cnt = strings.Count(string(out), "main.registerSelf")
 				Expect(cnt).To(BeNumerically(">", 0), "main.registerSelf function should be in the binary")
