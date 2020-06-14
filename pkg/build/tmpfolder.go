@@ -19,11 +19,11 @@ package build
 import (
 	"crypto/sha256"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/qiniu/goc/pkg/cover"
 )
@@ -57,7 +57,7 @@ func (b *Build) MvProjectsToTmp() {
 func (b *Build) mvProjectsToTmp() {
 	path, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("Cannot get current working directoy, the error is: %v", err)
+		log.Fatalf("Cannot get current working directory, the error is: %v", err)
 	}
 	b.TmpDir = filepath.Join(os.TempDir(), TmpFolderName(path))
 
@@ -70,7 +70,7 @@ func (b *Build) mvProjectsToTmp() {
 	}
 	log.Printf("Tmp project generated in: %v", b.TmpDir)
 
-	// set Build.IsMod flag, so we dont have to call checkIfLegacyProject another time
+	// set Build.IsMod flag, so we don't have to call checkIfLegacyProject another time
 	if b.checkIfLegacyProject() {
 		b.cpLegacyProject()
 	} else {
@@ -154,11 +154,7 @@ func (b *Build) findWhereToInstall() string {
 	return filepath.Join(os.Getenv("HOME"), "go", "bin")
 }
 
-func (b *Build) RemoveTmpDir() {
-	debuggoc := viper.GetBool("debuggoc")
-	if debuggoc == false {
-		if b.TmpDir != "" {
-			os.RemoveAll(b.TmpDir)
-		}
-	}
+// Clean clears up the temporary workspace
+func (b *Build) Clean() error {
+	return os.RemoveAll(b.TmpDir)
 }

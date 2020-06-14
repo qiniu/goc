@@ -36,7 +36,7 @@ goc server --port=:8080
 goc server --port=localhost:8080
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		cover.StartServer(port)
+		cover.Run(port)
 	},
 }
 

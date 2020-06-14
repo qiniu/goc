@@ -17,13 +17,14 @@
 package cmd
 
 import (
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"path/filepath"
 	"runtime"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var rootCmd = &cobra.Command{
@@ -54,8 +55,7 @@ Find more information at:
 }
 
 func init() {
-	rootCmd.PersistentFlags().BoolVar(&debugGoc, "debuggoc", false, "turn goc into debug mode")
-	rootCmd.PersistentFlags().MarkHidden("debuggoc")
+	rootCmd.PersistentFlags().BoolVar(&debugGoc, "debug", false, "run goc in debug mode")
 	viper.BindPFlags(rootCmd.PersistentFlags())
 }
 

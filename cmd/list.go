@@ -18,34 +18,30 @@ package cmd
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
+	"log"
 	"os"
 
 	"github.com/qiniu/goc/pkg/cover"
 	"github.com/spf13/cobra"
 )
 
-var clearCmd = &cobra.Command{
-	Use:   "clear",
-	Short: "Clear code coverage counters of all the registered services",
-	Long:  `Clear code coverage counters for the services under test at runtime.`,
+var listCmd = &cobra.Command{
+	Use:   "list",
+	Short: "Lists all the registered services",
+	Long:  "Lists all the registered services",
 	Example: `
-# Clear coverage counter from default register center http://127.0.0.1:7777.
-goc clear
-
-# Clear coverage counter from specified register center.
-goc clear --center=http://192.168.1.1:8080
+goc list [flags]
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		res, err := cover.NewWorker(center).Clear()
+		res, err := cover.NewWorker(center).ListServices()
 		if err != nil {
-			log.Fatalf("call host %v failed, err: %v, response: %v", center, err, string(res))
+			log.Fatalf("list failed, err: %v", err)
 		}
 		fmt.Fprint(os.Stdout, string(res))
 	},
 }
 
 func init() {
-	addBasicFlags(clearCmd.Flags())
-	rootCmd.AddCommand(clearCmd)
+	listCmd.Flags().StringVarP(&center, "center", "", "http://127.0.0.1:7777", "cover profile host center")
+	rootCmd.AddCommand(listCmd)
 }

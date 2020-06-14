@@ -27,7 +27,7 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Clear the register information in order to start a new round of tests",
 	Run: func(cmd *cobra.Command, args []string) {
-		if res, err := cover.NewWorker().InitSystem(center); err != nil {
+		if res, err := cover.NewWorker(center).InitSystem(); err != nil {
 			log.Fatalf("call host %v failed, err: %v, response: %v", center, err, string(res))
 		}
 	},
