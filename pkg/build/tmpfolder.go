@@ -23,9 +23,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/qiniu/goc/pkg/cover"
+	log "github.com/sirupsen/logrus"
 )
 
 func (b *Build) MvProjectsToTmp() {

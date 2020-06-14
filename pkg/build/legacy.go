@@ -17,12 +17,12 @@
 package build
 
 import (
-	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 
 	"github.com/otiai10/copy"
 	"github.com/qiniu/goc/pkg/cover"
+	log "github.com/sirupsen/logrus"
 )
 
 func (b *Build) cpLegacyProject() {

@@ -19,9 +19,8 @@ package cmd
 import (
 	"github.com/qiniu/goc/pkg/cover"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var coverCmd = &cobra.Command{

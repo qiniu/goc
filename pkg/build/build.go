@@ -35,10 +35,17 @@ type Build struct {
 	TmpDir        string                    // the temporary directory to build the project
 	TmpWorkingDir string                    // the working directory in the temporary directory, which is corresponding to the current directory in the project directory
 	IsMod         bool                      // determine whether it is a Mod project
-	BuildFlags    string                    // Build flags
-	Packages      string                    // Packages that needs to build
 	Root          string                    // Project Root
 	Target        string                    // the binary name that go build generate
+
+	// keep compatible with go commands:
+	// go run [build flags] [-exec xprog] package [arguments...]
+	// go build [-o output] [-i] [build flags] [packages]
+	// go install [-i] [build flags] [packages]
+	BuildFlags     string // Build flags
+	Packages       string // Packages that needs to build
+	GoRunExecFlag  string // for the -exec flags in go run command
+	GoRunArguments string // for the '[arguments]' parameters in go run command
 }
 
 // NewBuild creates a Build struct which can build from goc temporary directory,
@@ -108,7 +115,26 @@ func (b *Build) determineOutputDir(outputDir string) string {
 func (b *Build) validatePackageForBuild() bool {
 	if b.Packages == "." {
 		return true
-	} else {
-		return false
+	}
+	return false
+}
+
+// Run excutes the main package in addition with the internal goc features
+func (b *Build) Run() {
+	cmd := exec.Command("/bin/bash", "-c", "go run "+b.BuildFlags+" "+b.GoRunExecFlag+" "+b.Packages+" "+b.GoRunArguments)
+	cmd.Dir = b.TmpWorkingDir
+
+	if b.NewGOPATH != "" {
+		// Change to temp GOPATH for go install command
+		cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", b.NewGOPATH))
+	}
+
+	log.Printf("go build cmd is: %v", cmd.Args)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatalf("Fail to execute: %v. The error is: %v, the stdout/stderr is: %v", cmd.Args, err, string(out))
+	}
+	if len(out) > 0 {
+		fmt.Println(string(out))
 	}
 }
