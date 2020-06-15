@@ -48,16 +48,18 @@ func Run(port string) {
 	if err != nil {
 		log.Fatalf("failed to create log file %s, err: %v", LogFile, err)
 	}
-	r := GocServer(f)
+
+	// both log to stdout and file by default
+	mw := io.MultiWriter(f, os.Stdout)
+	r := GocServer(mw)
 	log.Fatal(r.Run(port))
 }
 
 // GocServer init goc server engine
 func GocServer(w io.Writer) *gin.Engine {
-	if w != nil && w != os.Stdout {
-		gin.DefaultWriter = io.MultiWriter(w, os.Stdout)
+	if w != nil {
+		gin.DefaultWriter = w
 	}
-
 	r := gin.Default()
 	// api to show the registered services
 	r.StaticFile(PersistenceFile, "./"+PersistenceFile)
