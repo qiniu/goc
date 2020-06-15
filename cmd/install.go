@@ -43,11 +43,7 @@ goc build --buildflags="-ldflags '-extldflags -static' -tags='embed kodo'"
 	Run: func(cmd *cobra.Command, args []string) {
 		gocBuild := build.NewInstall(buildFlags, packages)
 		// remove temporary directory if needed
-		defer func() {
-			if !debugGoc {
-				gocBuild.Clean()
-			}
-		}()
+		defer gocBuild.Clean()
 		// doCover with original buildFlags, with new GOPATH( tmp:original )
 		// in the tmp directory
 		cover.Execute(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir, mode, center)

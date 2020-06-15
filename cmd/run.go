@@ -39,11 +39,7 @@ goc run .
 		gocBuild := build.NewBuild(buildFlags, packages, buildOutput)
 		gocBuild.GoRunExecFlag = goRunExecFlag
 		gocBuild.GoRunArguments = goRunArguments
-		defer func() {
-			if !debugGoc {
-				gocBuild.Clean()
-			}
-		}()
+		defer gocBuild.Clean()
 		// start goc server
 		var l = newLocalListener()
 		go cover.GocServer(ioutil.Discard).RunListener(l)
