@@ -130,11 +130,15 @@ func (b *Build) Run() {
 	}
 
 	log.Printf("go build cmd is: %v", cmd.Args)
-	out, err := cmd.CombinedOutput()
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Start()
 	if err != nil {
-		log.Fatalf("Fail to execute: %v. The error is: %v, the stdout/stderr is: %v", cmd.Args, err, string(out))
+		log.Fatalf("Fail to start command: %v. The error is: %v", cmd.Args, err)
 	}
-	if len(out) > 0 {
-		fmt.Println(string(out))
+
+	if err = cmd.Wait(); err != nil {
+		log.Fatalf("Fail to execute command: %v. The error is: %v", cmd.Args, err)
 	}
+
 }

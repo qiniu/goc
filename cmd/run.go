@@ -40,6 +40,7 @@ goc run .
 		gocBuild.GoRunExecFlag = goRunExecFlag
 		gocBuild.GoRunArguments = goRunArguments
 		defer gocBuild.Clean()
+
 		// start goc server
 		var l = newLocalListener()
 		go cover.GocServer(ioutil.Discard).RunListener(l)
