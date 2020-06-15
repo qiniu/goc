@@ -41,6 +41,9 @@ goc run .
 		gocBuild.GoRunArguments = goRunArguments
 		defer gocBuild.Clean()
 
+		// only save services in memory
+		cover.DefaultStore = cover.NewMemoryStore()
+
 		// start goc server
 		var l = newLocalListener()
 		go cover.GocServer(ioutil.Discard).RunListener(l)

@@ -21,7 +21,7 @@ import (
 )
 
 func TestLocalStore(t *testing.T) {
-	localStore := NewStore()
+	localStore := NewFileStore()
 	var tc1 = Service{
 		Name:    "a",
 		Address: "http://127.0.0.1",
