@@ -44,7 +44,7 @@ func TestLocalStore(t *testing.T) {
 	localStore.Add(tc4)
 	addrs := localStore.Get(tc1.Name)
 	if len(addrs) != 2 {
-		t.Error("unexpect result")
+		t.Error("unexpected result")
 	}
 
 	for _, addr := range addrs {

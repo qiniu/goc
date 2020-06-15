@@ -18,13 +18,14 @@ package cover
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -224,4 +225,82 @@ func TestDeclareCoverVars(t *testing.T) {
 		})
 	}
 
+}
+
+func TestGetInternalParent(t *testing.T) {
+	var tcs = []struct {
+		ImportPath     string
+		expectedParent string
+	}{
+		{
+			ImportPath:     "a/internal/b",
+			expectedParent: "a",
+		},
+		{
+			ImportPath:     "internal/b",
+			expectedParent: "",
+		},
+		{
+			ImportPath:     "a/b/internal/b",
+			expectedParent: "a/b",
+		},
+		{
+			ImportPath:     "a/b/internal",
+			expectedParent: "a/b",
+		},
+		{
+			ImportPath:     "a/b/internal/c",
+			expectedParent: "a/b",
+		},
+		{
+			ImportPath:     "a/b/c",
+			expectedParent: "",
+		},
+		{
+			ImportPath:     "",
+			expectedParent: "",
+		},
+	}
+
+	for _, tc := range tcs {
+		actual := getInternalParent(tc.ImportPath)
+		if actual != tc.expectedParent {
+			t.Errorf("getInternalParent failed for importPath %s, expected %s, got %s", tc.ImportPath, tc.expectedParent, actual)
+		}
+	}
+}
+
+func TestFindInternal(t *testing.T) {
+	var tcs = []struct {
+		ImportPath     string
+		expectedParent bool
+	}{
+		{
+			ImportPath:     "a/internal/b",
+			expectedParent: true,
+		},
+		{
+			ImportPath:     "internal/b",
+			expectedParent: true,
+		},
+		{
+			ImportPath:     "a/b/internal",
+			expectedParent: true,
+		},
+		{
+			ImportPath:     "a/b/c",
+			expectedParent: false,
+		},
+		{
+			ImportPath:     "internal",
+			expectedParent: true,
+		},
+	}
+
+	for _, tc := range tcs {
+		actual := hasInternalPath(tc.ImportPath)
+		if actual != tc.expectedParent {
+			t.Errorf("hasInternalPath check failed for importPath %s", tc.ImportPath)
+		}
+	}
 }

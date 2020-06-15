@@ -155,7 +155,7 @@ func Execute(args, newGopath, target, mode, center string) {
 
 				//only focus package neither standard Go library nor dependency library
 				if depPkg, ok := pkgs[dep]; ok {
-					if findInternal(dep) {
+					if hasInternalPath(dep) {
 						//scan exist cache cover to tc.CacheCover
 						if cache, ok := seenCache[dep]; ok {
 							log.Printf("cache cover exist: %s", cache.Package.ImportPath)
@@ -296,10 +296,10 @@ func isDirExist(path string) bool {
 }
 
 // Refer: https://github.com/golang/go/blob/master/src/cmd/go/internal/load/pkg.go#L1334:6
-// findInternal looks for the final "internal" path element in the given import path.
-// If there isn't one, findInternal returns ok=false.
-// Otherwise, findInternal returns ok=true and the index of the "internal".
-func findInternal(path string) bool {
+// hasInternalPath looks for the final "internal" path element in the given import path.
+// If there isn't one, hasInternalPath returns ok=false.
+// Otherwise, hasInternalPath returns ok=true and the index of the "internal".
+func hasInternalPath(path string) bool {
 	// Three cases, depending on internal at start/end of string or not.
 	// The order matters: we must return the index of the final element,
 	// because the final one produces the most restrictive requirement
