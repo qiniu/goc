@@ -103,7 +103,7 @@ func (b *Build) Build() error {
 // the binary name is always same as the directory name of current directory
 func (b *Build) determineOutputDir(outputDir string) (string, error) {
 	if b.TmpDir == "" {
-		log.Errorf("Can only be called after Build.MvProjectsToTmp()", ErrWrongCallSequence)
+		log.Errorf("Can only be called after Build.MvProjectsToTmp(): %v", ErrWrongCallSequence)
 		return "", fmt.Errorf("can only be called after Build.MvProjectsToTmp(): %w", ErrWrongCallSequence)
 	}
 	curWorkingDir, err := os.Getwd()
