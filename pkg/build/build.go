@@ -36,6 +36,7 @@ type Build struct {
 	TmpWorkingDir string                    // the working directory in the temporary directory, which is corresponding to the current directory in the project directory
 	IsMod         bool                      // determine whether it is a Mod project
 	Root          string
+	// go 1.11, go 1.12 has no Root
 	// Project Root:
 	// 1. legacy, root == GOPATH
 	// 2. mod, root == go.mod Dir

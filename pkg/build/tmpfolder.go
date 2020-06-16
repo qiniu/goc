@@ -48,7 +48,9 @@ func (b *Build) MvProjectsToTmp() {
 	}
 	// fix #14: unable to build project not in GOPATH in legacy mode
 	// this kind of project does not have a pkg.Root value
-	if b.Root == "" {
+	// go 1.11, 1.12 has no pkg.Root,
+	// so add b.IsMod == false as secondary judgement
+	if b.Root == "" && b.IsMod == false {
 		b.NewGOPATH = b.OriGOPATH
 	}
 	log.Printf("New GOPATH: %v", b.NewGOPATH)
@@ -90,7 +92,7 @@ func (b *Build) mvProjectsToTmp() error {
 	// 1. a legacy project, but not in any GOPATH, will cause the b.Root == ""
 	if b.IsMod == false && b.Root != "" {
 		b.cpLegacyProject()
-	} else if b.IsMod == true && b.Root != "" {
+	} else if b.IsMod == true { // go 1.11, 1.12 has no Build.Root
 		b.cpGoModulesProject()
 	} else if b.IsMod == false && b.Root == "" {
 		b.TmpWorkingDir = b.TmpDir
