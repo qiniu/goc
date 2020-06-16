@@ -25,36 +25,50 @@ import (
 )
 
 // NewInstall creates a Build struct which can install from goc temporary directory
-func NewInstall(buildflags string, packages string) *Build {
+func NewInstall(buildflags string, packages string) (*Build, error) {
 	b := &Build{
 		BuildFlags: buildflags,
 		Packages:   packages,
 	}
 	if false == b.validatePackageForInstall() {
-		log.Fatalln("packages only support . and ./...")
+		log.Errorln(ErrWrongPackageTypeForInstall)
+		return nil, ErrWrongPackageTypeForInstall
 	}
 	b.MvProjectsToTmp()
-	return b
+	return b, nil
 }
 
-func (b *Build) Install() {
+func (b *Build) Install() error {
 	log.Println("Go building in temp...")
 	cmd := exec.Command("/bin/bash", "-c", "go install "+b.BuildFlags+" "+b.Packages)
 	cmd.Dir = b.TmpWorkingDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
+	whereToInstall, err := b.findWhereToInstall()
+	if err != nil {
+		// ignore the err
+		log.Errorf("No place to install: %v", err)
+	}
 	// Change the temp GOBIN, to force binary install to original place
-	cmd.Env = append(os.Environ(), fmt.Sprintf("GOBIN=%v", b.findWhereToInstall()))
+	cmd.Env = append(os.Environ(), fmt.Sprintf("GOBIN=%v", whereToInstall))
 	if b.NewGOPATH != "" {
 		// Change to temp GOPATH for go install command
 		cmd.Env = append(cmd.Env, fmt.Sprintf("GOPATH=%v", b.NewGOPATH))
 	}
 
-	log.Printf("go install cmd is: %v", cmd.Args)
-	out, err := cmd.CombinedOutput()
+	log.Infof("go install cmd is: %v", cmd.Args)
+	err = cmd.Start()
 	if err != nil {
-		log.Fatalf("Fail to execute: %v. The error is: %v, the stdout/stderr is: %v", cmd.Args, err, string(out))
+		log.Errorf("Fail to execute: %v. The error is: %v", cmd.Args, err)
+		return fmt.Errorf("fail to execute: %v: %w", cmd.Args, err)
 	}
-	log.Printf("Go install successful. Binary installed in: %v", b.findWhereToInstall())
+	if err = cmd.Wait(); err != nil {
+		log.Errorf("go install failed. The error is: %v", err)
+		return fmt.Errorf("go install failed: %w", err)
+	}
+	log.Infof("Go install successful. Binary installed in: %v", whereToInstall)
+	return nil
 }
 
 func (b *Build) validatePackageForInstall() bool {

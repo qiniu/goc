@@ -20,9 +20,10 @@ import (
 	"os"
 	"path/filepath"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/otiai10/copy"
 	"github.com/qiniu/goc/pkg/cover"
-	log "github.com/sirupsen/logrus"
 )
 
 func (b *Build) cpLegacyProject() {
@@ -37,7 +38,7 @@ func (b *Build) cpLegacyProject() {
 		}
 
 		if err := copy.Copy(src, dst); err != nil {
-			log.Printf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
+			log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
 		}
 
 		visited[src] = true
@@ -73,9 +74,25 @@ func (b *Build) cpDepPackages(pkg *cover.Package, visited map[string]bool) {
 		dst := filepath.Join(b.TmpDir, "src", dep)
 
 		if err := copy.Copy(src, dst); err != nil {
-			log.Printf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
+			log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
 		}
 
 		visited[src] = true
+	}
+}
+
+func (b *Build) cpNonStandardLegacy() {
+	for _, v := range b.Pkgs {
+		if v.Name == "main" {
+			dst := b.TmpDir
+			src := v.Dir
+
+			if err := copy.Copy(src, dst); err != nil {
+				log.Printf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
+			}
+			break
+		} else {
+			continue
+		}
 	}
 }
