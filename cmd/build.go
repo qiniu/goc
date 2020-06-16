@@ -17,10 +17,11 @@
 package cmd
 
 import (
+	"log"
+
 	"github.com/qiniu/goc/pkg/build"
 	"github.com/qiniu/goc/pkg/cover"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 var buildCmd = &cobra.Command{
@@ -43,21 +44,7 @@ goc build --output /to/this/path
 goc build --buildflags="-ldflags '-extldflags -static' -tags='embed kodo'"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		gocBuild, err := build.NewBuild(buildFlags, packages, buildOutput)
-		if err != nil {
-			log.Fatalf("Fail to NewBuild: %v", err)
-		}
-		// remove temporary directory if needed
-		defer gocBuild.Clean()
-		// doCover with original buildFlags, with new GOPATH( tmp:original )
-		// in the tmp directory
-		cover.Execute(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir, mode, center)
-		// do install in the temporary directory
-		err = gocBuild.Build()
-		if err != nil {
-			log.Fatalf("Fail to build: %v", err)
-		}
-		return
+		runBuild()
 	},
 }
 
@@ -67,4 +54,22 @@ func init() {
 	addBuildFlags(buildCmd.Flags())
 	buildCmd.Flags().StringVar(&buildOutput, "output", "", "it forces build to write the resulting executable or object to the named output file or directory")
 	rootCmd.AddCommand(buildCmd)
+}
+
+func runBuild() {
+	gocBuild, err := build.NewBuild(buildFlags, packages, buildOutput)
+	if err != nil {
+		log.Fatalf("Fail to NewBuild: %v", err)
+	}
+	// remove temporary directory if needed
+	defer gocBuild.Clean()
+	// doCover with original buildFlags, with new GOPATH( tmp:original )
+	// in the tmp directory
+	cover.Execute(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir, mode, center)
+	// do install in the temporary directory
+	err = gocBuild.Build()
+	if err != nil {
+		log.Fatalf("Fail to build: %v", err)
+	}
+	return
 }

@@ -40,25 +40,29 @@ goc install --center=http://127.0.0.1:7777
 goc build --buildflags="-ldflags '-extldflags -static' -tags='embed kodo'"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		gocBuild, err := build.NewInstall(buildFlags, packages)
-		if err != nil {
-			log.Fatalf("Fail to NewInstall: %v", err)
-		}
-		// remove temporary directory if needed
-		defer gocBuild.Clean()
-		// doCover with original buildFlags, with new GOPATH( tmp:original )
-		// in the tmp directory
-		cover.Execute(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir, mode, center)
-		// do install in the temporary directory
-		err = gocBuild.Install()
-		if err != nil {
-			log.Fatalf("Fail to install: %v", err)
-		}
-		return
+		runInstall()
 	},
 }
 
 func init() {
 	addBuildFlags(installCmd.Flags())
 	rootCmd.AddCommand(installCmd)
+}
+
+func runInstall() {
+	gocBuild, err := build.NewInstall(buildFlags, packages)
+	if err != nil {
+		log.Fatalf("Fail to NewInstall: %v", err)
+	}
+	// remove temporary directory if needed
+	defer gocBuild.Clean()
+	// doCover with original buildFlags, with new GOPATH( tmp:original )
+	// in the tmp directory
+	cover.Execute(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir, mode, center)
+	// do install in the temporary directory
+	err = gocBuild.Install()
+	if err != nil {
+		log.Fatalf("Fail to install: %v", err)
+	}
+	return
 }
