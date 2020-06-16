@@ -18,9 +18,10 @@ package build
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // NewInstall creates a Build struct which can install from goc temporary directory
@@ -59,7 +60,6 @@ func (b *Build) Install() {
 func (b *Build) validatePackageForInstall() bool {
 	if b.Packages == "." || b.Packages == "./..." {
 		return true
-	} else {
-		return false
 	}
+	return false
 }

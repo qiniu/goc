@@ -19,7 +19,6 @@ package cover
 import (
 	"bytes"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"net"
@@ -28,18 +27,19 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/tools/cover"
 	"k8s.io/test-infra/gopherage/pkg/cov"
 )
 
-// LocalStore implements the IPersistence interface
-var LocalStore Store
+// DefaultStore implements the IPersistence interface
+var DefaultStore Store
 
 // LogFile a file to save log.
 const LogFile = "goc.log"
 
 func init() {
-	LocalStore = NewStore()
+	DefaultStore = NewFileStore()
 }
 
 // Run starts coverage host center
@@ -48,16 +48,18 @@ func Run(port string) {
 	if err != nil {
 		log.Fatalf("failed to create log file %s, err: %v", LogFile, err)
 	}
-	r := GocServer(f)
+
+	// both log to stdout and file by default
+	mw := io.MultiWriter(f, os.Stdout)
+	r := GocServer(mw)
 	log.Fatal(r.Run(port))
 }
 
 // GocServer init goc server engine
 func GocServer(w io.Writer) *gin.Engine {
-	if w != nil && w != os.Stdout {
-		gin.DefaultWriter = io.MultiWriter(w, os.Stdout)
+	if w != nil {
+		gin.DefaultWriter = w
 	}
-
 	r := gin.Default()
 	// api to show the registered services
 	r.StaticFile(PersistenceFile, "./"+PersistenceFile)
@@ -82,7 +84,7 @@ type Service struct {
 
 //listServices list all the registered services
 func listServices(c *gin.Context) {
-	services := LocalStore.GetAll()
+	services := DefaultStore.GetAll()
 	c.JSON(http.StatusOK, services)
 }
 
@@ -109,7 +111,7 @@ func registerService(c *gin.Context) {
 		log.Printf("the registed host %s of service %s is different with the real one %s, here we choose the real one", service.Name, host, realIP)
 		service.Address = fmt.Sprintf("http://%s:%s", realIP, port)
 	}
-	if err := LocalStore.Add(service); err != nil {
+	if err := DefaultStore.Add(service); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -118,7 +120,7 @@ func registerService(c *gin.Context) {
 }
 
 func profile(c *gin.Context) {
-	svrsUnderTest := LocalStore.GetAll()
+	svrsUnderTest := DefaultStore.GetAll()
 	var mergedProfiles = make([][]*cover.Profile, len(svrsUnderTest))
 	for _, addrs := range svrsUnderTest {
 		for _, addr := range addrs {
@@ -154,7 +156,7 @@ func profile(c *gin.Context) {
 }
 
 func clear(c *gin.Context) {
-	svrsUnderTest := LocalStore.GetAll()
+	svrsUnderTest := DefaultStore.GetAll()
 	for svc, addrs := range svrsUnderTest {
 		for _, addr := range addrs {
 			pp, err := NewWorker(addr).Clear()
@@ -168,7 +170,7 @@ func clear(c *gin.Context) {
 }
 
 func initSystem(c *gin.Context) {
-	if err := LocalStore.Init(); err != nil {
+	if err := DefaultStore.Init(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

@@ -22,7 +22,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"os"
@@ -32,6 +31,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/sirupsen/logrus"
 )
@@ -112,6 +113,125 @@ type PackageError struct {
 	Err         string   // the error itself
 }
 
+//Execute execute go tool cover for all the .go files in the target folder
+func Execute(args, newGopath, target, mode, center string) {
+	if !isDirExist(target) {
+		log.Fatalf("target directory %s not exist", target)
+	}
+
+	listArgs := []string{"-json"}
+	if len(args) != 0 {
+		listArgs = append(listArgs, args)
+	}
+	listArgs = append(listArgs, "./...")
+	pkgs := ListPackages(target, strings.Join(listArgs, " "), newGopath)
+
+	var seen = make(map[string]*PackageCover)
+	var seenCache = make(map[string]*PackageCover)
+	for _, pkg := range pkgs {
+		if pkg.Name == "main" {
+			log.Printf("handle package: %v", pkg.ImportPath)
+			// inject the main package
+			mainCover, err := AddCounters(pkg, mode, newGopath)
+			if err != nil {
+				log.Fatalf("failed to add counters for pkg %s, err: %v", pkg.ImportPath, err)
+			}
+
+			// new a testcover for this service
+			tc := TestCover{
+				Mode:         mode,
+				Center:       center,
+				MainPkgCover: mainCover,
+			}
+
+			// handle its dependency
+			var internalPkgCache = make(map[string][]*PackageCover)
+			tc.CacheCover = make(map[string]*PackageCover)
+			for _, dep := range pkg.Deps {
+				if packageCover, ok := seen[dep]; ok {
+					tc.DepsCover = append(tc.DepsCover, packageCover)
+					continue
+				}
+
+				//only focus package neither standard Go library nor dependency library
+				if depPkg, ok := pkgs[dep]; ok {
+					if hasInternalPath(dep) {
+						//scan exist cache cover to tc.CacheCover
+						if cache, ok := seenCache[dep]; ok {
+							log.Printf("cache cover exist: %s", cache.Package.ImportPath)
+							tc.CacheCover[cache.Package.Dir] = cache
+							continue
+						}
+
+						// add counter for internal package
+						inPkgCover, err := AddCounters(depPkg, mode, newGopath)
+						if err != nil {
+							log.Fatalf("failed to add counters for internal pkg %s, err: %v", depPkg.ImportPath, err)
+						}
+						parentDir := getInternalParent(depPkg.Dir)
+						parentImportPath := getInternalParent(depPkg.ImportPath)
+
+						//if internal parent dir or import is root path, ignore the dep. the dep is Go library nor dependency library
+						if parentDir == "" {
+							continue
+						}
+						if parentImportPath == "" {
+							continue
+						}
+
+						pkg := &Package{
+							ImportPath: parentImportPath,
+							Dir:        parentDir,
+						}
+
+						// Some internal package have same parent dir or import path
+						// Cache all vars by internal parent dir for all child internal counter vars
+						cacheCover := AddCacheCover(pkg, inPkgCover)
+						if v, ok := tc.CacheCover[cacheCover.Package.Dir]; ok {
+							for cVar, val := range v.Vars {
+								cacheCover.Vars[cVar] = val
+							}
+							tc.CacheCover[cacheCover.Package.Dir] = cacheCover
+						} else {
+							tc.CacheCover[cacheCover.Package.Dir] = cacheCover
+						}
+
+						// Cache all internal vars to internal parent package
+						inCover := CacheInternalCover(inPkgCover)
+						if v, ok := internalPkgCache[cacheCover.Package.Dir]; ok {
+							v = append(v, inCover)
+							internalPkgCache[cacheCover.Package.Dir] = v
+						} else {
+							var covers []*PackageCover
+							covers = append(covers, inCover)
+							internalPkgCache[cacheCover.Package.Dir] = covers
+						}
+						seenCache[dep] = cacheCover
+						continue
+					}
+
+					packageCover, err := AddCounters(depPkg, mode, newGopath)
+					if err != nil {
+						log.Fatalf("failed to add counters for pkg %s, err: %v", depPkg.ImportPath, err)
+					}
+					tc.DepsCover = append(tc.DepsCover, packageCover)
+					seen[dep] = packageCover
+				}
+			}
+
+			if errs := InjectCacheCounters(internalPkgCache, tc.CacheCover); len(errs) > 0 {
+				log.Fatalf("failed to inject cache counters for package: %s, err: %v", pkg.ImportPath, errs)
+			}
+
+			// inject Http Cover APIs
+			var httpCoverApis = fmt.Sprintf("%s/http_cover_apis_auto_generated.go", pkg.Dir)
+			if err := InjectCountersHandlers(tc, httpCoverApis); err != nil {
+				log.Fatalf("failed to inject counters for package: %s, err: %v", pkg.ImportPath, err)
+			}
+		}
+	}
+}
+
 // ListPackages list all packages under specific via go list command
 // The argument newgopath is if you need to go list in a different GOPATH
 func ListPackages(dir string, args string, newgopath string) map[string]*Package {
@@ -165,6 +285,48 @@ func AddCounters(pkg *Package, mode, newgopath string) (*PackageCover, error) {
 		Package: pkg,
 		Vars:    coverVarMap,
 	}, nil
+}
+
+func isDirExist(path string) bool {
+	s, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return s.IsDir()
+}
+
+// Refer: https://github.com/golang/go/blob/master/src/cmd/go/internal/load/pkg.go#L1334:6
+// hasInternalPath looks for the final "internal" path element in the given import path.
+// If there isn't one, hasInternalPath returns ok=false.
+// Otherwise, hasInternalPath returns ok=true and the index of the "internal".
+func hasInternalPath(path string) bool {
+	// Three cases, depending on internal at start/end of string or not.
+	// The order matters: we must return the index of the final element,
+	// because the final one produces the most restrictive requirement
+	// on the importer.
+	switch {
+	case strings.HasSuffix(path, "/internal"):
+		return true
+	case strings.Contains(path, "/internal/"):
+		return true
+	case path == "internal", strings.HasPrefix(path, "internal/"):
+		return true
+	}
+	return false
+}
+
+func getInternalParent(path string) string {
+	switch {
+	case strings.HasSuffix(path, "/internal"):
+		return strings.Split(path, "/internal")[0]
+	case strings.Contains(path, "/internal/"):
+		return strings.Split(path, "/internal/")[0]
+	case path == "internal":
+		return ""
+	case strings.HasPrefix(path, "internal/"):
+		return strings.Split(path, "internal/")[0]
+	}
+	return ""
 }
 
 func buildCoverCmd(file string, coverVar *FileVar, pkg *Package, mode, newgopath string) *exec.Cmd {

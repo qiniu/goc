@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"github.com/qiniu/goc/pkg/build"
+	"github.com/qiniu/goc/pkg/cover"
 	"github.com/spf13/cobra"
 )
 
@@ -45,14 +46,10 @@ goc build -- -ldflags "-extldflags -static" -tags="embed kodo"
 	Run: func(cmd *cobra.Command, args []string) {
 		gocBuild := build.NewBuild(buildFlags, packages, buildOutput)
 		// remove temporary directory if needed
-		defer func() {
-			if !debugGoc {
-				gocBuild.Clean()
-			}
-		}()
+		defer gocBuild.Clean()
 		// doCover with original buildFlags, with new GOPATH( tmp:original )
 		// in the tmp directory
-		doCover(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir)
+		cover.Execute(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir, mode, center)
 		// do install in the temporary directory
 		gocBuild.Build()
 		return

@@ -13,6 +13,9 @@ var (
 	buildFlags string
 	packages   string
 	appArgs    string
+
+	goRunExecFlag  string
+	goRunArguments string
 )
 
 // addBasicFlags adds a
@@ -41,6 +44,8 @@ func addRunFlags(cmdset *pflag.FlagSet) {
 	addBuildFlags(cmdset)
 	cmdset.Lookup("packages").Usage = "specify the package name, only ., ./... and *.go are supported"
 	cmdset.StringVar(&appArgs, "appargs", "", "specify the application's arguments")
+	cmdset.StringVar(&goRunExecFlag, "exec", "", "same as -exec flag in 'go run' command")
+	cmdset.StringVar(&goRunArguments, "arguments", "", "same as 'arguments' in 'go run' command")
 	// bind to viper
 	viper.BindPFlags(cmdset)
 }

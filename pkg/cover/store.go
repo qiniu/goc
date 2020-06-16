@@ -19,10 +19,11 @@ package cover
 import (
 	"bufio"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"strings"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Store persistents the registered service information
@@ -38,77 +39,82 @@ type Store interface {
 
 	// Init cleanup all the registered service information
 	Init() error
+
+	// Set stores the services information into internal state
+	Set(services map[string][]string)
 }
 
 // PersistenceFile is the file to save services address information
 const PersistenceFile = "_svrs_address.txt"
 
-// localStore holds the registered services into memory and persistent to a local file
-type localStore struct {
+// fileStore holds the registered services into memory and persistent to a local file
+type fileStore struct {
 	mu             sync.RWMutex
-	servicesMap    map[string][]string
 	persistentFile string
+
+	memoryStore Store
 }
 
-// Add adds the given service to localStore
-func (l *localStore) Add(s Service) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	// load to memory
-	if addrs, ok := l.servicesMap[s.Name]; ok {
-		for _, addr := range addrs {
-			if addr == s.Address {
-				log.Printf("service registered already, name: %s, address: %s", s.Name, s.Address)
-				return nil
-			}
-		}
-		addrs = append(addrs, s.Address)
-		l.servicesMap[s.Name] = addrs
-	} else {
-		l.servicesMap[s.Name] = []string{s.Address}
+// NewFileStore creates a store using local file
+func NewFileStore() Store {
+	l := &fileStore{
+		persistentFile: PersistenceFile,
+		memoryStore:    NewMemoryStore(),
 	}
 
+	if err := l.load(); err != nil {
+		log.Fatalf("load failed, file: %s, err: %v", l.persistentFile, err)
+	}
+
+	return l
+}
+
+// Add adds the given service to file Store
+func (l *fileStore) Add(s Service) error {
+	l.memoryStore.Add(s)
+
 	// persistent to local store
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	return l.appendToFile(s)
 }
 
 // Get returns the registered service information with the given name
-func (l *localStore) Get(name string) []string {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-	return l.servicesMap[name]
+func (l *fileStore) Get(name string) []string {
+	return l.memoryStore.Get(name)
 }
 
 // Get returns all the registered service information
-func (l *localStore) GetAll() map[string][]string {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-	return l.servicesMap
+func (l *fileStore) GetAll() map[string][]string {
+	return l.memoryStore.GetAll()
 }
 
 // Init cleanup all the registered service information
 // and the local persistent file
-func (l *localStore) Init() error {
+func (l *fileStore) Init() error {
+	if err := l.memoryStore.Init(); err != nil {
+		return err
+	}
+
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if err := os.Remove(l.persistentFile); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to delete file %s, err: %v", l.persistentFile, err)
 	}
 
-	l.servicesMap = make(map[string][]string, 0)
 	return nil
 }
 
 // load all registered service from file to memory
-func (l *localStore) load() (map[string][]string, error) {
+func (l *fileStore) load() error {
 	var svrsMap = make(map[string][]string, 0)
 
 	f, err := os.Open(l.persistentFile)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return svrsMap, nil
+			return nil
 		}
-		return svrsMap, fmt.Errorf("failed to open file, path: %s, err: %v", l.persistentFile, err)
+		return fmt.Errorf("failed to open file, path: %s, err: %v", l.persistentFile, err)
 	}
 	defer f.Close()
 
@@ -129,13 +135,19 @@ func (l *localStore) load() (map[string][]string, error) {
 	}
 
 	if err := ns.Err(); err != nil {
-		return svrsMap, fmt.Errorf("read file failed, file: %s, err: %v", l.persistentFile, err)
+		return fmt.Errorf("read file failed, file: %s, err: %v", l.persistentFile, err)
 	}
 
-	return svrsMap, nil
+	// set information to memory
+	l.memoryStore.Set(svrsMap)
+	return nil
 }
 
-func (l *localStore) appendToFile(s Service) error {
+func (l *fileStore) Set(services map[string][]string) {
+	panic("TO BE IMPLEMENTED")
+}
+
+func (l *fileStore) appendToFile(s Service) error {
 	f, err := os.OpenFile(l.persistentFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return err
@@ -159,17 +171,67 @@ func split(r rune) bool {
 	return r == '&'
 }
 
-// NewStore creates a store using local file
-func NewStore() Store {
-	l := &localStore{
-		persistentFile: PersistenceFile,
-		servicesMap:    make(map[string][]string, 0),
+// memoryStore holds the registered services only into memory
+type memoryStore struct {
+	mu          sync.RWMutex
+	servicesMap map[string][]string
+}
+
+// NewMemoryStore creates a memory store
+func NewMemoryStore() Store {
+	return &memoryStore{
+		servicesMap: make(map[string][]string, 0),
+	}
+}
+
+// Add adds the given service to MemoryStore
+func (l *memoryStore) Add(s Service) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	// load to memory
+	if addrs, ok := l.servicesMap[s.Name]; ok {
+		for _, addr := range addrs {
+			if addr == s.Address {
+				log.Printf("service registered already, name: %s, address: %s", s.Name, s.Address)
+				return nil
+			}
+		}
+		addrs = append(addrs, s.Address)
+		l.servicesMap[s.Name] = addrs
+	} else {
+		l.servicesMap[s.Name] = []string{s.Address}
 	}
 
-	services, err := l.load()
-	if err != nil {
-		log.Fatalf("load failed, file: %s, err: %v", l.persistentFile, err)
-	}
+	return nil
+}
+
+// Get returns the registered service information with the given name
+func (l *memoryStore) Get(name string) []string {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return l.servicesMap[name]
+}
+
+// Get returns all the registered service information
+func (l *memoryStore) GetAll() map[string][]string {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return l.servicesMap
+}
+
+// Init cleanup all the registered service information
+// and the local persistent file
+func (l *memoryStore) Init() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	l.servicesMap = make(map[string][]string, 0)
+	return nil
+}
+
+func (l *memoryStore) Set(services map[string][]string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
 	l.servicesMap = services
-	return l
 }

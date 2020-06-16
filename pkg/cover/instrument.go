@@ -145,9 +145,10 @@ func clearFileCover(counter []uint32) {
 func registerHandlers() {
 	ln, host, err := listen()
 	if err != nil {
-		log.Fatalf("profile listen failed, err:%v", err)
+		log.Fatalf("listen failed, err:%v", err)
 	}
-	log.Println("profile listen on", host)
+	
+	fmt.Printf("[goc] goc agent listened on: %s \n", host)
 	profileAddr := "http://" + host
 	if resp, err := registerSelf(profileAddr); err != nil {
 		log.Fatalf("register address %v failed, err: %v, response: %v", profileAddr, err, string(resp))
@@ -220,7 +221,7 @@ func registerSelf(address string) ([]byte, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil && isNetworkError(err) {
-		log.Printf("[WARN]error occured:%v, try again", err)
+		log.Printf("[goc][WARN]error occured:%v, try again", err)
 		resp, err = http.DefaultClient.Do(req)
 	}
 	defer resp.Body.Close()

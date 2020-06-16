@@ -23,9 +23,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/qiniu/goc/pkg/cover"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 func (b *Build) MvProjectsToTmp() {
@@ -156,5 +156,8 @@ func (b *Build) findWhereToInstall() string {
 
 // Clean clears up the temporary workspace
 func (b *Build) Clean() error {
-	return os.RemoveAll(b.TmpDir)
+	if !viper.GetBool("debug") {
+		return os.RemoveAll(b.TmpDir)
+	}
+	return nil
 }
