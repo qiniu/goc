@@ -35,9 +35,12 @@ type Build struct {
 	TmpDir        string                    // the temporary directory to build the project
 	TmpWorkingDir string                    // the working directory in the temporary directory, which is corresponding to the current directory in the project directory
 	IsMod         bool                      // determine whether it is a Mod project
-	Root          string                    // Project Root
-	Target        string                    // the binary name that go build generate
-
+	Root          string
+	// go 1.11, go 1.12 has no Root
+	// Project Root:
+	// 1. legacy, root == GOPATH
+	// 2. mod, root == go.mod Dir
+	Target string // the binary name that go build generate
 	// keep compatible with go commands:
 	// go run [build flags] [-exec xprog] package [arguments...]
 	// go build [-o output] [-i] [build flags] [packages]
@@ -50,26 +53,33 @@ type Build struct {
 
 // NewBuild creates a Build struct which can build from goc temporary directory,
 // and generate binary in current working directory
-func NewBuild(buildflags string, packages string, outputDir string) *Build {
+func NewBuild(buildflags string, packages string, outputDir string) (*Build, error) {
 	// buildflags = buildflags + " -o " + outputDir
 	b := &Build{
 		BuildFlags: buildflags,
 		Packages:   packages,
 	}
 	if false == b.validatePackageForBuild() {
-		log.Fatalln("packages only support \".\"")
+		log.Errorln(ErrWrongPackageTypeForBuild)
+		return nil, ErrWrongPackageTypeForBuild
 	}
 	b.MvProjectsToTmp()
-	b.Target = b.determineOutputDir(outputDir)
-	return b
+	dir, err := b.determineOutputDir(outputDir)
+	b.Target = dir
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
 }
 
-func (b *Build) Build() {
+func (b *Build) Build() error {
 	log.Infoln("Go building in temp...")
 	// new -o will overwrite  previous ones
 	b.BuildFlags = b.BuildFlags + " -o " + b.Target
 	cmd := exec.Command("/bin/bash", "-c", "go build "+b.BuildFlags+" "+b.Packages)
 	cmd.Dir = b.TmpWorkingDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	if b.NewGOPATH != "" {
 		// Change to temp GOPATH for go install command
@@ -77,22 +87,30 @@ func (b *Build) Build() {
 	}
 
 	log.Printf("go build cmd is: %v", cmd.Args)
-	out, err := cmd.CombinedOutput()
+	err := cmd.Start()
 	if err != nil {
-		log.Fatalf("Fail to execute: %v. The error is: %v, the stdout/stderr is: %v", cmd.Args, err, string(out))
+		log.Errorf("Fail to execute: %v. The error is: %v", cmd.Args, err)
+		return fmt.Errorf("fail to execute: %v: %w", cmd.Args, err)
+	}
+	if err = cmd.Wait(); err != nil {
+		log.Errorf("go build failed. The error is: %v", err)
+		return fmt.Errorf("go build faileds: %w", err)
 	}
 	log.Println("Go build exit successful.")
+	return nil
 }
 
 // determineOutputDir, as we only allow . as package name,
 // the binary name is always same as the directory name of current directory
-func (b *Build) determineOutputDir(outputDir string) string {
+func (b *Build) determineOutputDir(outputDir string) (string, error) {
 	if b.TmpDir == "" {
-		log.Fatalln("Can only be called after Build.MvProjectsToTmp().")
+		log.Errorf("Can only be called after Build.MvProjectsToTmp(): %v", ErrWrongCallSequence)
+		return "", fmt.Errorf("can only be called after Build.MvProjectsToTmp(): %w", ErrWrongCallSequence)
 	}
 	curWorkingDir, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("Cannot get current working directory, the err: %v.", err)
+		log.Errorf("Cannot get current working directory: %v", err)
+		return "", fmt.Errorf("cannot get current working directory: %w", err)
 	}
 
 	if outputDir == "" {
@@ -102,13 +120,14 @@ func (b *Build) determineOutputDir(outputDir string) string {
 			// replace "_" with "-" in the import path
 			last = strings.ReplaceAll(last, "_", "-")
 		}
-		return filepath.Join(curWorkingDir, last)
+		return filepath.Join(curWorkingDir, last), nil
 	}
 	abs, err := filepath.Abs(outputDir)
 	if err != nil {
-		log.Fatalf("Fail to transform the path: %v to absolute path, the error is: %v", outputDir, err)
+		log.Errorf("Fail to transform the path: %v to absolute path: %v", outputDir, err)
+		return "", fmt.Errorf("fail to transform the path %v to absolute path: %w", outputDir, err)
 	}
-	return abs
+	return abs, nil
 }
 
 // validatePackageForBuild only allow . as package name

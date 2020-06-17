@@ -56,6 +56,7 @@ var _ = Describe("E2E", func() {
 			testProjDir := filepath.Join(TESTS_ROOT, "samples/simple_project")
 			cmd := exec.Command("goc", "build", "--debug")
 			cmd.Dir = testProjDir
+			cmd.Env = append(os.Environ(), "GO111MODULE=on")
 
 			out, err := cmd.CombinedOutput()
 			Expect(err).To(BeNil(), "goc build on this project should be successful", string(out))

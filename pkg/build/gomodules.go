@@ -28,7 +28,7 @@ func (b *Build) cpGoModulesProject() {
 			src := v.Module.Dir
 
 			if err := copy.Copy(src, dst); err != nil {
-				log.Printf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
+				log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
 			}
 			break
 		} else {

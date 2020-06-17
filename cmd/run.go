@@ -36,7 +36,7 @@ It is exactly behave as 'go run .' in addition of some internal goc features.`,
 goc run .
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		gocBuild := build.NewBuild(buildFlags, packages, buildOutput)
+		gocBuild, _ := build.NewBuild(buildFlags, packages, buildOutput)
 		gocBuild.GoRunExecFlag = goRunExecFlag
 		gocBuild.GoRunArguments = goRunArguments
 		defer gocBuild.Clean()

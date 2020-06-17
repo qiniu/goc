@@ -24,16 +24,22 @@ import (
 	"testing"
 )
 
+var baseDir string
+
+func init() {
+	baseDir, _ = os.Getwd()
+}
+
 func TestNewDirParseInLegacyProject(t *testing.T) {
-	workingDir := "../../tests/samples/simple_gopath_project/src/qiniu.com/simple_gopath_project"
-	gopath, _ := filepath.Abs("../../tests/samples/simple_gopath_project")
+	workingDir := filepath.Join(baseDir, "../../tests/samples/simple_gopath_project/src/qiniu.com/simple_gopath_project")
+	gopath := filepath.Join(baseDir, "../../tests/samples/simple_gopath_project")
 
 	os.Chdir(workingDir)
-	fmt.Println(gopath)
+
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "off")
 
-	b := NewInstall("", ".")
+	b, _ := NewInstall("", ".")
 	if -1 == strings.Index(b.TmpWorkingDir, b.TmpDir) {
 		t.Fatalf("Directory parse error. newwd: %v, tmpdir: %v", b.TmpWorkingDir, b.TmpDir)
 	}
@@ -42,7 +48,7 @@ func TestNewDirParseInLegacyProject(t *testing.T) {
 		t.Fatalf("The New GOPATH is wrong. newgopath: %v, tmpdir: %v", b.NewGOPATH, b.TmpDir)
 	}
 
-	b = NewBuild("", ".", "")
+	b, _ = NewBuild("", ".", "")
 	if -1 == strings.Index(b.TmpWorkingDir, b.TmpDir) {
 		t.Fatalf("Directory parse error. newwd: %v, tmpdir: %v", b.TmpWorkingDir, b.TmpDir)
 	}
@@ -53,7 +59,7 @@ func TestNewDirParseInLegacyProject(t *testing.T) {
 }
 
 func TestNewDirParseInModProject(t *testing.T) {
-	workingDir := "../../tests/samples/simple_project"
+	workingDir := filepath.Join(baseDir, "../../tests/samples/simple_project")
 	gopath := ""
 
 	os.Chdir(workingDir)
@@ -61,7 +67,7 @@ func TestNewDirParseInModProject(t *testing.T) {
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "on")
 
-	b := NewInstall("", ".")
+	b, _ := NewInstall("", ".")
 	if -1 == strings.Index(b.TmpWorkingDir, b.TmpDir) {
 		t.Fatalf("Directory parse error. newwd: %v, tmpdir: %v", b.TmpWorkingDir, b.TmpDir)
 	}
@@ -70,7 +76,7 @@ func TestNewDirParseInModProject(t *testing.T) {
 		t.Fatalf("The New GOPATH is wrong. newgopath: %v, tmpdir: %v", b.NewGOPATH, b.TmpDir)
 	}
 
-	b = NewBuild("", ".", "")
+	b, _ = NewBuild("", ".", "")
 	if -1 == strings.Index(b.TmpWorkingDir, b.TmpDir) {
 		t.Fatalf("Directory parse error. newwd: %v, tmpdir: %v", b.TmpWorkingDir, b.TmpDir)
 	}
@@ -82,15 +88,21 @@ func TestNewDirParseInModProject(t *testing.T) {
 
 // Test #14
 func TestLegacyProjectNotInGoPATH(t *testing.T) {
-	workingDir := "../../tests/samples/simple_gopath_project/src/qiniu.com/simple_gopath_project"
+	workingDir := filepath.Join(baseDir, "../../tests/samples/simple_gopath_project/src/qiniu.com/simple_gopath_project")
 	gopath := ""
 
 	os.Chdir(workingDir)
 	fmt.Println(gopath)
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "off")
-	b := NewBuild("", ".", "")
+
+	b, _ := NewBuild("", ".", "")
 	if b.OriGOPATH != b.NewGOPATH {
 		t.Fatalf("New GOPATH should be same with old GOPATH, for this kind of project. New: %v, old: %v", b.NewGOPATH, b.OriGOPATH)
+	}
+
+	_, err := os.Stat(filepath.Join(b.TmpDir, "main.go"))
+	if err != nil {
+		t.Fatalf("There should be a main.go in temporary directory directly, the error: %v", err)
 	}
 }

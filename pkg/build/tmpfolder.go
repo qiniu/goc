@@ -18,6 +18,7 @@ package build
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -47,17 +48,20 @@ func (b *Build) MvProjectsToTmp() {
 	}
 	// fix #14: unable to build project not in GOPATH in legacy mode
 	// this kind of project does not have a pkg.Root value
-	if b.Root == "" {
+	// go 1.11, 1.12 has no pkg.Root,
+	// so add b.IsMod == false as secondary judgement
+	if b.Root == "" && b.IsMod == false {
 		b.NewGOPATH = b.OriGOPATH
 	}
 	log.Printf("New GOPATH: %v", b.NewGOPATH)
 	return
 }
 
-func (b *Build) mvProjectsToTmp() {
+func (b *Build) mvProjectsToTmp() error {
 	path, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("Cannot get current working directory, the error is: %v", err)
+		log.Errorf("Cannot get current working directory, the error is: %v", err)
+		return err
 	}
 	b.TmpDir = filepath.Join(os.TempDir(), TmpFolderName(path))
 
@@ -66,20 +70,39 @@ func (b *Build) mvProjectsToTmp() {
 	// Create a new tmp folder
 	err = os.MkdirAll(filepath.Join(b.TmpDir, "src"), os.ModePerm)
 	if err != nil {
-		log.Fatalf("Fail to create the temporary build directory. The err is: %v", err)
+		log.Errorf("Fail to create the temporary build directory. The err is: %v", err)
+		return err
 	}
 	log.Printf("Tmp project generated in: %v", b.TmpDir)
 
-	// set Build.IsMod flag, so we don't have to call checkIfLegacyProject another time
-	if b.checkIfLegacyProject() {
-		b.cpLegacyProject()
-	} else {
-		b.IsMod = true
-		b.cpGoModulesProject()
+	// traverse pkg list to get project meta info
+	b.IsMod, b.Root, err = b.traversePkgsList()
+	if errors.Is(err, ErrShouldNotReached) {
+		return fmt.Errorf("mvProjectsToTmp with a empty project: %w", err)
 	}
-	b.getTmpwd()
+	// we should get corresponding working directory in temporary directory
+	b.TmpWorkingDir, err = b.getTmpwd()
+	if err != nil {
+		log.Errorf("fail to get workding directory in temporary directory: %v", err)
+		return fmt.Errorf("fail to get workding directory in temporary directory: %w", err)
+	}
+	// issue #14
+	// if b.Root == "", then the project is non-standard project
+	// known cases:
+	// 1. a legacy project, but not in any GOPATH, will cause the b.Root == ""
+	if b.IsMod == false && b.Root != "" {
+		b.cpLegacyProject()
+	} else if b.IsMod == true { // go 1.11, 1.12 has no Build.Root
+		b.cpGoModulesProject()
+	} else if b.IsMod == false && b.Root == "" {
+		b.TmpWorkingDir = b.TmpDir
+		b.cpNonStandardLegacy()
+	} else {
+		return fmt.Errorf("unknown project type: %w", ErrShouldNotReached)
+	}
 
-	log.Printf("New workingdir in tmp directory in: %v", b.TmpWorkingDir)
+	log.Infof("New workingdir in tmp directory in: %v", b.TmpWorkingDir)
+	return nil
 }
 
 func TmpFolderName(path string) string {
@@ -89,29 +112,35 @@ func TmpFolderName(path string) string {
 	return "goc-" + h
 }
 
-// checkIfLegacyProject Check if it is go module project
-// true legacy
-// false go mod
-func (b *Build) checkIfLegacyProject() bool {
+// traversePkgsList travse the Build.Pkgs list
+// return Build.IsMod, tell if the project is a mod project
+// return Build.Root:
+// 1. the project root if it is a mod project,
+// 2. current GOPATH if it is a legacy project,
+// 3. some non-standard project, which Build.IsMod == false, Build.Root == nil
+func (b *Build) traversePkgsList() (isMod bool, root string, err error) {
 	for _, v := range b.Pkgs {
 		// get root
-		b.Root = v.Root
+		root = v.Root
 		if v.Module == nil {
-			return true
+			return
 		}
-		return false
+		isMod = true
+		return
 	}
-	log.Fatalln("Should never be reached....")
-	return false
+	log.Error("should not reach here")
+	err = ErrShouldNotReached
+	return
 }
 
 // getTmpwd get the corresponding working directory in the temporary working directory
 // and store it in the Build.tmpWorkdingDir
-func (b *Build) getTmpwd() {
+func (b *Build) getTmpwd() (string, error) {
 	for _, pkg := range b.Pkgs {
 		path, err := os.Getwd()
 		if err != nil {
-			log.Fatalf("Cannot get current working directory, the error is: %v", err)
+			log.Errorf("cannot get current working directory: %v", err)
+			return "", fmt.Errorf("cannot get current working directory: %w", err)
 		}
 
 		index := -1
@@ -125,33 +154,32 @@ func (b *Build) getTmpwd() {
 		}
 
 		if index == -1 {
-			log.Fatalf("goc install not executed in project directory.")
+			return "", ErrGocShouldExecInProject
 		}
-		b.TmpWorkingDir = filepath.Join(b.TmpDir, path[len(parentPath):])
-		// log.Printf("New building directory in: %v", tmpwd)
-		return
+		// b.TmpWorkingDir = filepath.Join(b.TmpDir, path[len(parentPath):])
+		return filepath.Join(b.TmpDir, path[len(parentPath):]), nil
 	}
 
-	log.Fatalln("Should never be reached....")
-	return
+	return "", ErrShouldNotReached
 }
 
-func (b *Build) findWhereToInstall() string {
+func (b *Build) findWhereToInstall() (string, error) {
 	if GOBIN := os.Getenv("GOBIN"); GOBIN != "" {
-		return GOBIN
+		return GOBIN, nil
 	}
 
 	// old GOPATH dir
 	GOPATH := os.Getenv("GOPATH")
 	if false == b.IsMod {
-		for _, v := range b.Pkgs {
-			return filepath.Join(v.Root, "bin")
+		if b.Root == "" {
+			return "", ErrNoplaceToInstall
 		}
+		return filepath.Join(b.Root, "bin"), nil
 	}
 	if GOPATH != "" {
-		return filepath.Join(strings.Split(GOPATH, ":")[0], "bin")
+		return filepath.Join(strings.Split(GOPATH, ":")[0], "bin"), nil
 	}
-	return filepath.Join(os.Getenv("HOME"), "go", "bin")
+	return filepath.Join(os.Getenv("HOME"), "go", "bin"), nil
 }
 
 // Clean clears up the temporary workspace
