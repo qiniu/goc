@@ -32,6 +32,7 @@ type Build struct {
 	Pkgs          map[string]*cover.Package // Pkg list parsed from "go list -json ./..." command
 	NewGOPATH     string                    // the new GOPATH
 	OriGOPATH     string                    // the original GOPATH
+	WorkingDir    string                    // the working directory
 	TmpDir        string                    // the temporary directory to build the project
 	TmpWorkingDir string                    // the working directory in the temporary directory, which is corresponding to the current directory in the project directory
 	IsMod         bool                      // determine whether it is a Mod project
@@ -53,17 +54,23 @@ type Build struct {
 
 // NewBuild creates a Build struct which can build from goc temporary directory,
 // and generate binary in current working directory
-func NewBuild(buildflags string, packages string, outputDir string) (*Build, error) {
+func NewBuild(buildflags string, args []string, workingDir string, outputDir string) (*Build, error) {
+	if err := checkParameters(args, workingDir); err != nil {
+		return nil, err
+	}
 	// buildflags = buildflags + " -o " + outputDir
 	b := &Build{
 		BuildFlags: buildflags,
-		Packages:   packages,
+		Packages:   strings.Join(args, " "),
+		WorkingDir: workingDir,
 	}
 	if false == b.validatePackageForBuild() {
 		log.Errorln(ErrWrongPackageTypeForBuild)
 		return nil, ErrWrongPackageTypeForBuild
 	}
-	b.MvProjectsToTmp()
+	if err := b.MvProjectsToTmp(); err != nil {
+		return nil, err
+	}
 	dir, err := b.determineOutputDir(outputDir)
 	b.Target = dir
 	if err != nil {
@@ -90,13 +97,13 @@ func (b *Build) Build() error {
 	err := cmd.Start()
 	if err != nil {
 		log.Errorf("Fail to execute: %v. The error is: %v", cmd.Args, err)
-		return fmt.Errorf("fail to execute: %v: %w", cmd.Args, err)
+		return fmt.Errorf("fail to execute: %v, err: %w", cmd.Args, err)
 	}
 	if err = cmd.Wait(); err != nil {
 		log.Errorf("go build failed. The error is: %v", err)
-		return fmt.Errorf("go build faileds: %w", err)
+		return fmt.Errorf("fail to execute: %v, err: %w", cmd.Args, err)
 	}
-	log.Println("Go build exit successful.")
+	log.Infoln("Go build exit successful.")
 	return nil
 }
 
@@ -107,57 +114,42 @@ func (b *Build) determineOutputDir(outputDir string) (string, error) {
 		log.Errorf("Can only be called after Build.MvProjectsToTmp(): %v", ErrWrongCallSequence)
 		return "", fmt.Errorf("can only be called after Build.MvProjectsToTmp(): %w", ErrWrongCallSequence)
 	}
-	curWorkingDir, err := os.Getwd()
-	if err != nil {
-		log.Errorf("Cannot get current working directory: %v", err)
-		return "", fmt.Errorf("cannot get current working directory: %w", err)
-	}
 
 	if outputDir == "" {
-		_, last := filepath.Split(curWorkingDir)
+		_, last := filepath.Split(b.WorkingDir)
 		if b.IsMod {
 			// in mod, special rule
 			// replace "_" with "-" in the import path
 			last = strings.ReplaceAll(last, "_", "-")
 		}
-		return filepath.Join(curWorkingDir, last), nil
+		return filepath.Join(b.WorkingDir, last), nil
 	}
 	abs, err := filepath.Abs(outputDir)
 	if err != nil {
 		log.Errorf("Fail to transform the path: %v to absolute path: %v", outputDir, err)
-		return "", fmt.Errorf("fail to transform the path %v to absolute path: %w", outputDir, err)
+		return "", err
 	}
 	return abs, nil
 }
 
 // validatePackageForBuild only allow . as package name
 func (b *Build) validatePackageForBuild() bool {
-	if b.Packages == "." {
+	if b.Packages == "." || b.Packages == "" {
 		return true
 	}
 	return false
 }
 
-// Run excutes the main package in addition with the internal goc features
-func (b *Build) Run() {
-	cmd := exec.Command("/bin/bash", "-c", "go run "+b.BuildFlags+" "+b.GoRunExecFlag+" "+b.Packages+" "+b.GoRunArguments)
-	cmd.Dir = b.TmpWorkingDir
-
-	if b.NewGOPATH != "" {
-		// Change to temp GOPATH for go install command
-		cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", b.NewGOPATH))
+func checkParameters(args []string, workingDir string) error {
+	if len(args) > 1 {
+		log.Errorln(ErrTooManyArgs)
+		return ErrTooManyArgs
 	}
 
-	log.Printf("go build cmd is: %v", cmd.Args)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Start()
-	if err != nil {
-		log.Fatalf("Fail to start command: %v. The error is: %v", cmd.Args, err)
+	if workingDir == "" {
+		return ErrInvalidWorkingDir
 	}
 
-	if err = cmd.Wait(); err != nil {
-		log.Fatalf("Fail to execute command: %v. The error is: %v", cmd.Args, err)
-	}
-
+	log.Infof("Working directory: %v", workingDir)
+	return nil
 }

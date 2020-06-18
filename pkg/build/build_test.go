@@ -17,10 +17,13 @@
 package build
 
 import (
-	"github.com/stretchr/testify/assert"
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestInvalidPackage(t *testing.T) {
@@ -28,26 +31,62 @@ func TestInvalidPackage(t *testing.T) {
 	workingDir := filepath.Join(baseDir, "../../tests/samples/simple_project")
 	gopath := ""
 
-	os.Chdir(workingDir)
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "on")
 
-	_, err := NewBuild("", "example.com/simple-project", "")
-	assert.Equal(t, err, ErrWrongPackageTypeForBuild, "the package name should be invalid")
+	_, err := NewBuild("", []string{"example.com/simple-project"}, workingDir, "")
+	if !assert.Equal(t, err, ErrWrongPackageTypeForBuild) {
+		assert.FailNow(t, "the package name should be invalid")
+	}
 }
 
 func TestBasicBuildForModProject(t *testing.T) {
-	workingDir := filepath.Join(baseDir, "../tests/samples/simple_project")
+	workingDir := filepath.Join(baseDir, "../../tests/samples/simple_project")
 	gopath := ""
 
-	os.Chdir(workingDir)
+	os.Setenv("GOPATH", gopath)
+	os.Setenv("GO111MODULE", "on")
+	fmt.Println(workingDir)
+	buildFlags, args, buildOutput := "", []string{"."}, ""
+	gocBuild, err := NewBuild(buildFlags, args, workingDir, buildOutput)
+	if !assert.Equal(t, err, nil) {
+		assert.FailNow(t, "should create temporary directory successfully")
+	}
+
+	err = gocBuild.Build()
+	if !assert.Equal(t, err, nil) {
+		assert.FailNow(t, "temporary directory should build successfully")
+	}
+}
+
+func TestCheckParameters(t *testing.T) {
+	err := checkParameters([]string{"aa", "bb"}, "aa")
+	assert.Equal(t, err, ErrTooManyArgs, "too many arguments should failed")
+
+	err = checkParameters([]string{"aa"}, "")
+	assert.Equal(t, err, ErrInvalidWorkingDir, "empty working directory should failed")
+}
+
+func TestDetermineOutputDir(t *testing.T) {
+	b := &Build{}
+	_, err := b.determineOutputDir("")
+	assert.Equal(t, errors.Is(err, ErrWrongCallSequence), true, "called before Build.MvProjectsToTmp() should fail")
+
+	b.TmpDir = "fake"
+	_, err = b.determineOutputDir("xx")
+	assert.Equal(t, err, nil, "should return a directory")
+}
+
+func TestInvalidPackageNameForBuild(t *testing.T) {
+	workingDir := filepath.Join(baseDir, "../../tests/samples/simple_project")
+	gopath := filepath.Join(baseDir, "../../tests/samples/simple_project", "testhome")
+
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "on")
 
-	buildFlags, packages, buildOutput := "", ".", ""
-	gocBuild, err := NewBuild(buildFlags, packages, buildOutput)
-	assert.Equal(t, err, nil, "should create temporary directory successfully")
-
-	err = gocBuild.Build()
-	assert.Equal(t, err, nil, "temporary directory should build successfully")
+	buildFlags, packages := "", []string{"main.go"}
+	_, err := NewBuild(buildFlags, packages, workingDir, "")
+	if !assert.Equal(t, err, ErrWrongPackageTypeForBuild) {
+		assert.FailNow(t, "should not success with non . or ./... package")
+	}
 }

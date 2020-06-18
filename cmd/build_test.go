@@ -17,13 +17,14 @@
 package cmd
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var baseDir string
@@ -38,14 +39,14 @@ func TestGeneratedBinary(t *testing.T) {
 	workingDir := filepath.Join(baseDir, "../tests/samples/simple_project")
 	gopath := ""
 
-	os.Chdir(workingDir)
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "on")
 
-	buildFlags, packages, buildOutput = "", ".", ""
-	runBuild()
+	buildFlags, buildOutput = "", ""
+	args := []string{"."}
+	runBuild(args, workingDir)
 
-	obj := filepath.Join(".", "simple-project")
+	obj := filepath.Join(workingDir, "simple-project")
 	fInfo, err := os.Lstat(obj)
 	assert.Equal(t, err, nil, "the binary should be generated.")
 	assert.Equal(t, startTime.Before(fInfo.ModTime()), true, obj+"new binary should be generated, not the old one")

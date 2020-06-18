@@ -17,13 +17,14 @@
 package cmd
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestInstalledBinaryForMod(t *testing.T) {
@@ -32,12 +33,12 @@ func TestInstalledBinaryForMod(t *testing.T) {
 	workingDir := filepath.Join(baseDir, "../tests/samples/simple_project")
 	gopath := filepath.Join(baseDir, "../tests/samples/simple_project", "testhome")
 
-	os.Chdir(workingDir)
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "on")
 
-	buildFlags, packages, buildOutput = "", ".", ""
-	runInstall()
+	buildFlags, buildOutput = "", ""
+	args := []string{"."}
+	runInstall(args, workingDir)
 
 	obj := filepath.Join(gopath, "bin", "simple-project")
 	fInfo, err := os.Lstat(obj)
@@ -60,12 +61,12 @@ func TestInstalledBinaryForLegacy(t *testing.T) {
 	workingDir := filepath.Join(baseDir, "../tests/samples/simple_gopath_project/src/qiniu.com/simple_gopath_project")
 	gopath := filepath.Join(baseDir, "../tests/samples/simple_gopath_project")
 
-	os.Chdir(workingDir)
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "off")
 
-	buildFlags, packages, buildOutput = "", ".", ""
-	runInstall()
+	buildFlags, buildOutput = "", ""
+	args := []string{"."}
+	runInstall(args, workingDir)
 
 	obj := filepath.Join(gopath, "bin", "simple_gopath_project")
 	fInfo, err := os.Lstat(obj)

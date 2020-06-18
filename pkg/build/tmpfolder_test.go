@@ -34,12 +34,10 @@ func TestNewDirParseInLegacyProject(t *testing.T) {
 	workingDir := filepath.Join(baseDir, "../../tests/samples/simple_gopath_project/src/qiniu.com/simple_gopath_project")
 	gopath := filepath.Join(baseDir, "../../tests/samples/simple_gopath_project")
 
-	os.Chdir(workingDir)
-
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "off")
 
-	b, _ := NewInstall("", ".")
+	b, _ := NewInstall("", []string{"."}, workingDir)
 	if -1 == strings.Index(b.TmpWorkingDir, b.TmpDir) {
 		t.Fatalf("Directory parse error. newwd: %v, tmpdir: %v", b.TmpWorkingDir, b.TmpDir)
 	}
@@ -48,7 +46,7 @@ func TestNewDirParseInLegacyProject(t *testing.T) {
 		t.Fatalf("The New GOPATH is wrong. newgopath: %v, tmpdir: %v", b.NewGOPATH, b.TmpDir)
 	}
 
-	b, _ = NewBuild("", ".", "")
+	b, _ = NewBuild("", []string{"."}, workingDir, "")
 	if -1 == strings.Index(b.TmpWorkingDir, b.TmpDir) {
 		t.Fatalf("Directory parse error. newwd: %v, tmpdir: %v", b.TmpWorkingDir, b.TmpDir)
 	}
@@ -62,12 +60,11 @@ func TestNewDirParseInModProject(t *testing.T) {
 	workingDir := filepath.Join(baseDir, "../../tests/samples/simple_project")
 	gopath := ""
 
-	os.Chdir(workingDir)
 	fmt.Println(gopath)
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "on")
 
-	b, _ := NewInstall("", ".")
+	b, _ := NewInstall("", []string{"."}, workingDir)
 	if -1 == strings.Index(b.TmpWorkingDir, b.TmpDir) {
 		t.Fatalf("Directory parse error. newwd: %v, tmpdir: %v", b.TmpWorkingDir, b.TmpDir)
 	}
@@ -76,7 +73,7 @@ func TestNewDirParseInModProject(t *testing.T) {
 		t.Fatalf("The New GOPATH is wrong. newgopath: %v, tmpdir: %v", b.NewGOPATH, b.TmpDir)
 	}
 
-	b, _ = NewBuild("", ".", "")
+	b, _ = NewBuild("", []string{"."}, workingDir, "")
 	if -1 == strings.Index(b.TmpWorkingDir, b.TmpDir) {
 		t.Fatalf("Directory parse error. newwd: %v, tmpdir: %v", b.TmpWorkingDir, b.TmpDir)
 	}
@@ -91,12 +88,11 @@ func TestLegacyProjectNotInGoPATH(t *testing.T) {
 	workingDir := filepath.Join(baseDir, "../../tests/samples/simple_gopath_project/src/qiniu.com/simple_gopath_project")
 	gopath := ""
 
-	os.Chdir(workingDir)
 	fmt.Println(gopath)
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "off")
 
-	b, _ := NewBuild("", ".", "")
+	b, _ := NewBuild("", []string{"."}, workingDir, "")
 	if b.OriGOPATH != b.NewGOPATH {
 		t.Fatalf("New GOPATH should be same with old GOPATH, for this kind of project. New: %v, old: %v", b.NewGOPATH, b.OriGOPATH)
 	}

@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -35,6 +36,11 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/sirupsen/logrus"
+)
+
+var (
+	ErrCoverPkgFailed  = errors.New("fail to inject code to project")
+	ErrCoverListFailed = errors.New("fail to list package dependencies")
 )
 
 // TestCover is a collection of all counters
@@ -114,9 +120,10 @@ type PackageError struct {
 }
 
 //Execute execute go tool cover for all the .go files in the target folder
-func Execute(args, newGopath, target, mode, center string) {
+func Execute(args, newGopath, target, mode, center string) error {
 	if !isDirExist(target) {
-		log.Fatalf("target directory %s not exist", target)
+		log.Errorf("Target directory %s not exist", target)
+		return ErrCoverPkgFailed
 	}
 
 	listArgs := []string{"-json"}
@@ -124,7 +131,11 @@ func Execute(args, newGopath, target, mode, center string) {
 		listArgs = append(listArgs, args)
 	}
 	listArgs = append(listArgs, "./...")
-	pkgs := ListPackages(target, strings.Join(listArgs, " "), newGopath)
+	pkgs, err := ListPackages(target, strings.Join(listArgs, " "), newGopath)
+	if err != nil {
+		log.Errorf("Fail to list all packages, the error: %v", err)
+		return err
+	}
 
 	var seen = make(map[string]*PackageCover)
 	var seenCache = make(map[string]*PackageCover)
@@ -134,7 +145,8 @@ func Execute(args, newGopath, target, mode, center string) {
 			// inject the main package
 			mainCover, err := AddCounters(pkg, mode, newGopath)
 			if err != nil {
-				log.Fatalf("failed to add counters for pkg %s, err: %v", pkg.ImportPath, err)
+				log.Errorf("failed to add counters for pkg %s, err: %v", pkg.ImportPath, err)
+				return ErrCoverPkgFailed
 			}
 
 			// new a testcover for this service
@@ -158,7 +170,7 @@ func Execute(args, newGopath, target, mode, center string) {
 					if hasInternalPath(dep) {
 						//scan exist cache cover to tc.CacheCover
 						if cache, ok := seenCache[dep]; ok {
-							log.Printf("cache cover exist: %s", cache.Package.ImportPath)
+							log.Infof("cache cover exist: %s", cache.Package.ImportPath)
 							tc.CacheCover[cache.Package.Dir] = cache
 							continue
 						}
@@ -166,7 +178,8 @@ func Execute(args, newGopath, target, mode, center string) {
 						// add counter for internal package
 						inPkgCover, err := AddCounters(depPkg, mode, newGopath)
 						if err != nil {
-							log.Fatalf("failed to add counters for internal pkg %s, err: %v", depPkg.ImportPath, err)
+							log.Errorf("failed to add counters for internal pkg %s, err: %v", depPkg.ImportPath, err)
+							return ErrCoverPkgFailed
 						}
 						parentDir := getInternalParent(depPkg.Dir)
 						parentImportPath := getInternalParent(depPkg.ImportPath)
@@ -212,7 +225,8 @@ func Execute(args, newGopath, target, mode, center string) {
 
 					packageCover, err := AddCounters(depPkg, mode, newGopath)
 					if err != nil {
-						log.Fatalf("failed to add counters for pkg %s, err: %v", depPkg.ImportPath, err)
+						log.Errorf("failed to add counters for pkg %s, err: %v", depPkg.ImportPath, err)
+						return err
 					}
 					tc.DepsCover = append(tc.DepsCover, packageCover)
 					seen[dep] = packageCover
@@ -220,21 +234,25 @@ func Execute(args, newGopath, target, mode, center string) {
 			}
 
 			if errs := InjectCacheCounters(internalPkgCache, tc.CacheCover); len(errs) > 0 {
-				log.Fatalf("failed to inject cache counters for package: %s, err: %v", pkg.ImportPath, errs)
+				log.Errorf("failed to inject cache counters for package: %s, err: %v", pkg.ImportPath, errs)
+				return ErrCoverPkgFailed
 			}
 
 			// inject Http Cover APIs
 			var httpCoverApis = fmt.Sprintf("%s/http_cover_apis_auto_generated.go", pkg.Dir)
 			if err := InjectCountersHandlers(tc, httpCoverApis); err != nil {
-				log.Fatalf("failed to inject counters for package: %s, err: %v", pkg.ImportPath, err)
+				log.Errorf("failed to inject counters for package: %s, err: %v", pkg.ImportPath, err)
+				return ErrCoverPkgFailed
 			}
 		}
 	}
+
+	return nil
 }
 
 // ListPackages list all packages under specific via go list command
 // The argument newgopath is if you need to go list in a different GOPATH
-func ListPackages(dir string, args string, newgopath string) map[string]*Package {
+func ListPackages(dir string, args string, newgopath string) (map[string]*Package, error) {
 	cmd := exec.Command("/bin/bash", "-c", "go list "+args)
 	log.Printf("go list cmd is: %v", cmd.Args)
 	cmd.Dir = dir
@@ -243,7 +261,8 @@ func ListPackages(dir string, args string, newgopath string) map[string]*Package
 	}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatalf("excute `go list -json ./...` command failed, err: %v, out: %v", err, string(out))
+		log.Errorf("excute `go list -json ./...` command failed, err: %v, out: %v", err, string(out))
+		return nil, ErrCoverListFailed
 	}
 
 	dec := json.NewDecoder(bytes.NewReader(out))
@@ -254,10 +273,12 @@ func ListPackages(dir string, args string, newgopath string) map[string]*Package
 			if err == io.EOF {
 				break
 			}
-			log.Fatalf("reading go list output: %v", err)
+			log.Errorf("reading go list output: %v", err)
+			return nil, ErrCoverListFailed
 		}
 		if pkg.Error != nil {
-			log.Fatalf("list package %s failed with output: %v", pkg.ImportPath, pkg.Error)
+			log.Errorf("list package %s failed with output: %v", pkg.ImportPath, pkg.Error)
+			return nil, ErrCoverPkgFailed
 		}
 
 		// for _, err := range pkg.DepsErrors {
@@ -266,7 +287,7 @@ func ListPackages(dir string, args string, newgopath string) map[string]*Package
 
 		pkgs[pkg.ImportPath] = &pkg
 	}
-	return pkgs
+	return pkgs, nil
 }
 
 // AddCounters add counters for all go files under the package
