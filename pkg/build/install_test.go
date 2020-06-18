@@ -12,12 +12,11 @@ func TestBasicInstallForModProject(t *testing.T) {
 	workingDir := filepath.Join(baseDir, "../tests/samples/simple_project")
 	gopath := filepath.Join(baseDir, "../tests/samples/simple_project", "testhome")
 
-	os.Chdir(workingDir)
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "on")
 
 	buildFlags, packages := "", []string{"."}
-	gocBuild, err := NewInstall(buildFlags, packages)
+	gocBuild, err := NewInstall(buildFlags, packages, workingDir)
 	assert.Equal(t, err, nil, "should create temporary directory successfully")
 
 	err = gocBuild.Install()

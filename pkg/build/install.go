@@ -26,14 +26,14 @@ import (
 )
 
 // NewInstall creates a Build struct which can install from goc temporary directory
-func NewInstall(buildflags string, args []string) (*Build, error) {
-	if len(args) > 1 {
-		log.Errorf("Too many args")
-		return nil, ErrTooManyArgs
+func NewInstall(buildflags string, args []string, workingDir string) (*Build, error) {
+	if err := checkParameters(args, workingDir); err != nil {
+		return nil, err
 	}
 	b := &Build{
 		BuildFlags: buildflags,
 		Packages:   strings.Join(args, " "),
+		WorkingDir: workingDir,
 	}
 	if false == b.validatePackageForInstall() {
 		log.Errorln(ErrWrongPackageTypeForInstall)

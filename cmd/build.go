@@ -17,6 +17,8 @@
 package cmd
 
 import (
+	"os"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/qiniu/goc/pkg/build"
@@ -44,7 +46,11 @@ goc build --output /to/this/path
 goc build --buildflags="-ldflags '-extldflags -static' -tags='embed kodo'"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		runBuild(args)
+		wd, err := os.Getwd()
+		if err != nil {
+			log.Fatalf("Fail to build: %v", err)
+		}
+		runBuild(args, wd)
 	},
 }
 
@@ -56,8 +62,8 @@ func init() {
 	rootCmd.AddCommand(buildCmd)
 }
 
-func runBuild(args []string) {
-	gocBuild, err := build.NewBuild(buildFlags, args, buildOutput)
+func runBuild(args []string, wd string) {
+	gocBuild, err := build.NewBuild(buildFlags, args, wd, buildOutput)
 	if err != nil {
 		log.Fatalf("Fail to build: %v", err)
 	}

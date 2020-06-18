@@ -29,11 +29,10 @@ func TestInvalidPackage(t *testing.T) {
 	workingDir := filepath.Join(baseDir, "../../tests/samples/simple_project")
 	gopath := ""
 
-	os.Chdir(workingDir)
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "on")
 
-	_, err := NewBuild("", []string{"example.com/simple-project"}, "")
+	_, err := NewBuild("", []string{"example.com/simple-project"}, "", workingDir)
 	assert.Equal(t, err, ErrWrongPackageTypeForBuild, "the package name should be invalid")
 }
 
@@ -41,12 +40,11 @@ func TestBasicBuildForModProject(t *testing.T) {
 	workingDir := filepath.Join(baseDir, "../tests/samples/simple_project")
 	gopath := ""
 
-	os.Chdir(workingDir)
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "on")
 
 	buildFlags, args, buildOutput := "", []string{"."}, ""
-	gocBuild, err := NewBuild(buildFlags, args, buildOutput)
+	gocBuild, err := NewBuild(buildFlags, args, buildOutput, workingDir)
 	assert.Equal(t, err, nil, "should create temporary directory successfully")
 
 	err = gocBuild.Build()

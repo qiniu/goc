@@ -67,17 +67,12 @@ func (b *Build) MvProjectsToTmp() error {
 }
 
 func (b *Build) mvProjectsToTmp() error {
-	path, err := os.Getwd()
-	if err != nil {
-		log.Errorf("Cannot get current working directory, the error is: %v", err)
-		return err
-	}
-	b.TmpDir = filepath.Join(os.TempDir(), TmpFolderName(path))
+	b.TmpDir = filepath.Join(os.TempDir(), TmpFolderName(b.WorkingDir))
 
 	// Delete previous tmp folder and its content
 	os.RemoveAll(b.TmpDir)
 	// Create a new tmp folder
-	err = os.MkdirAll(filepath.Join(b.TmpDir, "src"), os.ModePerm)
+	err := os.MkdirAll(filepath.Join(b.TmpDir, "src"), os.ModePerm)
 	if err != nil {
 		log.Errorf("Fail to create the temporary build directory. The err is: %v", err)
 		return err
@@ -146,19 +141,13 @@ func (b *Build) traversePkgsList() (isMod bool, root string, err error) {
 // and store it in the Build.tmpWorkdingDir
 func (b *Build) getTmpwd() (string, error) {
 	for _, pkg := range b.Pkgs {
-		path, err := os.Getwd()
-		if err != nil {
-			log.Errorf("cannot get current working directory: %v", err)
-			return "", fmt.Errorf("cannot get current working directory: %w", err)
-		}
-
 		index := -1
 		var parentPath string
 		if b.IsMod == false {
-			index = strings.Index(path, pkg.Root)
+			index = strings.Index(b.WorkingDir, pkg.Root)
 			parentPath = pkg.Root
 		} else {
-			index = strings.Index(path, pkg.Module.Dir)
+			index = strings.Index(b.WorkingDir, pkg.Module.Dir)
 			parentPath = pkg.Module.Dir
 		}
 
@@ -166,7 +155,7 @@ func (b *Build) getTmpwd() (string, error) {
 			return "", ErrGocShouldExecInProject
 		}
 		// b.TmpWorkingDir = filepath.Join(b.TmpDir, path[len(parentPath):])
-		return filepath.Join(b.TmpDir, path[len(parentPath):]), nil
+		return filepath.Join(b.TmpDir, b.WorkingDir[len(parentPath):]), nil
 	}
 
 	return "", ErrShouldNotReached
@@ -177,16 +166,14 @@ func (b *Build) findWhereToInstall() (string, error) {
 		return GOBIN, nil
 	}
 
-	// old GOPATH dir
-	GOPATH := os.Getenv("GOPATH")
 	if false == b.IsMod {
 		if b.Root == "" {
 			return "", ErrNoplaceToInstall
 		}
 		return filepath.Join(b.Root, "bin"), nil
 	}
-	if GOPATH != "" {
-		return filepath.Join(strings.Split(GOPATH, ":")[0], "bin"), nil
+	if b.OriGOPATH != "" {
+		return filepath.Join(strings.Split(b.OriGOPATH, ":")[0], "bin"), nil
 	}
 	return filepath.Join(os.Getenv("HOME"), "go", "bin"), nil
 }

@@ -39,13 +39,12 @@ func TestGeneratedBinary(t *testing.T) {
 	workingDir := filepath.Join(baseDir, "../tests/samples/simple_project")
 	gopath := ""
 
-	os.Chdir(workingDir)
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "on")
 
 	buildFlags, buildOutput = "", ""
 	args := []string{"."}
-	runBuild(args)
+	runBuild(args, workingDir)
 
 	obj := filepath.Join(".", "simple-project")
 	fInfo, err := os.Lstat(obj)

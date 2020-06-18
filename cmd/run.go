@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"os"
 
 	"github.com/qiniu/goc/pkg/build"
 	"github.com/qiniu/goc/pkg/cover"
@@ -36,7 +37,11 @@ It is exactly behave as 'go run .' in addition of some internal goc features.`,
 goc run .
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		gocBuild, err := build.NewBuild(buildFlags, args, buildOutput)
+		wd, err := os.Getwd()
+		if err != nil {
+			log.Fatalf("Fail to build: %v", err)
+		}
+		gocBuild, err := build.NewBuild(buildFlags, args, buildOutput, wd)
 		if err != nil {
 			log.Fatalf("Fail to run: %v", err)
 		}

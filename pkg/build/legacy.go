@@ -50,13 +50,6 @@ func (b *Build) cpLegacyProject() {
 // only cp dependency in root(current gopath),
 // skip deps in other GOPATHs
 func (b *Build) cpDepPackages(pkg *cover.Package, visited map[string]bool) {
-	/*
-		oriGOPATH := os.Getenv("GOPATH")
-		if oriGOPATH == "" {
-			oriGOPATH = filepath.Join(os.Getenv("HOME"), "go")
-		}
-		gopaths := strings.Split(oriGOPATH, ":")
-	*/
 	gopath := pkg.Root
 	for _, dep := range pkg.Deps {
 		src := filepath.Join(gopath, "src", dep)

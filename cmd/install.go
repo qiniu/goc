@@ -17,6 +17,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/qiniu/goc/pkg/build"
 	"github.com/qiniu/goc/pkg/cover"
 	log "github.com/sirupsen/logrus"
@@ -40,7 +42,11 @@ goc install --center=http://127.0.0.1:7777
 goc build --buildflags="-ldflags '-extldflags -static' -tags='embed kodo'"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		runInstall(args)
+		wd, err := os.Getwd()
+		if err != nil {
+			log.Fatalf("Fail to build: %v", err)
+		}
+		runInstall(args, wd)
 	},
 }
 
@@ -49,8 +55,8 @@ func init() {
 	rootCmd.AddCommand(installCmd)
 }
 
-func runInstall(args []string) {
-	gocBuild, err := build.NewInstall(buildFlags, args)
+func runInstall(args []string, wd string) {
+	gocBuild, err := build.NewInstall(buildFlags, args, wd)
 	if err != nil {
 		log.Fatalf("Fail to install: %v", err)
 	}
