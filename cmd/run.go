@@ -41,7 +41,7 @@ goc run .
 		if err != nil {
 			log.Fatalf("Fail to build: %v", err)
 		}
-		gocBuild, err := build.NewBuild(buildFlags, args, buildOutput, wd)
+		gocBuild, err := build.NewBuild(buildFlags, args, wd, buildOutput)
 		if err != nil {
 			log.Fatalf("Fail to run: %v", err)
 		}

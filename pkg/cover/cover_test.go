@@ -27,6 +27,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -303,4 +304,41 @@ func TestFindInternal(t *testing.T) {
 			t.Errorf("hasInternalPath check failed for importPath %s", tc.ImportPath)
 		}
 	}
+}
+
+func TestExecuteForSimpleModProject(t *testing.T) {
+	workingDir := "../../tests/samples/simple_project"
+	gopath := ""
+
+	os.Setenv("GOPATH", gopath)
+	os.Setenv("GO111MODULE", "on")
+
+	testDir := filepath.Join(os.TempDir(), "goc-build-test")
+	copy.Copy(workingDir, testDir)
+
+	Execute("", gopath, testDir, "count", "http://127.0.0.1:7777")
+
+	_, err := os.Lstat(filepath.Join(testDir, "http_cover_apis_auto_generated.go"))
+	if !assert.Equal(t, err, nil) {
+		assert.FailNow(t, "should generate http_cover_apis_auto_generated.go")
+	}
+}
+
+func TestListPackagesForSimpleModProject(t *testing.T) {
+	workingDir := "../../tests/samples/simple_project"
+	gopath := ""
+
+	os.Setenv("GOPATH", gopath)
+	os.Setenv("GO111MODULE", "on")
+
+	pkgs, _ := ListPackages(workingDir, "-json ./...", "")
+	if !assert.Equal(t, len(pkgs), 1) {
+		assert.FailNow(t, "should only have one pkg")
+	}
+	if pkg, ok := pkgs["example.com/simple-project"]; ok {
+		assert.Equal(t, pkg.Module.Path, "example.com/simple-project")
+	} else {
+		assert.FailNow(t, "cannot get the pkg: example.com/simple-project")
+	}
+
 }

@@ -36,6 +36,7 @@ Find more information at:
 `,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		log.SetReportCaller(true)
+		log.SetLevel(log.InfoLevel)
 		log.SetFormatter(&log.TextFormatter{
 			FullTimestamp: true,
 			CallerPrettyfier: func(f *runtime.Frame) (string, string) {

@@ -149,5 +149,7 @@ func checkParameters(args []string, workingDir string) error {
 	if workingDir == "" {
 		return ErrInvalidWorkingDir
 	}
+
+	log.Infof("Working directory: %v", workingDir)
 	return nil
 }

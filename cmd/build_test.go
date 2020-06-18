@@ -46,7 +46,7 @@ func TestGeneratedBinary(t *testing.T) {
 	args := []string{"."}
 	runBuild(args, workingDir)
 
-	obj := filepath.Join(".", "simple-project")
+	obj := filepath.Join(workingDir, "simple-project")
 	fInfo, err := os.Lstat(obj)
 	assert.Equal(t, err, nil, "the binary should be generated.")
 	assert.Equal(t, startTime.Before(fInfo.ModTime()), true, obj+"new binary should be generated, not the old one")

@@ -46,7 +46,7 @@ func TestNewDirParseInLegacyProject(t *testing.T) {
 		t.Fatalf("The New GOPATH is wrong. newgopath: %v, tmpdir: %v", b.NewGOPATH, b.TmpDir)
 	}
 
-	b, _ = NewBuild("", []string{"."}, "", workingDir)
+	b, _ = NewBuild("", []string{"."}, workingDir, "")
 	if -1 == strings.Index(b.TmpWorkingDir, b.TmpDir) {
 		t.Fatalf("Directory parse error. newwd: %v, tmpdir: %v", b.TmpWorkingDir, b.TmpDir)
 	}
@@ -73,7 +73,7 @@ func TestNewDirParseInModProject(t *testing.T) {
 		t.Fatalf("The New GOPATH is wrong. newgopath: %v, tmpdir: %v", b.NewGOPATH, b.TmpDir)
 	}
 
-	b, _ = NewBuild("", []string{"."}, "", workingDir)
+	b, _ = NewBuild("", []string{"."}, workingDir, "")
 	if -1 == strings.Index(b.TmpWorkingDir, b.TmpDir) {
 		t.Fatalf("Directory parse error. newwd: %v, tmpdir: %v", b.TmpWorkingDir, b.TmpDir)
 	}
@@ -92,7 +92,7 @@ func TestLegacyProjectNotInGoPATH(t *testing.T) {
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "off")
 
-	b, _ := NewBuild("", []string{"."}, "", workingDir)
+	b, _ := NewBuild("", []string{"."}, workingDir, "")
 	if b.OriGOPATH != b.NewGOPATH {
 		t.Fatalf("New GOPATH should be same with old GOPATH, for this kind of project. New: %v, old: %v", b.NewGOPATH, b.OriGOPATH)
 	}

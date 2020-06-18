@@ -36,7 +36,7 @@ func (b *Build) MvProjectsToTmp() error {
 	}
 	listArgs = append(listArgs, "./...")
 	var err error
-	b.Pkgs, err = cover.ListPackages(".", strings.Join(listArgs, " "), "")
+	b.Pkgs, err = cover.ListPackages(b.WorkingDir, strings.Join(listArgs, " "), "")
 	if err != nil {
 		log.Errorln(err)
 		return err
@@ -81,6 +81,7 @@ func (b *Build) mvProjectsToTmp() error {
 
 	// traverse pkg list to get project meta info
 	b.IsMod, b.Root, err = b.traversePkgsList()
+	log.Infof("mod project? %v", b.IsMod)
 	if errors.Is(err, ErrShouldNotReached) {
 		return fmt.Errorf("mvProjectsToTmp with a empty project: %w", err)
 	}
