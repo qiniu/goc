@@ -17,7 +17,6 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -49,7 +48,13 @@ Find more information at:
 		})
 		if debugGoc == false {
 			// we only need log in debug mode
-			log.SetOutput(ioutil.Discard)
+			log.SetLevel(log.FatalLevel)
+			log.SetFormatter(&log.TextFormatter{
+				DisableTimestamp: true,
+				CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+					return "", ""
+				},
+			})
 		}
 	},
 }

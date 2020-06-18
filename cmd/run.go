@@ -36,7 +36,10 @@ It is exactly behave as 'go run .' in addition of some internal goc features.`,
 goc run .
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		gocBuild, _ := build.NewBuild(buildFlags, packages, buildOutput)
+		gocBuild, err := build.NewBuild(buildFlags, args, buildOutput)
+		if err != nil {
+			log.Fatalf("Fail to run: %v", err)
+		}
 		gocBuild.GoRunExecFlag = goRunExecFlag
 		gocBuild.GoRunArguments = goRunArguments
 		defer gocBuild.Clean()
@@ -53,7 +56,9 @@ goc run .
 		// execute covers for the target source with original buildFlags and new GOPATH( tmp:original )
 		cover.Execute(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir, mode, gocServer)
 
-		gocBuild.Run()
+		if err := gocBuild.Run(); err != nil {
+			log.Fatalln("Fail to run: %v", err)
+		}
 	},
 }
 

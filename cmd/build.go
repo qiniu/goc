@@ -17,7 +17,7 @@
 package cmd
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/qiniu/goc/pkg/build"
 	"github.com/qiniu/goc/pkg/cover"
@@ -28,7 +28,7 @@ var buildCmd = &cobra.Command{
 	Use:   "build",
 	Short: "Do cover for all go files and execute go build command",
 	Long: `
-First of all, this build command will copy the project code and its necessary dependencies to a temporary directory, then do cover for the target in this temporary directory, finally go build command will be executed and binaries generated to their original place.
+Build command will copy the project code and its necessary dependencies to a temporary directory, then do cover for the target, binaries will be generated to their original place.
 `,
 	Example: `
 # Build the current binary with cover variables injected. The binary will be generated in the current folder.
@@ -44,7 +44,7 @@ goc build --output /to/this/path
 goc build --buildflags="-ldflags '-extldflags -static' -tags='embed kodo'"
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		runBuild()
+		runBuild(args)
 	},
 }
 
@@ -52,14 +52,14 @@ var buildOutput string
 
 func init() {
 	addBuildFlags(buildCmd.Flags())
-	buildCmd.Flags().StringVar(&buildOutput, "output", "", "it forces build to write the resulting executable or object to the named output file or directory")
+	buildCmd.Flags().StringVar(&buildOutput, "output", "", "it forces build to write the resulting executable to the named output file")
 	rootCmd.AddCommand(buildCmd)
 }
 
-func runBuild() {
-	gocBuild, err := build.NewBuild(buildFlags, packages, buildOutput)
+func runBuild(args []string) {
+	gocBuild, err := build.NewBuild(buildFlags, args, buildOutput)
 	if err != nil {
-		log.Fatalf("Fail to NewBuild: %v", err)
+		log.Fatalf("Fail to build: %v", err)
 	}
 	// remove temporary directory if needed
 	defer gocBuild.Clean()

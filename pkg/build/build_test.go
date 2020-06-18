@@ -17,10 +17,11 @@
 package build
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestInvalidPackage(t *testing.T) {
@@ -32,7 +33,7 @@ func TestInvalidPackage(t *testing.T) {
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "on")
 
-	_, err := NewBuild("", "example.com/simple-project", "")
+	_, err := NewBuild("", []string{"example.com/simple-project"}, "")
 	assert.Equal(t, err, ErrWrongPackageTypeForBuild, "the package name should be invalid")
 }
 
@@ -44,8 +45,8 @@ func TestBasicBuildForModProject(t *testing.T) {
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "on")
 
-	buildFlags, packages, buildOutput := "", ".", ""
-	gocBuild, err := NewBuild(buildFlags, packages, buildOutput)
+	buildFlags, args, buildOutput := "", []string{"."}, ""
+	gocBuild, err := NewBuild(buildFlags, args, buildOutput)
 	assert.Equal(t, err, nil, "should create temporary directory successfully")
 
 	err = gocBuild.Build()

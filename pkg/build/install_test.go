@@ -1,10 +1,11 @@
 package build
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBasicInstallForModProject(t *testing.T) {
@@ -15,7 +16,7 @@ func TestBasicInstallForModProject(t *testing.T) {
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "on")
 
-	buildFlags, packages := "", "."
+	buildFlags, packages := "", []string{"."}
 	gocBuild, err := NewInstall(buildFlags, packages)
 	assert.Equal(t, err, nil, "should create temporary directory successfully")
 

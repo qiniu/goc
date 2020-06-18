@@ -29,15 +29,24 @@ import (
 	"github.com/spf13/viper"
 )
 
-func (b *Build) MvProjectsToTmp() {
+func (b *Build) MvProjectsToTmp() error {
 	listArgs := []string{"-json"}
 	if len(b.BuildFlags) != 0 {
 		listArgs = append(listArgs, b.BuildFlags)
 	}
 	listArgs = append(listArgs, "./...")
-	b.Pkgs = cover.ListPackages(".", strings.Join(listArgs, " "), "")
+	var err error
+	b.Pkgs, err = cover.ListPackages(".", strings.Join(listArgs, " "), "")
+	if err != nil {
+		log.Errorln(err)
+		return err
+	}
 
-	b.mvProjectsToTmp()
+	err = b.mvProjectsToTmp()
+	if err != nil {
+		log.Errorf("Fail to move the project to temporary directory")
+		return err
+	}
 	b.OriGOPATH = os.Getenv("GOPATH")
 	if b.IsMod == true {
 		b.NewGOPATH = ""
@@ -53,8 +62,8 @@ func (b *Build) MvProjectsToTmp() {
 	if b.Root == "" && b.IsMod == false {
 		b.NewGOPATH = b.OriGOPATH
 	}
-	log.Printf("New GOPATH: %v", b.NewGOPATH)
-	return
+	log.Infof("New GOPATH: %v", b.NewGOPATH)
+	return nil
 }
 
 func (b *Build) mvProjectsToTmp() error {
@@ -84,7 +93,7 @@ func (b *Build) mvProjectsToTmp() error {
 	b.TmpWorkingDir, err = b.getTmpwd()
 	if err != nil {
 		log.Errorf("fail to get workding directory in temporary directory: %v", err)
-		return fmt.Errorf("fail to get workding directory in temporary directory: %w", err)
+		return fmt.Errorf("getTmpwd failed with error: %w", err)
 	}
 	// issue #14
 	// if b.Root == "", then the project is non-standard project
@@ -109,7 +118,7 @@ func TmpFolderName(path string) string {
 	sum := sha256.Sum256([]byte(path))
 	h := fmt.Sprintf("%x", sum[:6])
 
-	return "goc-" + h
+	return "goc-build-" + h
 }
 
 // traversePkgsList travse the Build.Pkgs list
@@ -128,7 +137,7 @@ func (b *Build) traversePkgsList() (isMod bool, root string, err error) {
 		isMod = true
 		return
 	}
-	log.Error("should not reach here")
+	log.Error(ErrShouldNotReached)
 	err = ErrShouldNotReached
 	return
 }

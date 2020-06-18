@@ -17,13 +17,14 @@
 package cmd
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var baseDir string
@@ -42,8 +43,9 @@ func TestGeneratedBinary(t *testing.T) {
 	os.Setenv("GOPATH", gopath)
 	os.Setenv("GO111MODULE", "on")
 
-	buildFlags, packages, buildOutput = "", ".", ""
-	runBuild()
+	buildFlags, buildOutput = "", ""
+	args := []string{"."}
+	runBuild(args)
 
 	obj := filepath.Join(".", "simple-project")
 	fInfo, err := os.Lstat(obj)

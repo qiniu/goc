@@ -42,6 +42,6 @@ goc list [flags]
 }
 
 func init() {
-	listCmd.Flags().StringVarP(&center, "center", "", "http://127.0.0.1:7777", "cover profile host center")
+	addBasicFlags(listCmd.Flags())
 	rootCmd.AddCommand(listCmd)
 }

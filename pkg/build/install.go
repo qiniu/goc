@@ -20,21 +20,28 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
 
 // NewInstall creates a Build struct which can install from goc temporary directory
-func NewInstall(buildflags string, packages string) (*Build, error) {
+func NewInstall(buildflags string, args []string) (*Build, error) {
+	if len(args) > 1 {
+		log.Errorf("Too many args")
+		return nil, ErrTooManyArgs
+	}
 	b := &Build{
 		BuildFlags: buildflags,
-		Packages:   packages,
+		Packages:   strings.Join(args, " "),
 	}
 	if false == b.validatePackageForInstall() {
 		log.Errorln(ErrWrongPackageTypeForInstall)
 		return nil, ErrWrongPackageTypeForInstall
 	}
-	b.MvProjectsToTmp()
+	if err := b.MvProjectsToTmp(); err != nil {
+		return nil, err
+	}
 	return b, nil
 }
 
@@ -61,18 +68,18 @@ func (b *Build) Install() error {
 	err = cmd.Start()
 	if err != nil {
 		log.Errorf("Fail to execute: %v. The error is: %v", cmd.Args, err)
-		return fmt.Errorf("fail to execute: %v: %w", cmd.Args, err)
+		return err
 	}
 	if err = cmd.Wait(); err != nil {
 		log.Errorf("go install failed. The error is: %v", err)
-		return fmt.Errorf("go install failed: %w", err)
+		return err
 	}
 	log.Infof("Go install successful. Binary installed in: %v", whereToInstall)
 	return nil
 }
 
 func (b *Build) validatePackageForInstall() bool {
-	if b.Packages == "." || b.Packages == "./..." {
+	if b.Packages == "." || b.Packages == "" || b.Packages == "./..." {
 		return true
 	}
 	return false
