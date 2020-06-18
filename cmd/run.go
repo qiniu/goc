@@ -57,7 +57,7 @@ goc run .
 		cover.Execute(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir, mode, gocServer)
 
 		if err := gocBuild.Run(); err != nil {
-			log.Fatalln("Fail to run: %v", err)
+			log.Fatalf("Fail to run: %v", err)
 		}
 	},
 }
