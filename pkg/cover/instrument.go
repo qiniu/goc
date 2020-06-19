@@ -148,7 +148,6 @@ func registerHandlers() {
 		log.Fatalf("listen failed, err:%v", err)
 	}
 	
-	fmt.Printf("[goc] goc agent listened on: %s \n", host)
 	profileAddr := "http://" + host
 	if resp, err := registerSelf(profileAddr); err != nil {
 		log.Fatalf("register address %v failed, err: %v, response: %v", profileAddr, err, string(resp))
