@@ -9,6 +9,8 @@
 goc is a comprehensive coverage testing system for The Go Programming Language, especially for some complex scenarios，like system testing code coverage collection and
 accurate testing.
 
+![Demo](docs/images/intro.gif)
+
 > **Note:**
 >
 > This readme and related documentation are Work in Progress.
