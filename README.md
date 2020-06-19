@@ -9,11 +9,8 @@
 goc is a comprehensive coverage testing system for The Go Programming Language, especially for some complex scenarios，like system testing code coverage collection and
 accurate testing.
 
+Enjoy, Have Fun!
 ![Demo](docs/images/intro.gif)
-
-> **Note:**
->
-> This readme and related documentation are Work in Progress.
 
 ## Installation
 To install goc tool, you need to install Go first (**version 1.11+ is required**), then:
@@ -57,7 +54,9 @@ Goc can collect code coverages at runtime for your long-run golang applications.
 - [ ] Optimize the performance costed by code coverage counters.
 
 ## Contributing
-We welcome all kinds of contribution, including bug reports, feature requests, documentation improvements, UI refinements, etc. 
+We welcome all kinds of contribution, including bug reports, feature requests, documentation improvements, UI refinements, etc.
+
+Thanks to all [contributors](https://github.com/qiniu/goc/graphs/contributors)!!
 
 ## License
 Goc is released under the Apache 2.0 license. See [LICENSE.txt](https://github.com/qiniu/goc/blob/master/LICENSE)
