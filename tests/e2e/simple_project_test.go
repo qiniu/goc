@@ -92,7 +92,7 @@ var _ = Describe("E2E", func() {
 				Expect(err).To(BeNil(), "the binary cannot be disassembled")
 
 				cnt := strings.Count(string(out), "GoCover")
-				Expect(cnt).To(BeNumerically(">", 0), "GoCover varibale should be in the binary")
+				Expect(cnt).To(BeNumerically(">", 0), "GoCover variable should be in the binary")
 
 				cnt = strings.Count(string(out), "main.registerSelf")
 				Expect(cnt).To(BeNumerically(">", 0), "main.registerSelf function should be in the binary")

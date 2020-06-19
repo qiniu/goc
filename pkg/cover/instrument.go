@@ -220,13 +220,13 @@ func registerSelf(address string) ([]byte, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil && isNetworkError(err) {
-		log.Printf("[goc][WARN]error occured:%v, try again", err)
+		log.Printf("[goc][WARN]error occurred:%v, try again", err)
 		resp, err = http.DefaultClient.Do(req)
 	}
 	defer resp.Body.Close()
 
 	if err != nil {
-		return nil, fmt.Errorf("registed faile, err:%v", err)
+		return nil, fmt.Errorf("failed to register into coverage center, err:%v", err)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
@@ -235,7 +235,7 @@ func registerSelf(address string) ([]byte, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		err = fmt.Errorf("registed failed, response code %d", resp.StatusCode)
+		err = fmt.Errorf("failed to register into coverage center, response code %d", resp.StatusCode)
 	}
 
 	return body, err

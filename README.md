@@ -44,7 +44,6 @@ Goc can collect code coverages at runtime for your long-run golang applications.
     enricofoltran/simple-go-server/main.go:74.46,76.4 1 0
     ...   
     ```
-    Enjoy, Have Fun!
 
 ## RoadMap
 - [x] Support code coverage collection for system testing.
