@@ -33,8 +33,9 @@ var runCmd = &cobra.Command{
 	Short: "Run covers and runs the named main Go package",
 	Long: `Run covers and runs the named main Go package, 
 It is exactly behave as 'go run .' in addition of some internal goc features.`,
-	Example: `
+	Example: `	
 goc run .
+goc run . [--buildflags] [--exec] [--arguments]
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		wd, err := os.Getwd()
