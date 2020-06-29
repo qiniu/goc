@@ -58,7 +58,7 @@ var buildOutput string
 
 func init() {
 	addBuildFlags(buildCmd.Flags())
-	buildCmd.Flags().StringVar(&buildOutput, "output", "", "it forces build to write the resulting executable to the named output file")
+	buildCmd.Flags().StringVarP(&buildOutput, "output", "o", "", "it forces build to write the resulting executable to the named output file")
 	rootCmd.AddCommand(buildCmd)
 }
 
