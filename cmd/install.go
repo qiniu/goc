@@ -33,7 +33,7 @@ Install command will copy the project code and its necessary dependencies to a t
 `,
 	Example: `
 # Install all binaries with cover variables injected. The binary will be installed in $GOPATH/bin or $HOME/go/bin if directory existed.
-goc install --packages="./..."
+goc install ./...
 
 # Install the current binary with cover variables injected, and set the registry center to http://127.0.0.1:7777.
 goc install --center=http://127.0.0.1:7777 

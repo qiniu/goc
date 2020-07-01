@@ -165,7 +165,7 @@ func (c *PrComment) GetPrChangedFiles() (files []string, err error) {
 func GenCommentContent(commentPrefix string, delta cover.DeltaCovList) string {
 	var buf bytes.Buffer
 	table := tablewriter.NewWriter(&buf)
-	table.SetHeader([]string{"File", "BASE Coverage", "New Coverage", "Delta"})
+	table.SetHeader([]string{"File", "Base Coverage", "New Coverage", "Delta"})
 	table.SetAutoFormatHeaders(false)
 	table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
 	table.SetCenterSeparator("|")

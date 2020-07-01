@@ -11,8 +11,6 @@ var (
 	mode       string
 	debugGoc   bool
 	buildFlags string
-	// packages   string
-	appArgs string
 
 	goRunExecFlag  string
 	goRunArguments string
@@ -41,7 +39,6 @@ func addBuildFlags(cmdset *pflag.FlagSet) {
 
 func addRunFlags(cmdset *pflag.FlagSet) {
 	addBuildFlags(cmdset)
-	cmdset.StringVar(&appArgs, "appargs", "", "specify the application's arguments")
 	cmdset.StringVar(&goRunExecFlag, "exec", "", "same as -exec flag in 'go run' command")
 	cmdset.StringVar(&goRunArguments, "arguments", "", "same as 'arguments' in 'go run' command")
 	// bind to viper

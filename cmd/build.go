@@ -34,7 +34,7 @@ Build command will copy the project code and its necessary dependencies to a tem
 `,
 	Example: `
 # Build the current binary with cover variables injected. The binary will be generated in the current folder.
-goc build
+goc build .
 
 # Build the current binary with cover variables injected, and set the registry center to http://127.0.0.1:7777.
 goc build --center=http://127.0.0.1:7777 
@@ -58,7 +58,7 @@ var buildOutput string
 
 func init() {
 	addBuildFlags(buildCmd.Flags())
-	buildCmd.Flags().StringVar(&buildOutput, "output", "", "it forces build to write the resulting executable to the named output file")
+	buildCmd.Flags().StringVarP(&buildOutput, "output", "o", "", "it forces build to write the resulting executable to the named output file")
 	rootCmd.AddCommand(buildCmd)
 }
 
