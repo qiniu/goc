@@ -259,12 +259,14 @@ func ListPackages(dir string, args string, newgopath string) (map[string]*Packag
 	if newgopath != "" {
 		cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", newgopath))
 	}
-	out, err := cmd.CombinedOutput()
+	var errbuf bytes.Buffer
+	cmd.Stderr = &errbuf
+	out, err := cmd.Output()
 	if err != nil {
-		log.Errorf("excute `go list -json ./...` command failed, err: %v, out: %v", err, string(out))
+		log.Errorf("excute `go list -json ./...` command failed, err: %v, stdout: %v, stderr: %v", err, string(out), errbuf.String())
 		return nil, ErrCoverListFailed
 	}
-
+	log.Infof("\n%v", errbuf.String())
 	dec := json.NewDecoder(bytes.NewReader(out))
 	pkgs := make(map[string]*Package, 0)
 	for {
