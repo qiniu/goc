@@ -60,7 +60,7 @@ goc run . [--buildflags] [--exec] [--arguments]
 		fmt.Printf("[goc] goc server started: %s \n", gocServer)
 
 		// execute covers for the target source with original buildFlags and new GOPATH( tmp:original )
-		cover.Execute(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir, mode, gocServer)
+		cover.Execute(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir, mode, "", gocServer)
 
 		if err := gocBuild.Run(); err != nil {
 			log.Fatalf("Fail to run: %v", err)

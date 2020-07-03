@@ -64,7 +64,7 @@ func runInstall(args []string, wd string) {
 	defer gocBuild.Clean()
 	// doCover with original buildFlags, with new GOPATH( tmp:original )
 	// in the tmp directory
-	cover.Execute(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir, mode, center)
+	cover.Execute(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir, mode, agentPort, center)
 	// do install in the temporary directory
 	err = gocBuild.Install()
 	if err != nil {

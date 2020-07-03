@@ -316,7 +316,7 @@ func TestExecuteForSimpleModProject(t *testing.T) {
 	testDir := filepath.Join(os.TempDir(), "goc-build-test")
 	copy.Copy(workingDir, testDir)
 
-	Execute("", gopath, testDir, "count", "http://127.0.0.1:7777")
+	Execute("", gopath, testDir, "count", "", "http://127.0.0.1:7777")
 
 	_, err := os.Lstat(filepath.Join(testDir, "http_cover_apis_auto_generated.go"))
 	if !assert.Equal(t, err, nil) {
