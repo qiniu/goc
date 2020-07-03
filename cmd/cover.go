@@ -48,7 +48,7 @@ goc cover --center=http://127.0.0.1:7777 --target=/path/to/target --mode=atomic
 			log.Fatalf("unknown -mode %v", mode)
 		}
 
-		cover.Execute(buildFlags, "", target, mode, center)
+		cover.Execute(buildFlags, "", target, mode, agentPort, center)
 	},
 }
 
