@@ -3,6 +3,7 @@
 ![](https://github.com/qiniu/goc/workflows/ut-check/badge.svg)
 ![](https://github.com/qiniu/goc/workflows/style-check/badge.svg)
 ![](https://github.com/qiniu/goc/workflows/e2e%20test/badge.svg)
+![Build Release](https://github.com/qiniu/goc/workflows/Build%20Release/badge.svg)
 [![codecov](https://codecov.io/gh/qiniu/goc/branch/master/graph/badge.svg)](https://codecov.io/gh/qiniu/goc)
 [![GoDoc](https://godoc.org/github.com/qiniu/goc?status.svg)](https://godoc.org/github.com/qiniu/goc)
 
