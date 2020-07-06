@@ -9,3 +9,6 @@ goc
 
 # the temp file to save service address
 _svrs_address.txt
+
+# other
+*.iml

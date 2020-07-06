@@ -126,7 +126,6 @@ func Execute(args, newGopath, target, mode, agentPort, center string) error {
 		log.Errorf("Target directory %s not exist", target)
 		return ErrCoverPkgFailed
 	}
-
 	listArgs := []string{"-json"}
 	if len(args) != 0 {
 		listArgs = append(listArgs, args)
@@ -302,7 +301,7 @@ func AddCounters(pkg *Package, mode, newgopath string) (*PackageCover, error) {
 		cmd := buildCoverCmd(file, coverVar, pkg, mode, newgopath)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return nil, fmt.Errorf("execute go tool cover -mode=atomic -var %s -o %s/%s failed, err: %v, out: %s", coverVar.Var, pkg.Dir, file, err, string(out))
+			return nil, fmt.Errorf("execute go tool cover -mode=%s -var %s -o %s/%s failed, err: %v, out: %s", mode, coverVar.Var, pkg.Dir, file, err, string(out))
 		}
 	}
 

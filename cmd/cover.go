@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"github.com/qiniu/goc/pkg/cover"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -41,14 +40,7 @@ goc cover --center=http://127.0.0.1:7777 --target=/path/to/target --mode=atomic
 	Run: func(cmd *cobra.Command, args []string) {
 		var buildFlags string
 		buildFlags = viper.GetString("buildflags")
-		if mode == "" {
-			log.Fatalf("Error: flag needs an argument: -mode %v", mode)
-		}
-		if mode != "set" && mode != "count" && mode != "atomic" {
-			log.Fatalf("unknown -mode %v", mode)
-		}
-
-		cover.Execute(buildFlags, "", target, mode, agentPort, center)
+		cover.Execute(buildFlags, "", target, coverMode.String(), agentPort.String(), center)
 	},
 }
 
