@@ -6,11 +6,11 @@ EVENT_DATA=$(cat $GITHUB_EVENT_PATH)
 echo $EVENT_DATA | jq .
 UPLOAD_URL=$(echo $EVENT_DATA | jq -r .release.upload_url)
 UPLOAD_URL=${UPLOAD_URL/\{?name,label\}/}
-RELEASE_NAME=$(echo $EVENT_DATA | jq -r .release.tag_name)
+RELEASE_VERSION=$(echo $EVENT_DATA | jq -r .release.tag_name)
 PROJECT_NAME=$(basename $GITHUB_REPOSITORY)
-NAME="${NAME:-${PROJECT_NAME}-${RELEASE_NAME}}-${GOOS}-${GOARCH}"
+NAME="${NAME:-${PROJECT_NAME}-${RELEASE_VERSION}}-${GOOS}-${GOARCH}"
 
-go build .
+CGO_ENABLED=0 go build -ldflags "-X 'github.com/qiniu/goc/cmd.version=${RELEASE_VERSION}'" .
 
 ARCHIVE=tmp.tar.gz
 FILE_LIST=goc

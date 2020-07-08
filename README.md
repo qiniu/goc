@@ -3,6 +3,7 @@
 ![](https://github.com/qiniu/goc/workflows/ut-check/badge.svg)
 ![](https://github.com/qiniu/goc/workflows/style-check/badge.svg)
 ![](https://github.com/qiniu/goc/workflows/e2e%20test/badge.svg)
+![Build Release](https://github.com/qiniu/goc/workflows/Build%20Release/badge.svg)
 [![codecov](https://codecov.io/gh/qiniu/goc/branch/master/graph/badge.svg)](https://codecov.io/gh/qiniu/goc)
 [![GoDoc](https://godoc.org/github.com/qiniu/goc?status.svg)](https://godoc.org/github.com/qiniu/goc)
 
@@ -44,6 +45,14 @@ Goc can collect code coverages at runtime for your long-run golang applications.
     enricofoltran/simple-go-server/main.go:74.46,76.4 1 0
     ...   
     ```
+
+## Tips
+
+1. To understand the execution details of goc tool, you can use the `--debug` flag. Also we appreciate if you can provide such logs when submitting a bug to us.
+
+2. By default, the covered service will listen a random port in order to communicate with the goc server. this may not be suitable in [docker](https://docs.docker.com/engine/reference/commandline/run/#publish-or-expose-port--p---expose) or [kubernetes](https://kubernetes.io/docs/concepts/services-networking/service/#defining-a-service) environment since the port must be exposed explicitly in order to be accessible by others in such environment. For this kind of scenario, you can use `--agentport` flag to specific a fixed port when calling `goc build` or `goc install`.
+
+3. To use a remote goc server, you can use `--center` flag to compile the target service with `goc build` or `goc install` command.
 
 ## RoadMap
 - [x] Support code coverage collection for system testing.

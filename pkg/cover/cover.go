@@ -46,6 +46,7 @@ var (
 // TestCover is a collection of all counters
 type TestCover struct {
 	Mode         string
+	AgentPort    string
 	Center       string // cover profile host center
 	MainPkgCover *PackageCover
 	DepsCover    []*PackageCover
@@ -120,7 +121,7 @@ type PackageError struct {
 }
 
 //Execute execute go tool cover for all the .go files in the target folder
-func Execute(args, newGopath, target, mode, center string) error {
+func Execute(args, newGopath, target, mode, agentPort, center string) error {
 	if !isDirExist(target) {
 		log.Errorf("Target directory %s not exist", target)
 		return ErrCoverPkgFailed
@@ -152,6 +153,7 @@ func Execute(args, newGopath, target, mode, center string) error {
 			// new a testcover for this service
 			tc := TestCover{
 				Mode:         mode,
+				AgentPort:    agentPort,
 				Center:       center,
 				MainPkgCover: mainCover,
 			}
@@ -259,12 +261,14 @@ func ListPackages(dir string, args string, newgopath string) (map[string]*Packag
 	if newgopath != "" {
 		cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", newgopath))
 	}
-	out, err := cmd.CombinedOutput()
+	var errbuf bytes.Buffer
+	cmd.Stderr = &errbuf
+	out, err := cmd.Output()
 	if err != nil {
-		log.Errorf("excute `go list -json ./...` command failed, err: %v, out: %v", err, string(out))
+		log.Errorf("excute `go list -json ./...` command failed, err: %v, stdout: %v, stderr: %v", err, string(out), errbuf.String())
 		return nil, ErrCoverListFailed
 	}
-
+	log.Infof("\n%v", errbuf.String())
 	dec := json.NewDecoder(bytes.NewReader(out))
 	pkgs := make(map[string]*Package, 0)
 	for {

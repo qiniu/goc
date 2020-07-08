@@ -260,8 +260,12 @@ func listen() (ln net.Listener, host string, err error) {
 			return
 		}
 	}
-
-	ln, err = net.Listen("tcp4", ":0")
+	agentPort := "{{.AgentPort }}"
+	if agentPort != "" {
+		ln, err = net.Listen("tcp4", agentPort)
+	} else {
+		ln, err = net.Listen("tcp4", ":0")
+	}
 	if err != nil {
 		return
 	}

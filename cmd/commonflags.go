@@ -9,6 +9,7 @@ var (
 	target     string
 	center     string
 	mode       string
+	agentPort  string
 	debugGoc   bool
 	buildFlags string
 
@@ -26,6 +27,7 @@ func addBasicFlags(cmdset *pflag.FlagSet) {
 func addCommonFlags(cmdset *pflag.FlagSet) {
 	addBasicFlags(cmdset)
 	cmdset.StringVar(&mode, "mode", "count", "coverage mode: set, count, atomic")
+	cmdset.StringVar(&agentPort, "agentport", "", "specify fixed port for registered service communicate with goc server. if not provided, using a random one")
 	cmdset.StringVar(&buildFlags, "buildflags", "", "specify the build flags")
 	// bind to viper
 	viper.BindPFlags(cmdset)
