@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"strings"
 )
 
 func TestClientAction(t *testing.T) {
@@ -31,9 +32,11 @@ func TestClientAction(t *testing.T) {
 
 	// regsiter service into goc server
 	var src Service
-	src.Name = "goc"
+	src.Name = "/home/goctest123/_package/newest/goc"
 	src.Address = "http://127.0.0.1:7777"
 	res, err := client.RegisterService(src)
+	srvPath := strings.Split(src.Name, "/")
+	src.Name = srvPath[len(srvPath)-1]
 	assert.NoError(t, err)
 	assert.Contains(t, string(res), "success")
 

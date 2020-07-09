@@ -17,6 +17,8 @@
 package cover
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -29,7 +31,7 @@ import (
 
 // Action provides methods to contact with the covered service under test
 type Action interface {
-	Profile() ([]byte, error)
+	Profile(param ProfileParam) ([]byte, error)
 	Clear() ([]byte, error)
 	InitSystem() ([]byte, error)
 	ListServices() ([]byte, error)
@@ -73,6 +75,8 @@ func (c *client) RegisterService(srv Service) ([]byte, error) {
 	if strings.TrimSpace(srv.Name) == "" {
 		return nil, fmt.Errorf("invalid service name")
 	}
+	srvPath := strings.Split(srv.Name, "/")
+	srv.Name = srvPath[len(srvPath)-1]
 	u := fmt.Sprintf("%s%s?name=%s&address=%s", c.Host, CoverRegisterServiceAPI, srv.Name, srv.Address)
 	res, err := c.do("POST", u, nil)
 	return res, err
@@ -88,11 +92,16 @@ func (c *client) ListServices() ([]byte, error) {
 	return services, err
 }
 
-func (c *client) Profile() ([]byte, error) {
+func (c *client) Profile(param ProfileParam) ([]byte, error) {
+	log.Printf("param:%+v", param)
 	u := fmt.Sprintf("%s%s", c.Host, CoverProfileAPI)
-	profile, err := c.do("GET", u, nil)
+	args, err := json.Marshal(param)
+	if err != nil {
+		return nil, err
+	}
+	profile, err := c.do("POST", u, bytes.NewReader(args))
 	if err != nil && isNetworkError(err) {
-		profile, err = c.do("GET", u, nil)
+		profile, err = c.do("POST", u, bytes.NewReader(args))
 	}
 
 	return profile, err

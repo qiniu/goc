@@ -45,7 +45,12 @@ goc profile --center=http://192.168.1.1:8080 -o ./coverage.cov
 goc profile --center=http://192.168.1.1:8080 --output=./coverage.cov
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		res, err := cover.NewWorker(center).Profile()
+		p := cover.ProfileParam{
+			Force:   force,
+			Name:    name,
+			Address: address,
+		}
+		res, err := cover.NewWorker(center).Profile(p)
 		if err != nil {
 			log.Fatalf("call host %v failed, err: %v, response: %v", center, err, string(res))
 		}
@@ -67,9 +72,13 @@ goc profile --center=http://192.168.1.1:8080 --output=./coverage.cov
 }
 
 var output string
+var force bool
 
 func init() {
 	profileCmd.Flags().StringVarP(&output, "output", "o", "", "download cover profile")
+	profileCmd.Flags().StringVarP(&name, "name", "n", "", "name list to get cover profile")
+	profileCmd.Flags().StringVarP(&address, "address", "a", "", "address list to get cover proflie")
+	profileCmd.Flags().BoolVarP(&force, "force", "f", false, "force")
 	addBasicFlags(profileCmd.Flags())
 	rootCmd.AddCommand(profileCmd)
 }

@@ -26,10 +26,12 @@ import (
 	"net/url"
 	"os"
 
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/tools/cover"
 	"k8s.io/test-infra/gopherage/pkg/cov"
+	"strings"
 )
 
 // DefaultStore implements the IPersistence interface
@@ -67,7 +69,7 @@ func GocServer(w io.Writer) *gin.Engine {
 	v1 := r.Group("/v1")
 	{
 		v1.POST("/cover/register", registerService)
-		v1.GET("/cover/profile", profile)
+		v1.POST("/cover/profile", profile)
 		v1.POST("/cover/clear", clear)
 		v1.POST("/cover/init", initSystem)
 		v1.GET("/cover/list", listServices)
@@ -80,6 +82,13 @@ func GocServer(w io.Writer) *gin.Engine {
 type Service struct {
 	Name    string `form:"name" json:"name" binding:"required"`
 	Address string `form:"address" json:"address" binding:"required"`
+}
+
+// ProfileParam is param of profile API (TODO)
+type ProfileParam struct {
+	Force   bool   `form:"force"`
+	Name    string `form:"name" json:"name"`
+	Address string `form:"address" json:"address"`
 }
 
 //listServices list all the registered services
@@ -120,11 +129,61 @@ func registerService(c *gin.Context) {
 }
 
 func profile(c *gin.Context) {
-	svrsUnderTest := DefaultStore.GetAll()
+	respByte, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	var param ProfileParam
+	json.Unmarshal(respByte, &param)
+	if param.Name != "" && param.Address != "" {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": "invalid param"})
+		return
+	}
+	nameList := strings.Split(param.Name, "&")
+	addrList := strings.Split(param.Address, "&")
+	svrsAll := DefaultStore.GetAll()
+	svrsUnderTest := make(map[string][]string)
+	if param.Name == "" && param.Address == "" {
+		svrsUnderTest = svrsAll
+	} else {
+		if param.Name != "" {
+			for _, name := range nameList {
+				miss := true
+				for svr, addrs := range svrsAll {
+					if svr == name {
+						svrsUnderTest[svr] = addrs
+						miss = false
+					}
+				}
+				if miss && !param.Force {
+					c.JSON(http.StatusNotFound, fmt.Sprintf("service [%s] not found!", name))
+					return
+				}
+			}
+		}
+		if param.Address != "" {
+			for _, addr := range addrList {
+				miss := true
+				for svr, addrs := range svrsAll {
+					for _, a := range addrs {
+						if a == addr {
+							svrsUnderTest[svr] = append(svrsUnderTest[svr], a)
+							miss = false
+						}
+					}
+				}
+				if miss && !param.Force {
+					c.JSON(http.StatusNotFound, fmt.Sprintf("address [%s] not found!", addr))
+					return
+				}
+			}
+		}
+	}
 	var mergedProfiles = make([][]*cover.Profile, len(svrsUnderTest))
-	for _, addrs := range svrsUnderTest {
-		for _, addr := range addrs {
-			pp, err := NewWorker(addr).Profile()
+	for _, svrs := range svrsUnderTest {
+		for _, addr := range svrs {
+			pp, err := NewWorker(addr).Profile(ProfileParam{})
 			if err != nil {
 				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 				return
