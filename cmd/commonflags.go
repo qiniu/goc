@@ -1,6 +1,25 @@
+/*
+ Copyright 2020 Qiniu Cloud (qiniu.com)
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
 package cmd
 
 import (
+	"fmt"
+	"net"
+
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -8,14 +27,17 @@ import (
 var (
 	target     string
 	center     string
-	mode       string
-	agentPort  string
+	agentPort  AgentPort
 	debugGoc   bool
 	buildFlags string
 
 	goRunExecFlag  string
 	goRunArguments string
 )
+
+var coverMode = CoverMode{
+	mode: "count",
+}
 
 // addBasicFlags adds a
 func addBasicFlags(cmdset *pflag.FlagSet) {
@@ -26,8 +48,8 @@ func addBasicFlags(cmdset *pflag.FlagSet) {
 
 func addCommonFlags(cmdset *pflag.FlagSet) {
 	addBasicFlags(cmdset)
-	cmdset.StringVar(&mode, "mode", "count", "coverage mode: set, count, atomic")
-	cmdset.StringVar(&agentPort, "agentport", "", "specify fixed port for registered service communicate with goc server. if not provided, using a random one")
+	cmdset.Var(&coverMode, "mode", "coverage mode: set, count, atomic")
+	cmdset.Var(&agentPort, "agentport", "a fixed port such as :8100 for registered service communicate with goc server. if not provided, using a random one")
 	cmdset.StringVar(&buildFlags, "buildflags", "", "specify the build flags")
 	// bind to viper
 	viper.BindPFlags(cmdset)
@@ -45,4 +67,55 @@ func addRunFlags(cmdset *pflag.FlagSet) {
 	cmdset.StringVar(&goRunArguments, "arguments", "", "same as 'arguments' in 'go run' command")
 	// bind to viper
 	viper.BindPFlags(cmdset)
+}
+
+// add Cover Mode check
+type CoverMode struct {
+	mode string
+}
+
+func (m *CoverMode) String() string {
+	return m.mode
+}
+
+func (m *CoverMode) Set(v string) error {
+	if v == "" {
+		m.mode = "count"
+		return nil
+	}
+	if v != "set" && v != "count" && v != "atomic" {
+		return fmt.Errorf("unknown mode")
+	}
+	m.mode = v
+	return nil
+}
+
+func (m *CoverMode) Type() string {
+	return "string"
+}
+
+// add agentPort check
+type AgentPort struct {
+	port string
+}
+
+func (agent *AgentPort) String() string {
+	return agent.port
+}
+
+func (agent *AgentPort) Set(v string) error {
+	if v == "" {
+		agent.port = ""
+		return nil
+	}
+	_, _, err := net.SplitHostPort(v)
+	if err != nil {
+		return err
+	}
+	agent.port = v
+	return nil
+}
+
+func (agent *AgentPort) Type() string {
+	return "string"
 }
