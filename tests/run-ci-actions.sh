@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Copyright 2020 Qiniu Cloud (七牛云)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,13 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+echo "test start"
 
-chmod +x /home/runner/tools/goc/goc
-export PATH=/home/runner/tools/goc:$PATH
+bats server.bats
 
-chmod +x /home/runner/tools/e2e.test/e2e.test
-export PATH=/home/runner/tools/e2e.test:$PATH
-
-cd e2e
-e2e.test -test.v ./...
+bash <(curl -s https://codecov.io/bash) -f filtered.cov -F e2e
