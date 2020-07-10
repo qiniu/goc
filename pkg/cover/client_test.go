@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"strings"
 )
 
 func TestClientAction(t *testing.T) {
@@ -32,13 +31,58 @@ func TestClientAction(t *testing.T) {
 
 	// regsiter service into goc server
 	var src Service
-	src.Name = "/home/goctest123/_package/newest/goc"
+	src.Name = "goc"
 	src.Address = "http://127.0.0.1:7777"
 	res, err := client.RegisterService(src)
-	srvPath := strings.Split(src.Name, "/")
-	src.Name = srvPath[len(srvPath)-1]
 	assert.NoError(t, err)
 	assert.Contains(t, string(res), "success")
+
+	// get porfile from goc server
+	profileItems := []struct {
+		param ProfileParam
+		err   string
+	}{
+		{
+			param: ProfileParam{Force: false, Service: []string{src.Name}, Address: []string{src.Address}},
+			err:   "invalid param",
+		},
+		{
+			param: ProfileParam{Force: false, Address: []string{src.Address, "http://unknown.com"}},
+			err:   "not found",
+		},
+		{
+			param: ProfileParam{Force: true, Address: []string{src.Address, "http://unknown.com"}},
+			err:   "no profile",
+		},
+		{
+			param: ProfileParam{Force: true, Service: []string{src.Name, "unknownSvr"}},
+			err:   "no profile",
+		},
+		{
+			param: ProfileParam{Force: false, Service: []string{src.Name, "unknownSvr"}},
+			err:   "not found",
+		},
+		{
+			param: ProfileParam{},
+			err:   "connection refused",
+		},
+		{
+			param: ProfileParam{Service: []string{src.Name, src.Name}},
+			err:   "connection refused",
+		},
+		{
+			param: ProfileParam{Address: []string{src.Address, src.Address}},
+			err:   "connection refused",
+		},
+	}
+	for _, item := range profileItems {
+		res, err = client.Profile(item.param)
+		if err != nil {
+			assert.Contains(t, err.Error(), item.err)
+		} else {
+			assert.Contains(t, string(res), item.err)
+		}
+	}
 
 	// do list and check service
 	res, err = client.ListServices()

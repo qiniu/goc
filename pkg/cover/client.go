@@ -17,8 +17,7 @@
 package cover
 
 import (
-	"bytes"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -26,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -75,8 +75,6 @@ func (c *client) RegisterService(srv Service) ([]byte, error) {
 	if strings.TrimSpace(srv.Name) == "" {
 		return nil, fmt.Errorf("invalid service name")
 	}
-	srvPath := strings.Split(srv.Name, "/")
-	srv.Name = srvPath[len(srvPath)-1]
 	u := fmt.Sprintf("%s%s?name=%s&address=%s", c.Host, CoverRegisterServiceAPI, srv.Name, srv.Address)
 	res, err := c.do("POST", u, nil)
 	return res, err
@@ -93,17 +91,17 @@ func (c *client) ListServices() ([]byte, error) {
 }
 
 func (c *client) Profile(param ProfileParam) ([]byte, error) {
-	log.Printf("param:%+v", param)
-	u := fmt.Sprintf("%s%s", c.Host, CoverProfileAPI)
-	args, err := json.Marshal(param)
-	if err != nil {
-		return nil, err
+	u := fmt.Sprintf("%s%s?force=%s", c.Host, CoverProfileAPI, strconv.FormatBool(param.Force))
+	for _, svr := range param.Service {
+		u = u + "&service=" + svr
 	}
-	profile, err := c.do("POST", u, bytes.NewReader(args))
+	for _, addr := range param.Address {
+		u = u + "&address=" + addr
+	}
+	profile, err := c.do("GET", u, nil)
 	if err != nil && isNetworkError(err) {
-		profile, err = c.do("POST", u, bytes.NewReader(args))
+		profile, err = c.do("GET", u, nil)
 	}
-
 	return profile, err
 }
 
@@ -135,7 +133,10 @@ func (c *client) do(method, url string, body io.Reader) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	if res.StatusCode != http.StatusOK {
+		err = errors.New(string(responseBody))
+		return nil, err
+	}
 	return responseBody, nil
 }
 

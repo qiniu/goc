@@ -26,12 +26,11 @@ import (
 	"net/url"
 	"os"
 
-	"encoding/json"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/tools/cover"
 	"k8s.io/test-infra/gopherage/pkg/cov"
-	"strings"
+	"strconv"
 )
 
 // DefaultStore implements the IPersistence interface
@@ -69,7 +68,7 @@ func GocServer(w io.Writer) *gin.Engine {
 	v1 := r.Group("/v1")
 	{
 		v1.POST("/cover/register", registerService)
-		v1.POST("/cover/profile", profile)
+		v1.GET("/cover/profile", profile)
 		v1.POST("/cover/clear", clear)
 		v1.POST("/cover/init", initSystem)
 		v1.GET("/cover/list", listServices)
@@ -86,9 +85,9 @@ type Service struct {
 
 // ProfileParam is param of profile API (TODO)
 type ProfileParam struct {
-	Force   bool   `form:"force"`
-	Name    string `form:"name" json:"name"`
-	Address string `form:"address" json:"address"`
+	Force   bool     `form:"force"`
+	Service []string `form:"service" json:"service"`
+	Address []string `form:"address" json:"address"`
 }
 
 //listServices list all the registered services
@@ -129,69 +128,76 @@ func registerService(c *gin.Context) {
 }
 
 func profile(c *gin.Context) {
-	respByte, err := ioutil.ReadAll(c.Request.Body)
+	force, err := strconv.ParseBool(c.Query("force"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
-		return
-	}
-	var param ProfileParam
-	json.Unmarshal(respByte, &param)
-	if param.Name != "" && param.Address != "" {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": "invalid param"})
 		return
 	}
-	nameList := strings.Split(param.Name, "&")
-	addrList := strings.Split(param.Address, "&")
+	svrList := c.QueryArray("service")
+	addrList := c.QueryArray("address")
 	svrsAll := DefaultStore.GetAll()
 	svrsUnderTest := make(map[string][]string)
-	if param.Name == "" && param.Address == "" {
+	if len(svrList) != 0 && len(addrList) != 0 {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": "invalid param"})
+		return
+	}
+	if len(svrList) == 0 && len(addrList) == 0 {
 		svrsUnderTest = svrsAll
 	} else {
-		if param.Name != "" {
-			for _, name := range nameList {
-				miss := true
-				for svr, addrs := range svrsAll {
-					if svr == name {
-						svrsUnderTest[svr] = addrs
-						miss = false
-					}
+		if len(svrList) != 0 {
+			for _, name := range svrList {
+				if addr, ok := svrsAll[name]; ok {
+					svrsUnderTest[name] = addr
+					continue
 				}
-				if miss && !param.Force {
+				if !force {
 					c.JSON(http.StatusNotFound, fmt.Sprintf("service [%s] not found!", name))
 					return
 				}
 			}
 		}
-		if param.Address != "" {
+		if len(addrList) != 0 {
+		I:
 			for _, addr := range addrList {
-				miss := true
 				for svr, addrs := range svrsAll {
+					if contains(svrsUnderTest[svr], addr) {
+						continue I
+					}
 					for _, a := range addrs {
 						if a == addr {
 							svrsUnderTest[svr] = append(svrsUnderTest[svr], a)
-							miss = false
+							continue I
 						}
 					}
 				}
-				if miss && !param.Force {
+				if !force {
 					c.JSON(http.StatusNotFound, fmt.Sprintf("address [%s] not found!", addr))
 					return
 				}
 			}
 		}
 	}
-	var mergedProfiles = make([][]*cover.Profile, len(svrsUnderTest))
+	var mergedProfiles = make([][]*cover.Profile, 0)
 	for _, svrs := range svrsUnderTest {
 		for _, addr := range svrs {
 			pp, err := NewWorker(addr).Profile(ProfileParam{})
 			if err != nil {
-				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
-				return
+				if !force {
+
+					c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+					return
+				} else {
+					continue
+				}
 			}
 			profile, err := convertProfile(pp)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
+				if !force {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+					return
+				} else {
+					continue
+				}
 			}
 			mergedProfiles = append(mergedProfiles, profile)
 		}
@@ -252,4 +258,13 @@ func convertProfile(p []byte) ([]*cover.Profile, error) {
 	}
 
 	return cover.ParseProfiles(tf.Name())
+}
+
+func contains(arr []string, str string) bool {
+	for _, element := range arr {
+		if str == element {
+			return true
+		}
+	}
+	return false
 }

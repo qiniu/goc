@@ -41,6 +41,7 @@ import (
 var (
 	ErrCoverPkgFailed  = errors.New("fail to inject code to project")
 	ErrCoverListFailed = errors.New("fail to list package dependencies")
+	ErrStoreDuplicated = errors.New("storage duplicated")
 )
 
 // TestCover is a collection of all counters

@@ -35,20 +35,23 @@ var profileCmd = &cobra.Command{
 # Get coverage counter from default register center http://127.0.0.1:7777, the result output to stdout.
 goc profile
 
-# Get coverage counter from default register center, the result output to specified file.
-goc profile -o ./coverage.cov
-
-# Get coverage counter from specified register center, the result output to specified file.
-goc profile --center=http://192.168.1.1:8080 -o ./coverage.cov
-
 # Get coverage counter from specified register center, the result output to specified file.
 goc profile --center=http://192.168.1.1:8080 --output=./coverage.cov
+
+# Get coverage counter of several specified services
+goc profile --service=service1,service2 --service=service3
+
+# Get coverage counter of several specified address
+goc profile --address=address1,address2 --address=address3
+
+# Force to get coverage counter, ignore any internal error
+goc profile --force
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		p := cover.ProfileParam{
 			Force:   force,
-			Name:    name,
-			Address: address,
+			Service: svrList,
+			Address: addrList,
 		}
 		res, err := cover.NewWorker(center).Profile(p)
 		if err != nil {
@@ -73,12 +76,14 @@ goc profile --center=http://192.168.1.1:8080 --output=./coverage.cov
 
 var output string
 var force bool
+var svrList []string
+var addrList []string
 
 func init() {
 	profileCmd.Flags().StringVarP(&output, "output", "o", "", "download cover profile")
-	profileCmd.Flags().StringVarP(&name, "name", "n", "", "name list to get cover profile")
-	profileCmd.Flags().StringVarP(&address, "address", "a", "", "address list to get cover proflie")
-	profileCmd.Flags().BoolVarP(&force, "force", "f", false, "force")
+	profileCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "service to get cover profile")
+	profileCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "address to get cover profile")
+	profileCmd.Flags().BoolVarP(&force, "force", "f", false, "force to get cover profile, ignore any internal error")
 	addBasicFlags(profileCmd.Flags())
 	rootCmd.AddCommand(profileCmd)
 }
