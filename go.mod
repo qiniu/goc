@@ -1,4 +1,4 @@
-module github.com/qiniu/goc
+module github.com/AlanFightting/goc
 
 go 1.13
 
