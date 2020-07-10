@@ -18,6 +18,7 @@ package cover
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -341,4 +342,31 @@ func TestListPackagesForSimpleModProject(t *testing.T) {
 		assert.FailNow(t, "cannot get the pkg: example.com/simple-project")
 	}
 
+}
+
+// test if goc can get variables in internal package
+func TestCoverResultForInternalPackage(t *testing.T) {
+
+	workingDir := "../../tests/samples/simple_project_with_internal"
+	gopath := ""
+
+	os.Setenv("GOPATH", gopath)
+	os.Setenv("GO111MODULE", "on")
+
+	testDir := filepath.Join(os.TempDir(), "goc-build-test")
+	copy.Copy(workingDir, testDir)
+
+	Execute("", gopath, testDir, "count", "", "http://127.0.0.1:7777")
+
+	_, err := os.Lstat(filepath.Join(testDir, "http_cover_apis_auto_generated.go"))
+	if !assert.Equal(t, err, nil) {
+		assert.FailNow(t, "should generate http_cover_apis_auto_generated.go")
+	}
+
+	out, err := ioutil.ReadFile(filepath.Join(testDir, "http_cover_apis_auto_generated.go"))
+	cnt := strings.Count(string(out), "GoCacheCover")
+	assert.Equal(t, cnt > 0, true, "GoCacheCover variable should be in http_cover_apis_auto_generated.go")
+
+	cnt = strings.Count(string(out), "example.com/simple-project/internal/foo.go")
+	assert.Equal(t, cnt > 0, true, "`example.com/simple-project/internal/foo.go` should be in http_cover_apis_auto_generated.go")
 }
