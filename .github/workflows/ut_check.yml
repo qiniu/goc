@@ -27,4 +27,4 @@ jobs:
         run: |
           export DEFAULT_EXCEPT_PKGS=e2e
           go test -p 1 -coverprofile=coverage.txt $(go list ./... | grep -v -E $DEFAULT_EXCEPT_PKGS)
-          bash <(curl -s https://codecov.io/bash)
+          bash <(curl -s https://codecov.io/bash) -F unittest

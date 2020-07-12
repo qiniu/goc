@@ -116,6 +116,15 @@ func (b *Build) determineOutputDir(outputDir string) (string, error) {
 	}
 
 	// fix #43
+	if outputDir != "" {
+		abs, err := filepath.Abs(outputDir)
+		if err != nil {
+			log.Errorf("Fail to transform the path: %v to absolute path: %v", outputDir, err)
+			return "", err
+		}
+		return abs, nil
+	}
+	// fix #43
 	// use target name from `go list -json ./...` of the main module
 	targetName := ""
 	for _, pkg := range b.Pkgs {
