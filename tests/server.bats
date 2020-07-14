@@ -18,9 +18,11 @@ setup_file() {
     goc server 3>&- &
     GOC_PID=$!
     sleep 2
+    goc init
     # run covered goc
-    gocc server --port=:60001 3>&- &
+    gocc server --port=:60001 --debug 3>&- &
     GOCC_PID=$!
+    sleep 2
     echo "goc gocc server started"
 }
 
@@ -38,4 +40,17 @@ teardown_file() {
     # connect to covered goc
     run goc profile --center=http://127.0.0.1:60001
     [ "$status" -eq 0 ]
+}
+
+@test "register a covered service" {
+    WORKDIR=$PWD
+    cd $WORKDIR/samples/run_for_several_seconds
+
+    run goc build --debug --center=http://127.0.0.1:60001
+    [ "$status" -eq 0 ]
+    ./simple-project 3>&- &
+    sleep 1
+    # connect to covered goc
+    run goc profile --center=http://127.0.0.1:60001
+    [ "$status" -eq 0 ]    
 }
