@@ -138,35 +138,33 @@ func profile(c *gin.Context) {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": "invalid param"})
 		return
 	}
-	svrList := c.QueryArray("service")
-	addrList := c.QueryArray("address")
+	svrList := removeDuplicateElement(c.QueryArray("service"))
+	addrList := removeDuplicateElement(c.QueryArray("address"))
 	svrsAll := DefaultStore.GetAll()
-	svrsUnderTest, err := getSvrUnderTest(svrList, addrList, force, svrsAll)
+	filterAddrList, err := filterAddrs(svrList, addrList, force, svrsAll)
 	if err != nil {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 	}
 
 	var mergedProfiles = make([][]*cover.Profile, 0)
-	for _, svrs := range svrsUnderTest {
-		for _, addr := range svrs {
-			pp, err := NewWorker(addr).Profile(ProfileParam{})
-			if err != nil {
-				if force {
-					continue
-				}
-				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
-				return
+	for _, addr := range filterAddrList {
+		pp, err := NewWorker(addr).Profile(ProfileParam{})
+		if err != nil {
+			if force {
+				continue
 			}
-			profile, err := convertProfile(pp)
-			if err != nil {
-				if force {
-					continue
-				}
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-			mergedProfiles = append(mergedProfiles, profile)
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+			return
 		}
+		profile, err := convertProfile(pp)
+		if err != nil {
+			if force {
+				continue
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		mergedProfiles = append(mergedProfiles, profile)
 	}
 
 	if len(mergedProfiles) == 0 {
@@ -235,48 +233,52 @@ func contains(arr []string, str string) bool {
 	return false
 }
 
-// getSvrUnderTest get service map by service and address list
-func getSvrUnderTest(svrList, addrList []string, force bool, svrsAll map[string][]string) (svrsUnderTest map[string][]string, err error) {
-	svrsUnderTest = map[string][]string{}
+// filterAddrs filter address list by given service and address list
+func filterAddrs(svrList, addrList []string, force bool, svrsAll map[string][]string) (addrs []string, err error) {
+	addrs = []string{}
+	addrAll := []string{}
+	for _, addr := range svrsAll {
+		addrAll = append(addrAll, addr...)
+	}
 	if len(svrList) != 0 && len(addrList) != 0 {
-		return nil, fmt.Errorf("use this flag and 'address' flag at the same time is illegal")
+		return nil, fmt.Errorf("use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")
+	}
+	// Add matched services to map
+	for _, name := range svrList {
+		if addr, ok := svrsAll[name]; ok {
+			addrs = append(addrs, addr...)
+			continue // jump to match the next service
+		}
+		if !force {
+			return nil, fmt.Errorf("service [%s] not found", name)
+		}
+	}
+	// Add matched addresses to map
+	for _, addr := range addrList {
+		if contains(addrAll, addr) {
+			addrs = append(addrs, addr)
+			continue
+		}
+		if !force {
+			return nil, fmt.Errorf("address [%s] not found", addr)
+		}
+	}
+	if len(addrList) == 0 && len(svrList) == 0 {
+		addrs = addrAll
 	}
 	// Return all servers when all param is nil
-	if len(svrList) == 0 && len(addrList) == 0 {
-		return svrsAll, nil
-	} else {
-		// Add matched services to map
-		if len(svrList) != 0 {
-			for _, name := range svrList {
-				if addr, ok := svrsAll[name]; ok {
-					svrsUnderTest[name] = addr
-					continue // jump to match the next service
-				}
-				if !force {
-					return nil, fmt.Errorf("service [%s] not found", name)
-				}
-			}
-		}
-		// Add matched addresses to map
-		if len(addrList) != 0 {
-		I:
-			for _, addr := range addrList {
-				for svr, addrs := range svrsAll {
-					if contains(svrsUnderTest[svr], addr) {
-						continue I // The address is duplicate, jump over
-					}
-					for _, a := range addrs {
-						if a == addr {
-							svrsUnderTest[svr] = append(svrsUnderTest[svr], a)
-							continue I // jump to match the next address
-						}
-					}
-				}
-				if !force {
-					return nil, fmt.Errorf("address [%s] not found", addr)
-				}
-			}
+	return addrs, nil
+}
+
+// removeDuplicateElement remove duplicate element in slice
+func removeDuplicateElement(addrs []string) []string {
+	result := make([]string, 0, len(addrs))
+	temp := map[string]struct{}{}
+	for _, item := range addrs {
+		if _, ok := temp[item]; !ok {
+			temp[item] = struct{}{}
+			result = append(result, item)
 		}
 	}
-	return svrsUnderTest, nil
+	return result
 }

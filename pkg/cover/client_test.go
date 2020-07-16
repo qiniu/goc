@@ -68,7 +68,7 @@ func TestClientAction(t *testing.T) {
 		{
 			service: Service{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
 			param:   ProfileParam{Force: false, Service: []string{"serviceOK"}, Address: []string{profileSuccessMockSvr.URL}},
-			res:     "use 'service' and 'address' flag at the same time is illegal",
+			res:     "use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately",
 		},
 		{
 			service: Service{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
