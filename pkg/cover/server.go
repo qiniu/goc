@@ -30,6 +30,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/tools/cover"
 	"k8s.io/test-infra/gopherage/pkg/cov"
+	"strconv"
 )
 
 // DefaultStore implements the IPersistence interface
@@ -82,6 +83,13 @@ type Service struct {
 	Address string `form:"address" json:"address" binding:"required"`
 }
 
+// ProfileParam is param of profile API (TODO)
+type ProfileParam struct {
+	Force   bool     `form:"force"`
+	Service []string `form:"service" json:"service"`
+	Address []string `form:"address" json:"address"`
+}
+
 //listServices list all the registered services
 func listServices(c *gin.Context) {
 	services := DefaultStore.GetAll()
@@ -111,26 +119,49 @@ func registerService(c *gin.Context) {
 		log.Printf("the registed host %s of service %s is different with the real one %s, here we choose the real one", service.Name, host, realIP)
 		service.Address = fmt.Sprintf("http://%s:%s", realIP, port)
 	}
-	if err := DefaultStore.Add(service); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+
+	address := DefaultStore.Get(service.Name)
+	if !contains(address, service.Address) {
+		if err := DefaultStore.Add(service); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
+	return
 }
 
 func profile(c *gin.Context) {
-	svrsUnderTest := DefaultStore.GetAll()
-	var mergedProfiles = make([][]*cover.Profile, len(svrsUnderTest))
-	for _, addrs := range svrsUnderTest {
-		for _, addr := range addrs {
-			pp, err := NewWorker(addr).Profile()
+	force, err := strconv.ParseBool(c.Query("force"))
+	if err != nil {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": "invalid param"})
+		return
+	}
+	svrList := c.QueryArray("service")
+	addrList := c.QueryArray("address")
+	svrsAll := DefaultStore.GetAll()
+	svrsUnderTest, err := getSvrUnderTest(svrList, addrList, force, svrsAll)
+	if err != nil {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+	}
+
+	var mergedProfiles = make([][]*cover.Profile, 0)
+	for _, svrs := range svrsUnderTest {
+		for _, addr := range svrs {
+			pp, err := NewWorker(addr).Profile(ProfileParam{})
 			if err != nil {
+				if force {
+					continue
+				}
 				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 				return
 			}
 			profile, err := convertProfile(pp)
 			if err != nil {
+				if force {
+					continue
+				}
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
@@ -193,4 +224,59 @@ func convertProfile(p []byte) ([]*cover.Profile, error) {
 	}
 
 	return cover.ParseProfiles(tf.Name())
+}
+
+func contains(arr []string, str string) bool {
+	for _, element := range arr {
+		if str == element {
+			return true
+		}
+	}
+	return false
+}
+
+// getSvrUnderTest get service map by service and address list
+func getSvrUnderTest(svrList, addrList []string, force bool, svrsAll map[string][]string) (svrsUnderTest map[string][]string, err error) {
+	svrsUnderTest = map[string][]string{}
+	if len(svrList) != 0 && len(addrList) != 0 {
+		return nil, fmt.Errorf("use this flag and 'address' flag at the same time is illegal")
+	}
+	// Return all servers when all param is nil
+	if len(svrList) == 0 && len(addrList) == 0 {
+		return svrsAll, nil
+	} else {
+		// Add matched services to map
+		if len(svrList) != 0 {
+			for _, name := range svrList {
+				if addr, ok := svrsAll[name]; ok {
+					svrsUnderTest[name] = addr
+					continue // jump to match the next service
+				}
+				if !force {
+					return nil, fmt.Errorf("service [%s] not found", name)
+				}
+			}
+		}
+		// Add matched addresses to map
+		if len(addrList) != 0 {
+		I:
+			for _, addr := range addrList {
+				for svr, addrs := range svrsAll {
+					if contains(svrsUnderTest[svr], addr) {
+						continue I // The address is duplicate, jump over
+					}
+					for _, a := range addrs {
+						if a == addr {
+							svrsUnderTest[svr] = append(svrsUnderTest[svr], a)
+							continue I // jump to match the next address
+						}
+					}
+				}
+				if !force {
+					return nil, fmt.Errorf("address [%s] not found", addr)
+				}
+			}
+		}
+	}
+	return svrsUnderTest, nil
 }
