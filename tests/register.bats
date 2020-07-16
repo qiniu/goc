@@ -22,24 +22,33 @@ setup_file() {
     sleep 2
     goc init
 
-    # run covered goc run
-    WORKDIR=$PWD
-    cd samples/run_for_several_seconds
-    ls -al
-    gocc run --debug . 3>&- &
+    # run covered goc
+    gocc server --port=:60001 --debug 3>&- &
     GOCC_PID=$!
-    sleep 2
-    info "goc gocc server started"
+    sleep 1
+
+    info "goc server started"
 }
 
 teardown_file() {
-    cd $WORKDIR
-    # collect from center
-    goc profile --debug -o filtered-run.cov
     kill -9 $GOC_PID
     kill -9 $GOCC_PID
 }
 
-@test "test basic goc run" {
+@test "test basic goc register command" {
+    wait_profile_backend "register1"
 
+    run gocc register --center=http://127.0.0.1:60001 --name=xyz --address=http://137.0.0.1:666 --debug --debugcisyncfile ci-sync.bak;
+    info register output: $output
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"success"* ]]
+}
+
+@test "test goc register without port" {
+    wait_profile_backend "register2"
+
+    run gocc register --center=http://127.0.0.1:60001 --name=xyz --address=http://137.0.0.1 --debug --debugcisyncfile ci-sync.bak;
+    info register output: $output
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"missing port"* ]]
 }

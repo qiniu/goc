@@ -15,31 +15,35 @@
 
 load util.sh
 
-setup_file() {
+setup_file() { 
+    mkdir -p test-temp
+    cp samples/simple_project/main.go test-temp
+    cp samples/simple_project/go.mod test-temp
+
     # run centered server
     goc server 3>&- &
     GOC_PID=$!
     sleep 2
     goc init
 
-    # run covered goc run
-    WORKDIR=$PWD
-    cd samples/run_for_several_seconds
-    ls -al
-    gocc run --debug . 3>&- &
-    GOCC_PID=$!
-    sleep 2
-    info "goc gocc server started"
+    info "goc server started"
 }
 
 teardown_file() {
-    cd $WORKDIR
-    # collect from center
-    goc profile --debug -o filtered-run.cov
+    cp test-temp/filtered* .
+    rm -rf test-temp
     kill -9 $GOC_PID
-    kill -9 $GOCC_PID
 }
 
-@test "test basic goc run" {
+@test "test basic goc cover command" {
+    cd test-temp
+    wait_profile_backend "cover1"
+    run gocc cover --debug --debugcisyncfile ci-sync.bak;
+    info cover1 output: $output
+    [ "$status" -eq 0 ]
 
+    run ls http_cover_apis_auto_generated.go
+    info ls output: $output
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"http_cover_apis_auto_generated.go"* ]]
 }

@@ -1,4 +1,4 @@
-#!/usr/bin/env bats
+#!/usr/bin/env bash
 # Copyright 2020 Qiniu Cloud (七牛云)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,33 +13,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load util.sh
-
-setup_file() {
-    # run centered server
-    goc server 3>&- &
-    GOC_PID=$!
-    sleep 2
-    goc init
-
-    # run covered goc run
-    WORKDIR=$PWD
-    cd samples/run_for_several_seconds
-    ls -al
-    gocc run --debug . 3>&- &
-    GOCC_PID=$!
-    sleep 2
-    info "goc gocc server started"
+info() {
+  echo -e "[$(date +'%Y-%m-%dT%H:%M:%S.%N%z')] INFO: $@" >&3
 }
 
-teardown_file() {
-    cd $WORKDIR
+wait_profile() {
+    local n=0
+    local timeout=10
+    until [[ ${n} -ge ${timeout} ]]
+    do
+        # check whether the target port is listened by specific process
+        if [[ -f ci-sync.bak ]]; then
+            break
+        fi
+        n=$[${n}+1]
+        sleep 1
+    done
     # collect from center
-    goc profile --debug -o filtered-run.cov
-    kill -9 $GOC_PID
-    kill -9 $GOCC_PID
+    goc profile -o filtered-$1.cov
 }
 
-@test "test basic goc run" {
-
+wait_profile_backend() {
+    rm ci-sync.bak || true
+    coproc { wait_profile $1; }
 }

@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load util.sh
+
 setup_file() {
     # run centered server
     goc server 3>&- &
@@ -23,12 +25,12 @@ setup_file() {
     gocc server --port=:60001 --debug 3>&- &
     GOCC_PID=$!
     sleep 2
-    echo "goc gocc server started"
+    info "goc gocc server started"
 }
 
 teardown_file() {
     # collect from center
-    goc profile --debug -o filtered.cov
+    goc profile --debug -o filtered-server.cov
     kill -9 $GOC_PID
     kill -9 $GOCC_PID
 }

@@ -22,24 +22,31 @@ setup_file() {
     sleep 2
     goc init
 
-    # run covered goc run
+    # run covered goc
+    gocc server --port=:60001 --debug 3>&- &
+    GOCC_PID=$!
+    sleep 1
+
     WORKDIR=$PWD
     cd samples/run_for_several_seconds
-    ls -al
-    gocc run --debug . 3>&- &
-    GOCC_PID=$!
+    gocc build --center=http://127.0.0.1:60001
+    ./simple-project 3>&- &
+    SAMPLE_PID=$!
     sleep 2
-    info "goc gocc server started"
+
+    info "goc server started"
 }
 
 teardown_file() {
-    cd $WORKDIR
-    # collect from center
-    goc profile --debug -o filtered-run.cov
     kill -9 $GOC_PID
     kill -9 $GOCC_PID
+    kill -9 $SAMPLE_PID
 }
 
-@test "test basic goc run" {
+@test "test init command" {
+    wait_profile_backend "init1"
 
+    run gocc init --center=http://127.0.0.1:60001 --debug --debugcisyncfile ci-sync.bak;
+    info init output: $output
+    [ "$status" -eq 0 ]
 }

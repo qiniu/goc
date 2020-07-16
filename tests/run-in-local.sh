@@ -1,4 +1,4 @@
-#!/usr/bin/env bats
+#!/usr/bin/env bash
 # Copyright 2020 Qiniu Cloud (七牛云)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,33 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load util.sh
+set -ex
 
-setup_file() {
-    # run centered server
-    goc server 3>&- &
-    GOC_PID=$!
-    sleep 2
-    goc init
+echo "test start"
 
-    # run covered goc run
-    WORKDIR=$PWD
-    cd samples/run_for_several_seconds
-    ls -al
-    gocc run --debug . 3>&- &
-    GOCC_PID=$!
-    sleep 2
-    info "goc gocc server started"
-}
-
-teardown_file() {
-    cd $WORKDIR
-    # collect from center
-    goc profile --debug -o filtered-run.cov
-    kill -9 $GOC_PID
-    kill -9 $GOCC_PID
-}
-
-@test "test basic goc run" {
-
-}
+bats -t profile.bats
