@@ -38,13 +38,13 @@ goc profile
 # Get coverage counter from specified register center, the result output to specified file.
 goc profile --center=http://192.168.1.1:8080 --output=./coverage.cov
 
-# Get coverage counter of several specified services
-goc profile --service=service1,service2 --service=service3
+# Get coverage counter of several specified services. You can get all available service names from command 'goc list'. Use 'service' and 'address' flag at the same time is illegal.
+goc profile --service=service1,service2,service3
 
-# Get coverage counter of several specified address
-goc profile --address=address1,address2 --address=address3
+# Get coverage counter of several specified addresses. You can get all available addresses from command 'goc list'. Use 'service' and 'address' flag at the same time is illegal.
+goc profile --address=address1,address2,address3
 
-# Force to get coverage counter, ignore any internal error
+# Force to get the coverage counter of all the available services you want.
 goc profile --force
 `,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -81,9 +81,9 @@ var addrList []string
 
 func init() {
 	profileCmd.Flags().StringVarP(&output, "output", "o", "", "download cover profile")
-	profileCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "service to get cover profile")
-	profileCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "address to get cover profile")
-	profileCmd.Flags().BoolVarP(&force, "force", "f", false, "force to get cover profile, ignore any internal error")
+	profileCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "get the cover profile of these services, you can get all available service names from command `goc list`, use this flag and 'address' flag at the same time is illegal.")
+	profileCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "get the cover profile of these addresses, you can get all available addresses from command `goc list`, use this flag and 'service' flag at the same time is illegal.")
+	profileCmd.Flags().BoolVarP(&force, "force", "f", false, "force to get the coverage counter of all the available services you want")
 	addBasicFlags(profileCmd.Flags())
 	rootCmd.AddCommand(profileCmd)
 }

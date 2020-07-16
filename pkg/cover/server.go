@@ -119,12 +119,17 @@ func registerService(c *gin.Context) {
 		log.Printf("the registed host %s of service %s is different with the real one %s, here we choose the real one", service.Name, host, realIP)
 		service.Address = fmt.Sprintf("http://%s:%s", realIP, port)
 	}
-	if err := DefaultStore.Add(service); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+
+	address := DefaultStore.Get(service.Name)
+	if !contains(address, service.Address) {
+		if err := DefaultStore.Add(service); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
+	return
 }
 
 func profile(c *gin.Context) {
@@ -136,68 +141,29 @@ func profile(c *gin.Context) {
 	svrList := c.QueryArray("service")
 	addrList := c.QueryArray("address")
 	svrsAll := DefaultStore.GetAll()
-	svrsUnderTest := make(map[string][]string)
-	if len(svrList) != 0 && len(addrList) != 0 {
-		c.JSON(http.StatusExpectationFailed, gin.H{"error": "invalid param"})
-		return
+	svrsUnderTest, err := getSvrUnderTest(svrList, addrList, force, svrsAll)
+	if err != nil {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 	}
-	if len(svrList) == 0 && len(addrList) == 0 {
-		svrsUnderTest = svrsAll
-	} else {
-		if len(svrList) != 0 {
-			for _, name := range svrList {
-				if addr, ok := svrsAll[name]; ok {
-					svrsUnderTest[name] = addr
-					continue
-				}
-				if !force {
-					c.JSON(http.StatusNotFound, fmt.Sprintf("service [%s] not found!", name))
-					return
-				}
-			}
-		}
-		if len(addrList) != 0 {
-		I:
-			for _, addr := range addrList {
-				for svr, addrs := range svrsAll {
-					if contains(svrsUnderTest[svr], addr) {
-						continue I
-					}
-					for _, a := range addrs {
-						if a == addr {
-							svrsUnderTest[svr] = append(svrsUnderTest[svr], a)
-							continue I
-						}
-					}
-				}
-				if !force {
-					c.JSON(http.StatusNotFound, fmt.Sprintf("address [%s] not found!", addr))
-					return
-				}
-			}
-		}
-	}
+
 	var mergedProfiles = make([][]*cover.Profile, 0)
 	for _, svrs := range svrsUnderTest {
 		for _, addr := range svrs {
 			pp, err := NewWorker(addr).Profile(ProfileParam{})
 			if err != nil {
-				if !force {
-
-					c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
-					return
-				} else {
+				if force {
 					continue
 				}
+				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+				return
 			}
 			profile, err := convertProfile(pp)
 			if err != nil {
-				if !force {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-					return
-				} else {
+				if force {
 					continue
 				}
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
 			}
 			mergedProfiles = append(mergedProfiles, profile)
 		}
@@ -267,4 +233,50 @@ func contains(arr []string, str string) bool {
 		}
 	}
 	return false
+}
+
+// getSvrUnderTest get service map by service and address list
+func getSvrUnderTest(svrList, addrList []string, force bool, svrsAll map[string][]string) (svrsUnderTest map[string][]string, err error) {
+	svrsUnderTest = map[string][]string{}
+	if len(svrList) != 0 && len(addrList) != 0 {
+		return nil, fmt.Errorf("use this flag and 'address' flag at the same time is illegal")
+	}
+	// Return all servers when all param is nil
+	if len(svrList) == 0 && len(addrList) == 0 {
+		return svrsAll, nil
+	} else {
+		// Add matched services to map
+		if len(svrList) != 0 {
+			for _, name := range svrList {
+				if addr, ok := svrsAll[name]; ok {
+					svrsUnderTest[name] = addr
+					continue // jump to match the next service
+				}
+				if !force {
+					return nil, fmt.Errorf("service [%s] not found", name)
+				}
+			}
+		}
+		// Add matched addresses to map
+		if len(addrList) != 0 {
+		I:
+			for _, addr := range addrList {
+				for svr, addrs := range svrsAll {
+					if contains(svrsUnderTest[svr], addr) {
+						continue I // The address is duplicate, jump over
+					}
+					for _, a := range addrs {
+						if a == addr {
+							svrsUnderTest[svr] = append(svrsUnderTest[svr], a)
+							continue I // jump to match the next address
+						}
+					}
+				}
+				if !force {
+					return nil, fmt.Errorf("address [%s] not found", addr)
+				}
+			}
+		}
+	}
+	return svrsUnderTest, nil
 }

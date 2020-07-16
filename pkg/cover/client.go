@@ -17,7 +17,6 @@
 package cover
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -92,6 +91,10 @@ func (c *client) ListServices() ([]byte, error) {
 
 func (c *client) Profile(param ProfileParam) ([]byte, error) {
 	u := fmt.Sprintf("%s%s?force=%s", c.Host, CoverProfileAPI, strconv.FormatBool(param.Force))
+	if len(param.Service) != 0 && len(param.Address) != 0 {
+		return nil, fmt.Errorf("use 'service' and 'address' flag at the same time is illegal")
+	}
+
 	for _, svr := range param.Service {
 		u = u + "&service=" + svr
 	}
@@ -131,10 +134,6 @@ func (c *client) do(method, url string, body io.Reader) ([]byte, error) {
 	defer res.Body.Close()
 	responseBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
-	}
-	if res.StatusCode != http.StatusOK {
-		err = errors.New(string(responseBody))
 		return nil, err
 	}
 	return responseBody, nil

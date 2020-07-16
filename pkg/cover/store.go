@@ -23,7 +23,6 @@ import (
 	"strings"
 	"sync"
 
-	"errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -72,11 +71,8 @@ func NewFileStore() Store {
 
 // Add adds the given service to file Store
 func (l *fileStore) Add(s Service) error {
-	err := l.memoryStore.Add(s)
-	log.Println(errors.Is(err, ErrStoreDuplicated))
-	if errors.Is(err, ErrStoreDuplicated) {
-		return nil
-	}
+	l.memoryStore.Add(s)
+
 	// persistent to local store
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -197,7 +193,7 @@ func (l *memoryStore) Add(s Service) error {
 		for _, addr := range addrs {
 			if addr == s.Address {
 				log.Printf("service registered already, name: %s, address: %s", s.Name, s.Address)
-				return ErrStoreDuplicated
+				return nil
 			}
 		}
 		addrs = append(addrs, s.Address)

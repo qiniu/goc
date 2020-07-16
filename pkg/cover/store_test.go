@@ -17,7 +17,6 @@
 package cover
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -43,8 +42,6 @@ func TestLocalStore(t *testing.T) {
 	localStore.Add(tc2)
 	localStore.Add(tc3)
 	localStore.Add(tc4)
-	err := localStore.Add(tc1)
-	assert.NoError(t, err)
 	addrs := localStore.Get(tc1.Name)
 	if len(addrs) != 2 {
 		t.Error("unexpected result")
@@ -64,22 +61,4 @@ func TestLocalStore(t *testing.T) {
 	if len(localStore.GetAll()) != 0 {
 		t.Error("local store init failed")
 	}
-}
-
-func TestMemoryStore(t *testing.T) {
-	memoryStore := NewMemoryStore()
-	var tc1 = Service{
-		Name:    "a",
-		Address: "http://127.0.0.1",
-	}
-	err := memoryStore.Add(tc1)
-	if err != nil {
-		t.Error("add server to memory store failed")
-	}
-	addrs := memoryStore.Get(tc1.Name)
-	if len(addrs) != 1 {
-		t.Error("memory store check failed")
-	}
-	err = memoryStore.Add(tc1)
-	assert.Equal(t, err, ErrStoreDuplicated)
 }
