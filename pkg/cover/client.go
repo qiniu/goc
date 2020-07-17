@@ -92,7 +92,7 @@ func (c *client) ListServices() ([]byte, error) {
 func (c *client) Profile(param ProfileParam) ([]byte, error) {
 	u := fmt.Sprintf("%s%s?force=%s", c.Host, CoverProfileAPI, strconv.FormatBool(param.Force))
 	if len(param.Service) != 0 && len(param.Address) != 0 {
-		return nil, fmt.Errorf("use 'service' and 'address' flag at the same time is illegal")
+		return nil, fmt.Errorf("use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")
 	}
 
 	for _, svr := range param.Service {

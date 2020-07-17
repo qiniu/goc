@@ -138,35 +138,32 @@ func profile(c *gin.Context) {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": "invalid param"})
 		return
 	}
-	svrList := c.QueryArray("service")
-	addrList := c.QueryArray("address")
-	svrsAll := DefaultStore.GetAll()
-	svrsUnderTest, err := getSvrUnderTest(svrList, addrList, force, svrsAll)
+	serviceList := removeDuplicateElement(c.QueryArray("service"))
+	addressList := removeDuplicateElement(c.QueryArray("address"))
+	allInfos := DefaultStore.GetAll()
+	filterAddrList, err := filterAddrs(serviceList, addressList, force, allInfos)
 	if err != nil {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		return
 	}
 
 	var mergedProfiles = make([][]*cover.Profile, 0)
-	for _, svrs := range svrsUnderTest {
-		for _, addr := range svrs {
-			pp, err := NewWorker(addr).Profile(ProfileParam{})
-			if err != nil {
-				if force {
-					continue
-				}
-				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
-				return
+	for _, addr := range filterAddrList {
+		pp, err := NewWorker(addr).Profile(ProfileParam{})
+		if err != nil {
+			if force {
+				log.Warnf("get profile from [%s] failed, error: %s", addr, err.Error())
+				continue
 			}
-			profile, err := convertProfile(pp)
-			if err != nil {
-				if force {
-					continue
-				}
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
-			mergedProfiles = append(mergedProfiles, profile)
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+			return
 		}
+		profile, err := convertProfile(pp)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		mergedProfiles = append(mergedProfiles, profile)
 	}
 
 	if len(mergedProfiles) == 0 {
@@ -235,48 +232,53 @@ func contains(arr []string, str string) bool {
 	return false
 }
 
-// getSvrUnderTest get service map by service and address list
-func getSvrUnderTest(svrList, addrList []string, force bool, svrsAll map[string][]string) (svrsUnderTest map[string][]string, err error) {
-	svrsUnderTest = map[string][]string{}
-	if len(svrList) != 0 && len(addrList) != 0 {
-		return nil, fmt.Errorf("use this flag and 'address' flag at the same time is illegal")
+// filterAddrs filter address list by given service and address list
+func filterAddrs(serviceList, addressList []string, force bool, allInfos map[string][]string) (filterAddrList []string, err error) {
+	addressAll := []string{}
+	for _, addr := range allInfos {
+		addressAll = append(addressAll, addr...)
+	}
+	if len(serviceList) != 0 && len(addressList) != 0 {
+		return nil, fmt.Errorf("use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")
+	}
+	// Add matched services to map
+	for _, name := range serviceList {
+		if addr, ok := allInfos[name]; ok {
+			filterAddrList = append(filterAddrList, addr...)
+			continue // jump to match the next service
+		}
+		if !force {
+			return nil, fmt.Errorf("service [%s] not found", name)
+		}
+		log.Warnf("service [%s] not found", name)
+	}
+	// Add matched addresses to map
+	for _, addr := range addressList {
+		if contains(addressAll, addr) {
+			filterAddrList = append(filterAddrList, addr)
+			continue
+		}
+		if !force {
+			return nil, fmt.Errorf("address [%s] not found", addr)
+		}
+		log.Warnf("address [%s] not found", addr)
+	}
+	if len(addressList) == 0 && len(serviceList) == 0 {
+		filterAddrList = addressAll
 	}
 	// Return all servers when all param is nil
-	if len(svrList) == 0 && len(addrList) == 0 {
-		return svrsAll, nil
-	} else {
-		// Add matched services to map
-		if len(svrList) != 0 {
-			for _, name := range svrList {
-				if addr, ok := svrsAll[name]; ok {
-					svrsUnderTest[name] = addr
-					continue // jump to match the next service
-				}
-				if !force {
-					return nil, fmt.Errorf("service [%s] not found", name)
-				}
-			}
-		}
-		// Add matched addresses to map
-		if len(addrList) != 0 {
-		I:
-			for _, addr := range addrList {
-				for svr, addrs := range svrsAll {
-					if contains(svrsUnderTest[svr], addr) {
-						continue I // The address is duplicate, jump over
-					}
-					for _, a := range addrs {
-						if a == addr {
-							svrsUnderTest[svr] = append(svrsUnderTest[svr], a)
-							continue I // jump to match the next address
-						}
-					}
-				}
-				if !force {
-					return nil, fmt.Errorf("address [%s] not found", addr)
-				}
-			}
+	return filterAddrList, nil
+}
+
+// removeDuplicateElement remove duplicate element in slice
+func removeDuplicateElement(addrs []string) []string {
+	result := make([]string, 0, len(addrs))
+	temp := map[string]struct{}{}
+	for _, item := range addrs {
+		if _, ok := temp[item]; !ok {
+			temp[item] = struct{}{}
+			result = append(result, item)
 		}
 	}
-	return svrsUnderTest, nil
+	return result
 }

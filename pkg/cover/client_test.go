@@ -68,7 +68,7 @@ func TestClientAction(t *testing.T) {
 		{
 			service: Service{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
 			param:   ProfileParam{Force: false, Service: []string{"serviceOK"}, Address: []string{profileSuccessMockSvr.URL}},
-			res:     "use 'service' and 'address' flag at the same time is illegal",
+			res:     "use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately",
 		},
 		{
 			service: Service{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
@@ -93,11 +93,6 @@ func TestClientAction(t *testing.T) {
 		{
 			service: Service{Name: "serviceErr", Address: profileErrMockSvr.URL},
 			res:     "bad mode line: error",
-		},
-		{
-			service: Service{Name: "serviceErr", Address: profileErrMockSvr.URL},
-			param:   ProfileParam{Force: true},
-			res:     "no profiles",
 		},
 		{
 			service: Service{Name: "serviceNotExist", Address: "http://172.0.0.2:7777"},
