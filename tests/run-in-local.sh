@@ -17,28 +17,4 @@ set -ex
 
 echo "test start"
 
-bats -t server.bats
-
 bats -t run.bats
-
-bats -t version.bats
-
-bats -t list.bats
-
-bats -t clear.bats
-
-bats -t build.bats
-
-bats -t profile.bats
-
-bats -t install.bats
-
-bats -t register.bats
-
-bats -t init.bats
-
-bats -t diff.bats
-
-bats -t cover.bats
-
-bash <(curl -s https://codecov.io/bash) -f 'filtered*' -F e2e

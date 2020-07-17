@@ -11,3 +11,11 @@ fmt:
 
 govet-check:
 	go vet ./...
+
+clean:
+	find tests/ -type f -name '*.bak' -delete 
+	find tests/ -type f -name '*.cov' -delete 
+	find tests/ -type f -name 'simple-project' -delete 
+	find tests/ -type f -name '*_profile_listen_addr' -delete 
+	find tests/ -type f -name 'simple_gopath_project' -delete 
+	

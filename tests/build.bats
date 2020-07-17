@@ -21,38 +21,26 @@ setup_file() {
     GOC_PID=$!
     sleep 2
     goc init
-    # run covered goc
-    gocc server --port=:60001 --debug 3>&- &
-    GOCC_PID=$!
-    sleep 2
-    info "goc gocc server started"
+
+    info "goc server started"
 }
 
 teardown_file() {
-    # collect from center
-    goc profile --debug -o filtered-server.cov
     kill -9 $GOC_PID
-    kill -9 $GOCC_PID
 }
 
-@test "test basic goc server" {
-    # connect to covered goc
-    run goc clear --center=http://127.0.0.1:60001
-    [ "$status" -eq 0 ]
-    # connect to covered goc
-    run goc profile --center=http://127.0.0.1:60001
+@test "test basic goc build command" {
+    cd samples/run_for_several_seconds
+    wait_profile_backend "build1"
+    run gocc build --debug --debugcisyncfile ci-sync.bak;
+    info build output: $output
     [ "$status" -eq 0 ]
 }
 
-@test "register a covered service" {
-    WORKDIR=$PWD
-    cd $WORKDIR/samples/run_for_several_seconds
-
-    run goc build --debug --center=http://127.0.0.1:60001
+@test "test goc build command without debug" {
+    cd samples/run_for_several_seconds
+    wait_profile_backend "build2"
+    run gocc build --debugcisyncfile ci-sync.bak;
+    info build output: $output
     [ "$status" -eq 0 ]
-    ./simple-project 3>&- &
-    sleep 1
-    # connect to covered goc
-    run goc profile --center=http://127.0.0.1:60001
-    [ "$status" -eq 0 ]    
 }

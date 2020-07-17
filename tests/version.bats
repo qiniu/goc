@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bats
 # Copyright 2020 Qiniu Cloud (七牛云)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,32 +13,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+load util.sh
 
-echo "test start"
+setup_file() {
+    # run centered server
+    goc server 3>&- &
+    GOC_PID=$!
+    sleep 2
+    goc init
 
-bats -t server.bats
+    info "goc server started"
+}
 
-bats -t run.bats
+setup() {
+    goc init
+    rm ci-sync.bak || true
+}
 
-bats -t version.bats
+teardown_file() {
+    kill -9 $GOC_PID
+}
 
-bats -t list.bats
+@test "test basic goc version command" {
+    wait_profile_backend "version"
 
-bats -t clear.bats
-
-bats -t build.bats
-
-bats -t profile.bats
-
-bats -t install.bats
-
-bats -t register.bats
-
-bats -t init.bats
-
-bats -t diff.bats
-
-bats -t cover.bats
-
-bash <(curl -s https://codecov.io/bash) -f 'filtered*' -F e2e
+    run gocc version --debug --debugcisyncfile ci-sync.bak;
+    [ "$output" = "(devel)" ]
+}

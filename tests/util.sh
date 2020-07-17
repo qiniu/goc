@@ -13,32 +13,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+info() {
+  echo -e "[$(date +'%Y-%m-%dT%H:%M:%S.%N%z')] INFO: $@" >&3
+}
 
-echo "test start"
+wait_profile() {
+    local n=0
+    local timeout=10
+    until [[ ${n} -ge ${timeout} ]]
+    do
+        # check whether the target port is listened by specific process
+        if [[ -f ci-sync.bak ]]; then
+            break
+        fi
+        n=$[${n}+1]
+        sleep 1
+    done
+    # collect from center
+    goc profile -o filtered-$1.cov
+}
 
-bats -t server.bats
-
-bats -t run.bats
-
-bats -t version.bats
-
-bats -t list.bats
-
-bats -t clear.bats
-
-bats -t build.bats
-
-bats -t profile.bats
-
-bats -t install.bats
-
-bats -t register.bats
-
-bats -t init.bats
-
-bats -t diff.bats
-
-bats -t cover.bats
-
-bash <(curl -s https://codecov.io/bash) -f 'filtered*' -F e2e
+wait_profile_backend() {
+    rm ci-sync.bak || true
+    coproc { wait_profile $1; }
+}

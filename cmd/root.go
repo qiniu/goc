@@ -17,9 +17,11 @@
 package cmd
 
 import (
+	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -58,10 +60,23 @@ Find more information at:
 			})
 		}
 	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		if debugInCISyncFile != "" {
+			f, err := os.Create(debugInCISyncFile)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			defer f.Close()
+
+			time.Sleep(5 * time.Second)
+		}
+	},
 }
 
 func init() {
 	rootCmd.PersistentFlags().BoolVar(&debugGoc, "debug", false, "run goc in debug mode")
+	rootCmd.PersistentFlags().StringVar(&debugInCISyncFile, "debugcisyncfile", "", "internal use only, no explain")
+	rootCmd.PersistentFlags().MarkHidden("debugcisyncfile")
 	viper.BindPFlags(rootCmd.PersistentFlags())
 }
 

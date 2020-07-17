@@ -25,11 +25,12 @@ import (
 )
 
 var (
-	target     string
-	center     string
-	agentPort  AgentPort
-	debugGoc   bool
-	buildFlags string
+	target            string
+	center            string
+	agentPort         AgentPort
+	debugGoc          bool
+	debugInCISyncFile string
+	buildFlags        string
 
 	goRunExecFlag  string
 	goRunArguments string

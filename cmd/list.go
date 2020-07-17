@@ -18,8 +18,9 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/qiniu/goc/pkg/cover"
 	"github.com/spf13/cobra"
@@ -37,6 +38,7 @@ goc list [flags]
 		if err != nil {
 			log.Fatalf("list failed, err: %v", err)
 		}
+		log.Infoln(string(res))
 		fmt.Fprint(os.Stdout, string(res))
 	},
 }
