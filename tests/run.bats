@@ -22,24 +22,22 @@ setup_file() {
     sleep 2
     goc init
 
-    # run covered goc run
-    WORKDIR=$PWD
-    cd samples/run_for_several_seconds
-    ls -al
-    gocc run --debug . 3>&- &
-    GOCC_PID=$!
-    sleep 2
     info "goc gocc server started"
 }
 
 teardown_file() {
-    cd $WORKDIR
-    # collect from center
-    goc profile --debug -o filtered-run.cov
     kill -9 $GOC_PID
-    kill -9 $GOCC_PID
 }
 
 @test "test basic goc run" {
+    info $PWD
+    export GOPATH=$PWD/samples/simple_gopath_project
+    export GO111MODULE=off
+    cd samples/simple_gopath_project/src/qiniu.com/simple_gopath_project
+    wait_profile_backend "run1"
 
+    run gocc run . --debug --debugcisyncfile ci-sync.bak;
+    info run output: $output
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"hello, world."* ]]
 }

@@ -39,12 +39,10 @@ func (b *Build) Run() error {
 	cmd.Stderr = os.Stderr
 	err := cmd.Start()
 	if err != nil {
-		log.Errorf("Fail to start command: %v. The error is: %v", cmd.Args, err)
 		return fmt.Errorf("fail to execute: %v, err: %w", cmd.Args, err)
 	}
 
 	if err = cmd.Wait(); err != nil {
-		log.Errorf("Fail to go run: %v. The error is: %v", cmd.Args, err)
 		return fmt.Errorf("fail to execute: %v, err: %w", cmd.Args, err)
 	}
 

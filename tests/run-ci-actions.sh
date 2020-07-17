@@ -19,7 +19,7 @@ echo "test start"
 
 bats -t server.bats
 
-bats -t gocrun.bats
+bats -t run.bats
 
 bats -t version.bats
 

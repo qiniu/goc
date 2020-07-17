@@ -17,4 +17,4 @@ set -ex
 
 echo "test start"
 
-bats -t profile.bats
+bats -t run.bats

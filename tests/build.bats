@@ -31,7 +31,7 @@ teardown_file() {
 
 @test "test basic goc build command" {
     cd samples/run_for_several_seconds
-    wait_profile_backend "build"
+    wait_profile_backend "build1"
     run gocc build --debug --debugcisyncfile ci-sync.bak;
     info build output: $output
     [ "$status" -eq 0 ]
@@ -39,7 +39,7 @@ teardown_file() {
 
 @test "test goc build command without debug" {
     cd samples/run_for_several_seconds
-    wait_profile_backend "build"
+    wait_profile_backend "build2"
     run gocc build --debugcisyncfile ci-sync.bak;
     info build output: $output
     [ "$status" -eq 0 ]
