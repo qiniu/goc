@@ -95,11 +95,6 @@ func TestClientAction(t *testing.T) {
 			res:     "bad mode line: error",
 		},
 		{
-			service: Service{Name: "serviceErr", Address: profileErrMockSvr.URL},
-			param:   ProfileParam{Force: true},
-			res:     "no profiles",
-		},
-		{
 			service: Service{Name: "serviceNotExist", Address: "http://172.0.0.2:7777"},
 			res:     "connection refused",
 		},

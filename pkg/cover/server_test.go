@@ -46,7 +46,6 @@ func TestFilterAddrs(t *testing.T) {
 		{
 			svrList: []string{"unknown"},
 			force:   true,
-			addrRes: []string{},
 		},
 		{
 			addrList: []string{"http://127.0.0.1:7777", "http://127.0.0.2:7777"},
