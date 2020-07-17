@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bats
 # Copyright 2020 Qiniu Cloud (七牛云)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +13,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+setup_file() {
+    # run centered server
+    goc server 3>&- &
+    GOC_PID=$!
+    sleep 2
+    goc init
 
-echo "test start"
+    # run covered goc run
+    WORKDIR=$PWD
+    cd samples/run_for_several_seconds
+    ls -al
+    gocc run --debug . 3>&- &
+    GOCC_PID=$!
+    sleep 2
+    echo "goc gocc server started"
+}
 
-bats server.bats
+teardown_file() {
+    cd $WORKDIR
+    # collect from center
+    goc profile --debug -o filtered2.cov
+    kill -9 $GOC_PID
+    kill -9 $GOCC_PID
+}
 
-bats gocrun.bats
+@test "test basic goc run" {
 
-bash <(curl -s https://codecov.io/bash) -f 'filtered*' -F e2e
+}

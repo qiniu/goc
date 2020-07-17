@@ -9,8 +9,6 @@ require (
 	github.com/julienschmidt/httprouter v1.2.0
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
-	github.com/onsi/ginkgo v1.11.0
-	github.com/onsi/gomega v1.8.1
 	github.com/otiai10/copy v1.0.2
 	github.com/qiniu/api.v7/v7 v7.5.0
 	github.com/sirupsen/logrus v1.6.0

@@ -22,21 +22,19 @@ jobs:
       - name: Go build
         run: |
           go build
-      - name: Go build test binary
+      - name: Use goc to build self
         run: |
-          cd tests/e2e
-          go get -u github.com/onsi/ginkgo/ginkgo 
-          ginkgo build ./...
-      - name: Upload binary result for job 1
+          ./goc build --output ./gocc --debug
+      - name: Upload goc binary
         uses: actions/upload-artifact@v2
         with:
           name: goc
           path: goc
-      - name: Upload binary result for job 1
+      - name: Upload covered self goc binary
         uses: actions/upload-artifact@v2
         with:
-          name: e2e.test
-          path: tests/e2e/e2e.test
+          name: gocc
+          path: gocc
 
   job_2:
     name: E2E test
@@ -56,7 +54,16 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           path: /home/runner/tools
+      - name: Install bats-core 
+        run: |
+          git clone https://github.com/bats-core/bats-core.git
+          cd bats-core
+          sudo ./install.sh /usr/local
       - name: Do test
         run: |
+          chmod +x /home/runner/tools/goc/goc
+          export PATH=/home/runner/tools/goc:$PATH
+          chmod +x /home/runner/tools/gocc/gocc
+          export PATH=/home/runner/tools/gocc:$PATH
           cd tests
           ./run-ci-actions.sh

@@ -24,12 +24,13 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
 // Action provides methods to contact with the covered service under test
 type Action interface {
-	Profile() ([]byte, error)
+	Profile(param ProfileParam) ([]byte, error)
 	Clear() ([]byte, error)
 	InitSystem() ([]byte, error)
 	ListServices() ([]byte, error)
@@ -88,13 +89,22 @@ func (c *client) ListServices() ([]byte, error) {
 	return services, err
 }
 
-func (c *client) Profile() ([]byte, error) {
-	u := fmt.Sprintf("%s%s", c.Host, CoverProfileAPI)
+func (c *client) Profile(param ProfileParam) ([]byte, error) {
+	u := fmt.Sprintf("%s%s?force=%s", c.Host, CoverProfileAPI, strconv.FormatBool(param.Force))
+	if len(param.Service) != 0 && len(param.Address) != 0 {
+		return nil, fmt.Errorf("use 'service' and 'address' flag at the same time is illegal")
+	}
+
+	for _, svr := range param.Service {
+		u = u + "&service=" + svr
+	}
+	for _, addr := range param.Address {
+		u = u + "&address=" + addr
+	}
 	profile, err := c.do("GET", u, nil)
 	if err != nil && isNetworkError(err) {
 		profile, err = c.do("GET", u, nil)
 	}
-
 	return profile, err
 }
 
@@ -126,7 +136,6 @@ func (c *client) do(method, url string, body io.Reader) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return responseBody, nil
 }
 

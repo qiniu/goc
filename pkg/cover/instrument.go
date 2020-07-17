@@ -54,6 +54,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"path/filepath"
 
 	{{range $i, $pkgCover := .DepsCover}}
 	_cover{{$i}} {{$pkgCover.Package.ImportPath | printf "%q"}}
@@ -212,7 +213,8 @@ func registerHandlers() {
 }
 
 func registerSelf(address string) ([]byte, error) {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/cover/register?name=%s&address=%s", {{.Center | printf "%q"}}, os.Args[0], address), nil)
+	selfName := filepath.Base(os.Args[0])
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/cover/register?name=%s&address=%s", {{.Center | printf "%q"}}, selfName, address), nil)
 	if err != nil {
 		log.Fatalf("http.NewRequest failed: %v", err)
 		return nil, err
