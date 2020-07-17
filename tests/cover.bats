@@ -35,9 +35,16 @@ teardown_file() {
     kill -9 $GOC_PID
 }
 
+setup() {
+    goc init
+}
+
 @test "test basic goc cover command" {
     cd test-temp
-    wait_profile_backend "cover1"
+
+    wait_profile_backend "cover1" &
+    profile_pid=$!
+
     run gocc cover --debug --debugcisyncfile ci-sync.bak;
     info cover1 output: $output
     [ "$status" -eq 0 ]
@@ -46,4 +53,6 @@ teardown_file() {
     info ls output: $output
     [ "$status" -eq 0 ]
     [[ "$output" == *"http_cover_apis_auto_generated.go"* ]]
+
+    wait $profile_pid
 }

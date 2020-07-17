@@ -44,9 +44,12 @@ teardown_file() {
 }
 
 @test "test init command" {
-    wait_profile_backend "init1"
+    wait_profile_backend "init1" &
+    profile_pid=$!
 
     run gocc init --center=http://127.0.0.1:60001 --debug --debugcisyncfile ci-sync.bak;
     info init output: $output
     [ "$status" -eq 0 ]
+
+    wait $profile_pid
 }

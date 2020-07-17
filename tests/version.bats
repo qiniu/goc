@@ -35,8 +35,11 @@ teardown_file() {
 }
 
 @test "test basic goc version command" {
-    wait_profile_backend "version"
+    wait_profile_backend "version" &
+    profile_pid=$!
 
     run gocc version --debug --debugcisyncfile ci-sync.bak;
     [ "$output" = "(devel)" ]
+
+    wait $profile_pid
 }

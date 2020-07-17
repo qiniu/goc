@@ -44,19 +44,25 @@ teardown_file() {
 }
 
 @test "test basic goc clear command" {
-    wait_profile_backend "clear1"
+    wait_profile_backend "clear1" &
+    profile_pid=$!
 
     run gocc clear --debug --debugcisyncfile ci-sync.bak;
     info clear1 output: $output
     [ "$status" -eq 0 ]
-    [[ "$output" == *"coverage counter clear call successfully"* ]]
+    [[ "$output" == *""* ]]
+
+    wait $profile_pid
 }
 
 @test "test clear another center" {
-    wait_profile_backend "clear2"
+    wait_profile_backend "clear2" &
+    profile_pid=$!
 
     run gocc clear --center=http://127.0.0.1:60001 --debug --debugcisyncfile ci-sync.bak;
     info clear2 output: $output
     [ "$status" -eq 0 ]
     [[ "$output" == *"coverage counter clear call successfully"* ]]
+
+    wait $profile_pid
 }

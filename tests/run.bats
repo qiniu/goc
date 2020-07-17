@@ -34,10 +34,14 @@ teardown_file() {
     export GOPATH=$PWD/samples/simple_gopath_project
     export GO111MODULE=off
     cd samples/simple_gopath_project/src/qiniu.com/simple_gopath_project
-    wait_profile_backend "run1"
+
+    wait_profile_backend "run1" &
+    profile_pid=$!
 
     run gocc run . --debug --debugcisyncfile ci-sync.bak;
     info run output: $output
     [ "$status" -eq 0 ]
     [[ "$output" == *"hello, world."* ]]
+
+    wait $profile_pid
 }

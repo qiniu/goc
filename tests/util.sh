@@ -22,7 +22,8 @@ wait_profile() {
     local timeout=10
     until [[ ${n} -ge ${timeout} ]]
     do
-        # check whether the target port is listened by specific process
+        LS=`ls`
+        info $1, $LS
         if [[ -f ci-sync.bak ]]; then
             break
         fi
@@ -31,9 +32,10 @@ wait_profile() {
     done
     # collect from center
     goc profile -o filtered-$1.cov
+    info "done $1 collect"
 }
 
 wait_profile_backend() {
     rm ci-sync.bak || true
-    coproc { wait_profile $1; }
+    wait_profile $1
 }

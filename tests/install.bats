@@ -29,13 +29,22 @@ teardown_file() {
     kill -9 $GOC_PID
 }
 
+setup() {
+    goc init
+}
+
 @test "test basic goc install command" {
     info $PWD
     export GOPATH=$PWD/samples/simple_gopath_project
     export GO111MODULE=off
     cd samples/simple_gopath_project/src/qiniu.com/simple_gopath_project
-    wait_profile_backend "install"
+
+    wait_profile_backend "install" &
+    profile_pid=$!
+
     run gocc install --debug --debugcisyncfile ci-sync.bak;
     info install output: $output
     [ "$status" -eq 0 ]
+
+    wait $profile_pid
 }
