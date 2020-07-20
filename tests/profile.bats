@@ -27,6 +27,10 @@ setup_file() {
     GOCC_PID=$!
     sleep 1
 
+    WORKDIR=$PWD
+    cd samples/run_for_several_seconds
+    goc build --center=http://127.0.0.1:60001
+
     info "goc server started"
 }
 
@@ -35,19 +39,41 @@ teardown_file() {
     kill -9 $GOCC_PID
 }
 
-@test "test goc profile to stdout" {
-    wait_profile_backend "profile1"
+setup() {
+    goc init --center=http://127.0.0.1:60001
+    goc init
+}
 
-    run gocc profile --debug --debugcisyncfile ci-sync.bak;
+@test "test goc profile to stdout" {
+    ./simple-project 3>&- &
+    SAMPLE_PID=$!
+    sleep 2
+
+    wait_profile_backend "profile1" &
+    profile_pid=$!
+
+    run gocc profile --center=http://127.0.0.1:60001 --debug --debugcisyncfile ci-sync.bak
+    info $output
     [ "$status" -eq 0 ]
     [[ "$output" == *"mode: count"* ]]
+
+    wait $profile_pid
+    kill -9 $SAMPLE_PID
 }
 
 @test "test goc profile to file" {
-    wait_profile_backend "profile2"
+    ./simple-project 3>&- &
+    SAMPLE_PID=$!
+    sleep 2
 
-    run gocc profile -o test-profile.bak --debug --debugcisyncfile ci-sync.bak;
+    wait_profile_backend "profile2" &
+    profile_pid=$!
+
+    run gocc profile --center=http://127.0.0.1:60001 -o test-profile.bak --debug --debugcisyncfile ci-sync.bak;
     [ "$status" -eq 0 ]
     run cat test-profile.bak
     [[ "$output" == *"mode: count"* ]]
+
+    wait $profile_pid
+    kill -9 $SAMPLE_PID
 }

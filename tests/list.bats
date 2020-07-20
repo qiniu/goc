@@ -36,11 +36,14 @@ teardown_file() {
 }
 
 @test "test basic goc list command" {
-    wait_profile_backend "list"
+    wait_profile_backend "list" &
+    profile_pid=$!
 
     run gocc list --debug --debugcisyncfile ci-sync.bak;
     info list output: $output
     [ "$status" -eq 0 ]
     [[ "$output" == *"gocc"* ]]
     [[ "$output" == *"http"* ]]
+
+    wait $profile_pid
 }

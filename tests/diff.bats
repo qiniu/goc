@@ -29,41 +29,53 @@ teardown_file() {
     kill -9 $GOC_PID
 }
 
+setup() {
+    goc init
+}
+
 @test "test basic goc diff command" {
     cd samples/diff_samples
 
-    wait_profile_backend "diff1"
-
+    wait_profile_backend "diff1" &
+    profile_pid=$!
 
     run gocc diff --new-profile=./new.voc --base-profile=./base.voc --debug --debugcisyncfile ci-sync.bak;
-    info list output: $output
+    info diff1 output: $output
     [ "$status" -eq 0 ]
     [[ "$output" == *"qiniu.com/kodo/apiserver/server/main.go |     50.0%     |    100.0%    | 50.0%"* ]]
     [[ "$output" == *"Total                                   |     50.0%     |    100.0%    | 50.0%"* ]]
+
+    wait $profile_pid
 }
 
 @test "test diff in prow environment with periodic job" {
     cd samples/diff_samples
 
-    wait_profile_backend "diff2"
+    wait_profile_backend "diff2" &
+    profile_pid=$!
 
     export JOB_TYPE=periodic
-
-    run gocc diff --new-profile=./new.voc --prow-postsubmit-job=base --debug --debugcisyncfile ci-sync.bak;
-    info diff1 output: $output
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"do nothing"* ]]
-}
-
-@test "test diff in prow environment with postsubmit job" {
-    cd samples/diff_samples
-
-    wait_profile_backend "diff3"
-
-    export JOB_TYPE=postsubmit
 
     run gocc diff --new-profile=./new.voc --prow-postsubmit-job=base --debug --debugcisyncfile ci-sync.bak;
     info diff2 output: $output
     [ "$status" -eq 0 ]
     [[ "$output" == *"do nothing"* ]]
+
+    wait $profile_pid
+}
+
+@test "test diff in prow environment with postsubmit job" {
+    cd samples/diff_samples
+
+    wait_profile_backend "diff3" &
+    profile_pid=$!
+
+    export JOB_TYPE=postsubmit
+
+    run gocc diff --new-profile=./new.voc --prow-postsubmit-job=base --debug --debugcisyncfile ci-sync.bak;
+    info diff3 output: $output
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"do nothing"* ]]
+
+    wait $profile_pid
 }

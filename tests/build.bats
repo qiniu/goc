@@ -29,18 +29,48 @@ teardown_file() {
     kill -9 $GOC_PID
 }
 
+setup() {
+    goc init
+}
+
 @test "test basic goc build command" {
     cd samples/run_for_several_seconds
-    wait_profile_backend "build1"
+    
+    wait_profile_backend "build1" &
+    profile_pid=$!
+
     run gocc build --debug --debugcisyncfile ci-sync.bak;
-    info build output: $output
+    info build1 output: $output
     [ "$status" -eq 0 ]
+
+    wait $profile_pid
 }
 
 @test "test goc build command without debug" {
     cd samples/run_for_several_seconds
-    wait_profile_backend "build2"
+
+    wait_profile_backend "build2" &
+    profile_pid=$!
+
     run gocc build --debugcisyncfile ci-sync.bak;
-    info build output: $output
+    info build2 output: $output
     [ "$status" -eq 0 ]
+
+    wait $profile_pid
+}
+
+@test "test goc build in GOPATH project" {
+    info $PWD
+    export GOPATH=$PWD/samples/simple_gopath_project
+    export GO111MODULE=off
+    cd samples/simple_gopath_project/src/qiniu.com/simple_gopath_project
+
+    wait_profile_backend "build3" &
+    profile_pid=$!
+
+    run gocc build --buildflags="-v" --debug --debugcisyncfile ci-sync.bak;
+    info build3 output: $output
+    [ "$status" -eq 0 ]
+
+    wait $profile_pid
 }

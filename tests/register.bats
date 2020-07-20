@@ -35,20 +35,31 @@ teardown_file() {
     kill -9 $GOCC_PID
 }
 
+# we need to catch gocc server, so no init
+# setup() {
+#     goc init
+# }
+
 @test "test basic goc register command" {
-    wait_profile_backend "register1"
+    wait_profile_backend "register1" &
+    profile_pid=$!
 
     run gocc register --center=http://127.0.0.1:60001 --name=xyz --address=http://137.0.0.1:666 --debug --debugcisyncfile ci-sync.bak;
-    info register output: $output
+    info register1 output: $output
     [ "$status" -eq 0 ]
     [[ "$output" == *"success"* ]]
+
+    wait $profile_pid
 }
 
 @test "test goc register without port" {
-    wait_profile_backend "register2"
+    wait_profile_backend "register2" &
+    profile_pid=$!
 
     run gocc register --center=http://127.0.0.1:60001 --name=xyz --address=http://137.0.0.1 --debug --debugcisyncfile ci-sync.bak;
-    info register output: $output
+    info register2 output: $output
     [ "$status" -eq 0 ]
     [[ "$output" == *"missing port"* ]]
+
+    wait $profile_pid
 }
