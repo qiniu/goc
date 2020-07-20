@@ -81,8 +81,8 @@ var addrList []string
 
 func init() {
 	profileCmd.Flags().StringVarP(&output, "output", "o", "", "download cover profile")
-	profileCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "get the cover profile of these services, you can get all available service names from command `goc list`, use this flag and 'address' flag at the same time may cause ambiguity, please use them separately.")
-	profileCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "get the cover profile of these addresses, you can get all available addresses from command `goc list`, use this flag and 'service' flag at the same time may cause ambiguity, please use them separately.")
+	profileCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "get the cover profile of these services.")
+	profileCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "get the cover profile of these addresses.")
 	profileCmd.Flags().BoolVarP(&force, "force", "f", false, "force to get the coverage counter of all the available services you want")
 	addBasicFlags(profileCmd.Flags())
 	rootCmd.AddCommand(profileCmd)
