@@ -44,7 +44,7 @@ goc profile --service=service1,service2,service3
 # Get coverage counter of several specified addresses. You can get all available addresses from command 'goc list'. Use 'service' and 'address' flag at the same time may cause ambiguity, please use them separately.
 goc profile --address=address1,address2,address3
 
-# Force to get the coverage counter of all the available services you want.
+# Force fetching all available profiles.
 goc profile --force
 `,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -81,9 +81,9 @@ var addrList []string
 
 func init() {
 	profileCmd.Flags().StringVarP(&output, "output", "o", "", "download cover profile")
-	profileCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "get the cover profile of these services, you can get all available service names from command `goc list`, use this flag and 'address' flag at the same time may cause ambiguity, please use them separately.")
-	profileCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "get the cover profile of these addresses, you can get all available addresses from command `goc list`, use this flag and 'service' flag at the same time may cause ambiguity, please use them separately.")
-	profileCmd.Flags().BoolVarP(&force, "force", "f", false, "force to get the coverage counter of all the available services you want")
+	profileCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "service name to fetch profile, see 'goc list' for all services.")
+	profileCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "address to fetch profile, see 'goc list' for all addresses.")
+	profileCmd.Flags().BoolVarP(&force, "force", "f", false, "force fetching all available profiles")
 	addBasicFlags(profileCmd.Flags())
 	rootCmd.AddCommand(profileCmd)
 }
