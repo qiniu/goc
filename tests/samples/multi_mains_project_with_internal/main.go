@@ -1,8 +1,8 @@
 package main
 
 import (
-	"example.com/simple-project/foo"
-	"example.com/simple-project/internal"
+	"example.com/multi-mains-project/foo"
+	"example.com/multi-mains-project/internal"
 )
 
 func main() {

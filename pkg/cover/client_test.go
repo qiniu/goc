@@ -21,8 +21,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"net/http"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestClientAction(t *testing.T) {
@@ -128,9 +129,31 @@ func TestClientAction(t *testing.T) {
 	assert.Equal(t, "{}", string(res))
 }
 
-func TestE2E(t *testing.T) {
-	// FIXME: start goc server
-	// FIXME: call goc build to cover goc server
-	// FIXME: do some tests again goc server
-	// FIXME: goc profile and checkout coverage
+func TestClientRegisterService(t *testing.T) {
+	c := &client{}
+
+	// client register with empty address
+	testService1 := Service{
+		Address: "",
+		Name:    "abc",
+	}
+	_, err := c.RegisterService(testService1)
+	assert.Contains(t, err.Error(), "empty url")
+
+	// client register with empty name
+	testService2 := Service{
+		Address: "http://127.0.0.1:444",
+		Name:    "",
+	}
+	_, err = c.RegisterService(testService2)
+	assert.EqualError(t, err, "invalid service name")
+}
+
+func TestClientListServices(t *testing.T) {
+	c := &client{
+		Host:   "http://127.0.0.1:64445", // a invalid host
+		client: http.DefaultClient,
+	}
+	_, err := c.ListServices()
+	assert.Contains(t, err.Error(), "connect: connection refused")
 }

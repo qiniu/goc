@@ -111,7 +111,7 @@ func TestRunPresubmitFulldiff(t *testing.T) {
 	}
 	qc, router, _, teardown := qiniu.MockQiniuServer(&conf)
 	defer teardown()
-	qiniu.MockRouterAPI(router, localProfileContent)
+	qiniu.MockRouterAPI(router, localProfileContent, 0)
 
 	ChangedProfilePath := "changed.cov"
 	defer os.Remove(path.Join(pwd, ChangedProfilePath))

@@ -24,7 +24,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Go test
+        env:
+          GOVERSION: ${{ matrix.go-version }}
         run: |
           export DEFAULT_EXCEPT_PKGS=e2e
           go test -p 1 -coverprofile=coverage.txt $(go list ./... | grep -v -E $DEFAULT_EXCEPT_PKGS)
-          bash <(curl -s https://codecov.io/bash) -F unittest
+          bash <(curl -s https://codecov.io/bash) -F unittest-$GOVERSION

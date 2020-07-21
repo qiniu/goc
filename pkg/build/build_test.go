@@ -90,3 +90,12 @@ func TestInvalidPackageNameForBuild(t *testing.T) {
 		assert.FailNow(t, "should not success with non . or ./... package")
 	}
 }
+
+// test NewBuild with wrong parameters
+func TestNewBuildWithWrongParameters(t *testing.T) {
+	_, err := NewBuild("", []string{"a.go", "b.go"}, "cur", "cur")
+	assert.Equal(t, err, ErrTooManyArgs)
+
+	_, err = NewBuild("", []string{"a.go"}, "", "cur")
+	assert.Equal(t, err, ErrInvalidWorkingDir)
+}

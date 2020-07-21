@@ -60,6 +60,8 @@ jobs:
           cd bats-core
           sudo ./install.sh /usr/local
       - name: Do test
+        env:
+          GOVERSION: ${{ matrix.go-version }}
         run: |
           chmod +x /home/runner/tools/goc/goc
           export PATH=/home/runner/tools/goc:$PATH

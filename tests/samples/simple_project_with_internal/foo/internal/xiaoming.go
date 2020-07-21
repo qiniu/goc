@@ -1,0 +1,5 @@
+package internal
+
+func Xiaohong() {
+
+}
