@@ -97,7 +97,8 @@ func (o *ObjectHandle) NewRangeReader(ctx context.Context, offset, length int64)
 func runWithRetry(maxTry int, f func() (bool, error)) error {
 	var err error
 	for maxTry > 0 {
-		needRetry, err := f()
+		var needRetry bool
+		needRetry, err = f() // fix -  needRetry, err := f(), err hides the outside error
 		if err != nil {
 			logrus.Warnf("err occurred: %v. try again", err)
 		} else if needRetry {

@@ -41,4 +41,4 @@ bats -t diff.bats
 
 bats -t cover.bats
 
-bash <(curl -s https://codecov.io/bash) -f 'filtered*' -F e2e
+bash <(curl -s https://codecov.io/bash) -f 'filtered*' -F e2e-$GOVERSION

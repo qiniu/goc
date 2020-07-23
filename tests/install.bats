@@ -39,12 +39,51 @@ setup() {
     export GO111MODULE=off
     cd samples/simple_gopath_project/src/qiniu.com/simple_gopath_project
 
-    wait_profile_backend "install" &
+    wait_profile_backend "install1" &
     profile_pid=$!
 
     run gocc install --debug --debugcisyncfile ci-sync.bak;
-    info install output: $output
+    info install1 output: $output
     [ "$status" -eq 0 ]
+
+    wait $profile_pid
+}
+
+@test "test basic goc install command with GOBIN set" {
+    info $PWD
+    export GOPATH=$PWD/samples/simple_gopath_project
+    export GOBIN=$PWD
+    export GO111MODULE=off
+    cd samples/simple_gopath_project/src/qiniu.com/simple_gopath_project
+
+    wait_profile_backend "install2" &
+    profile_pid=$!
+
+    run gocc install --debug --debugcisyncfile ci-sync.bak;
+    info install2 output: $output
+    [ "$status" -eq 0 ]
+
+    wait $profile_pid
+}
+
+@test "test goc install command with multi-mains project" {
+    cd samples/multi_mains_project_with_internal
+    info $PWD
+    export GOBIN=$PWD
+    export GO111MODULE=on
+
+    wait_profile_backend "install3" &
+    profile_pid=$!
+
+    run gocc install ./... --debug --debugcisyncfile ci-sync.bak;
+    info install3 output: $output
+    [ "$status" -eq 0 ]
+
+    run ls -al 
+    info install3 ls output: $output
+
+    [[ -f main1 ]]
+    [[ -f main2 ]]
 
     wait $profile_pid
 }

@@ -12,3 +12,4 @@ _svrs_address.txt
 
 # other
 *.iml
+.DS_Store

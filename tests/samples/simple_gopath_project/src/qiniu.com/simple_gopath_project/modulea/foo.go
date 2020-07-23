@@ -1,0 +1,5 @@
+package modulea
+
+func Bar() {
+
+}

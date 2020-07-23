@@ -1,0 +1,5 @@
+package qiniu
+
+func BB() {
+
+}

@@ -22,6 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var baseDir string
@@ -101,4 +103,47 @@ func TestLegacyProjectNotInGoPATH(t *testing.T) {
 	if err != nil {
 		t.Fatalf("There should be a main.go in temporary directory directly, the error: %v", err)
 	}
+}
+
+// test traversePkgsList error case
+func TestTraversePkgsList(t *testing.T) {
+	b := &Build{
+		Pkgs: nil,
+	}
+	_, _, err := b.traversePkgsList()
+	assert.EqualError(t, err, ErrShouldNotReached.Error())
+}
+
+// test getTmpwd error case
+func TestGetTmpwd(t *testing.T) {
+	b := &Build{
+		Pkgs: nil,
+	}
+	_, err := b.getTmpwd()
+	assert.EqualError(t, err, ErrShouldNotReached.Error())
+}
+
+// test findWhereToInstall
+func TestFindWhereToInstall(t *testing.T) {
+	// if a legacy project without project root find
+	// should find no plcae to install
+	b := &Build{
+		Pkgs:  nil,
+		IsMod: false,
+		Root:  "",
+	}
+	_, err := b.findWhereToInstall()
+	assert.EqualError(t, err, ErrNoplaceToInstall.Error())
+
+	// if $GOBIN not found
+	// and if $GOPATH not found
+	// should install to $HOME/go/bin
+	b = &Build{
+		Pkgs:      nil,
+		IsMod:     true,
+		OriGOPATH: "",
+	}
+	placeToInstall, err := b.findWhereToInstall()
+	expectedPlace := filepath.Join(os.Getenv("HOME"), "go", "bin")
+	assert.Equal(t, placeToInstall, expectedPlace)
 }

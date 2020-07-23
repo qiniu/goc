@@ -25,12 +25,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/tools/cover"
 	"k8s.io/test-infra/gopherage/pkg/cov"
-	"strconv"
 )
 
 // DefaultStore implements the IPersistence interface
