@@ -121,7 +121,7 @@ func TestCreateGithubComment(t *testing.T) {
 	router.HandlerFunc("DELETE", "/repos/qiniu/goc/issues/comments/1", func(w http.ResponseWriter, r *http.Request) {
 	})
 
-	p := PrComment{
+	p := GithubPrComment{
 		RobotUserName: "qiniu-bot",
 		RepoOwner:     "qiniu",
 		RepoName:      "goc",
@@ -146,7 +146,7 @@ func TestGetPrChangedFiles(t *testing.T) {
 		fmt.Fprint(w, `[{"filename":"src/qiniu.com/kodo/s3apiv2/bucket/bucket.go"}]`)
 	})
 
-	p := PrComment{
+	p := GithubPrComment{
 		RobotUserName: "qiniu-bot",
 		RepoOwner:     "qiniu",
 		RepoName:      "goc",

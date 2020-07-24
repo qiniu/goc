@@ -17,16 +17,25 @@
 package prow
 
 import (
+	"errors"
+	"github.com/qiniu/goc/pkg/github"
+	"github.com/qiniu/goc/pkg/mock/clients"
+	"github.com/qiniu/goc/pkg/qiniu"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"path"
 	"testing"
+)
 
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
-
-	"github.com/qiniu/goc/pkg/github"
-	"github.com/qiniu/goc/pkg/qiniu"
+var (
+	defaultContent = `mode: atomic
+qiniu.com/kodo/bd/bdgetter/source.go:19.118,22.2 2 0
+qiniu.com/kodo/bd/bdgetter/source.go:37.34,39.2 1 0
+qiniu.com/kodo/bd/pfd/locker/app/qboxbdlocker/main.go:50.2,53.52 4 1
+qiniu.com/kodo/bd/pfd/locker/bdlocker/locker.go:33.51,35.2 1 0`
+	defaultLocalPath = "local.cov"
 )
 
 func TestTrimGhFileToProfile(t *testing.T) {
@@ -54,13 +63,9 @@ func setup(path, content string) {
 }
 
 func TestWriteChangedCov(t *testing.T) {
-	path := "local.cov"
+	path := defaultLocalPath
 	savePath := qiniu.ChangedProfileName
-	content := `mode: atomic
-qiniu.com/kodo/bd/bdgetter/source.go:19.118,22.2 2 0
-qiniu.com/kodo/bd/bdgetter/source.go:37.34,39.2 1 0
-qiniu.com/kodo/bd/pfd/locker/app/qboxbdlocker/main.go:50.2,53.52 4 1
-qiniu.com/kodo/bd/pfd/locker/bdlocker/locker.go:33.51,35.2 1 0`
+	content := defaultContent
 	changedFiles := []string{"qiniu.com/kodo/bd/pfd/locker/bdlocker/locker.go"}
 	expectContent := `mode: atomic
 qiniu.com/kodo/bd/pfd/locker/bdlocker/locker.go:33.51,35.2 1 0
@@ -95,10 +100,8 @@ func TestRunPresubmitFulldiff(t *testing.T) {
 
 	//mock local profile
 	pwd, err := os.Getwd()
-	if err != nil {
-		logrus.WithError(err).Fatalf("get pwd failed")
-	}
-	localPath := "local.cov"
+	assert.NoError(t, err)
+	localPath := defaultLocalPath
 	localProfileContent := `mode: atomic
 "qiniu.com/kodo/apiserver/server/main.go:32.49,33.13 1 30
 "qiniu.com/kodo/apiserver/server/main.go:42.49,43.13 1 0`
@@ -137,5 +140,103 @@ func TestRunPresubmitFulldiff(t *testing.T) {
 	}
 	defer os.Remove(path.Join(os.Getenv("ARTIFACTS"), j.HtmlProfile()))
 
-	j.RunPresubmit()
+	err = j.RunPresubmit()
+	assert.NoError(t, err)
 }
+
+func TestRunPresubmitErrorGetRemoteCoverProfile(t *testing.T) {
+	j := &Job{
+		LocalProfilePath: "unkown",
+	}
+	err := j.RunPresubmit()
+	assert.Contains(t, err.Error(), "no such file or directory")
+}
+
+func TestRunPresubmitGetEmptyProfile(t *testing.T) {
+	path := "local.cov"
+	setup(path, defaultContent)
+	defer os.Remove(path)
+	j := &Job{
+		LocalProfilePath: path,
+		QiniuClient:      &clients.MockQnClient{},
+	}
+	err := j.RunPresubmit()
+	assert.NoError(t, err)
+}
+
+type MockErrorListSubDirsQnClient struct {
+	*clients.MockQnClient
+}
+
+func (s *MockErrorListSubDirsQnClient) ListSubDirs(prefix string) ([]string, error) {
+	return nil, errors.New("mock error")
+}
+
+func TestRunPresubmitErrorGetBaseProfile(t *testing.T) {
+	path := "local.cov"
+	setup(path, defaultContent)
+	defer os.Remove(path)
+	j := &Job{
+		LocalProfilePath: path,
+		QiniuClient:      &MockErrorListSubDirsQnClient{},
+	}
+	err := j.RunPresubmit()
+	assert.Contains(t, err.Error(), "mock error")
+}
+
+type MockProfileQnClient struct {
+	*clients.MockQnClient
+}
+
+func (s *MockProfileQnClient) ListSubDirs(prefix string) ([]string, error) {
+	return []string{"1"}, nil
+}
+
+func (s *MockProfileQnClient) ReadObject(key string) ([]byte, error) {
+	logrus.Info(key)
+	if key == "logs/1/finished.json" {
+		return []byte(`{"timestamp":1590750306,"passed":true,"result":"SUCCESS","repo-version":"76433418ea48aae57af028f9cb2fa3735ce08c7d"}`), nil
+	}
+	return []byte(""), nil
+}
+
+// 无法实现coverList报错
+//func TestRunPresubmitErrorReadBaseProfile(t *testing.T) {
+//	path := "local.cov"
+//	setup(path, defaultContent)
+//	defer os.Remove(path)
+//	j := &Job{
+//		LocalProfilePath: path,
+//		QiniuClient:      &MockProfileQnClient{},
+//	}
+//	err := j.RunPresubmit()
+//	assert.Contains(t, err.Error(), "mock error")
+//}
+
+//type MockErrorPrComment struct {
+//	*clients.MockPrComment
+//}
+//
+//func (s *MockErrorPrComment) GetPrChangedFiles() (files []string, err error) {
+//	return []string{"aaa"}, nil
+//}
+//
+//func TestGetFilesAndCovList(t *testing.T){
+//	items := []struct {
+//		fullDiff bool
+//		prComment github.PrComment
+//		localP cover.CoverageList
+//		baseP cover.CoverageList
+//	}{
+//		{
+//			inputFiles:  []string{"src/qiniu.com/kodo/io/io/io_svr.go", "README.md"},
+//			expectFiles: []string{"qiniu.com/kodo/io/io/io_svr.go", "README.md"},
+//		},
+//	}
+//
+//	for _, tc := range items {
+//		f := trimGhFileToProfile(tc.inputFiles)
+//		assert.Equal(t, f, tc.expectFiles)
+//	}
+//	getFilesAndCovList
+//}

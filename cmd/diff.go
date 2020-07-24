@@ -160,7 +160,7 @@ func doDiffUnderProw(cmd *cobra.Command, args []string) {
 		if qiniuCredential == "" {
 			logrus.Fatalf("qiniu credential not provided")
 		}
-		var qc *qiniu.Client
+		var qc qiniu.Client
 		var conf qiniu.Config
 		files, err := ioutil.ReadFile(*&qiniuCredential)
 		if err != nil {

@@ -41,7 +41,7 @@ func TestNewRangeReader(t *testing.T) {
 
 	MockPrivateDomainUrl(router, 0)
 
-	oh := &ObjectHandle{
+	oh := &QnObjectHandle{
 		key:    "key",
 		cfg:    cfg,
 		bm:     nil,
@@ -78,7 +78,7 @@ func TestNewRangeReaderWithTimeoutAndRecover(t *testing.T) {
 
 	MockPrivateDomainUrl(router, 2)
 
-	oh := &ObjectHandle{
+	oh := &QnObjectHandle{
 		key:    "key",
 		cfg:    cfg,
 		bm:     nil,
@@ -116,7 +116,7 @@ func TestNewRangeReaderWithTimeoutNoRecover(t *testing.T) {
 
 	MockPrivateDomainUrl(router, 12)
 
-	oh := &ObjectHandle{
+	oh := &QnObjectHandle{
 		key:    "key",
 		cfg:    cfg,
 		bm:     nil,

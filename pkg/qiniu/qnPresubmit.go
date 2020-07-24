@@ -70,7 +70,7 @@ func isBuildSucceeded(jsonText []byte) bool {
 
 // FindBaseProfileFromQiniu finds the coverage profile file from the latest healthy build
 // stored in given gcs directory
-func FindBaseProfileFromQiniu(qc *Client, prowJobName, covProfileName string) ([]byte, error) {
+func FindBaseProfileFromQiniu(qc Client, prowJobName, covProfileName string) ([]byte, error) {
 	dirOfJob := path.Join("logs", prowJobName)
 	prefix := dirOfJob + "/"
 	strBuilds, err := qc.ListSubDirs(prefix)
