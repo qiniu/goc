@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"os"
 )
 
 func TestFindBaseProfileFromQiniu(t *testing.T) {
@@ -38,4 +39,30 @@ func TestFindBaseProfileFromQiniu(t *testing.T) {
 	getProfile, err := FindBaseProfileFromQiniu(qc, prowJobName, covProfileName)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, string(getProfile), mockProfileContent)
+}
+
+func TestArtifacts_ProfilePath(t *testing.T) {
+	p := &ProfileArtifacts{
+		Directory:   "directory/",
+		ProfileName: "profile",
+	}
+	profilePath := p.ProfilePath()
+	assert.Equal(t, profilePath, "directory/profile")
+}
+
+func TestProfileArtifacts_CreateChangedProfile(t *testing.T) {
+	p := &ProfileArtifacts{
+		ChangedProfileName: "test.cov",
+	}
+	file := p.CreateChangedProfile()
+	defer file.Close()
+	defer os.Remove(p.ChangedProfileName)
+}
+
+func TestProfileArtifacts_GetChangedProfileName(t *testing.T) {
+	p := &ProfileArtifacts{
+		ChangedProfileName: "change.cov",
+	}
+	name := p.GetChangedProfileName()
+	assert.Equal(t, name, "change.cov")
 }

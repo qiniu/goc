@@ -180,7 +180,7 @@ func doDiffUnderProw(cmd *cobra.Command, args []string) {
 		}
 		qc = qiniu.NewClient(&conf)
 
-		localArtifacts := qiniu.Artifacts{
+		localArtifacts := qiniu.ProfileArtifacts{
 			Directory:          artifacts,
 			ProfileName:        newProfile,
 			ChangedProfileName: qiniu.ChangedProfileName,

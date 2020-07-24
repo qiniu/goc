@@ -135,6 +135,12 @@ func TestCreateGithubComment(t *testing.T) {
 	p.CreateGithubComment("", coverList)
 }
 
+func TestCreateGithubCommentError(t *testing.T) {
+	p := &GithubPrComment{}
+	err := p.CreateGithubComment("", cover.DeltaCovList{})
+	assert.NoError(t, err)
+}
+
 func TestGetPrChangedFiles(t *testing.T) {
 	client, router, _, teardown := setup()
 	defer teardown()
@@ -159,4 +165,12 @@ func TestGetPrChangedFiles(t *testing.T) {
 	changedFiles, err := p.GetPrChangedFiles()
 	assert.Equal(t, err, nil)
 	assert.Equal(t, changedFiles, expectFiles)
+}
+
+func TestGetCommentFlag(t *testing.T) {
+	p := GithubPrComment{
+		CommentFlag: "flag",
+	}
+	flag := p.GetCommentFlag()
+	assert.Equal(t, flag, p.CommentFlag)
 }

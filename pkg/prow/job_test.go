@@ -18,6 +18,8 @@ package prow
 
 import (
 	"errors"
+	"fmt"
+	"github.com/qiniu/goc/pkg/cover"
 	"github.com/qiniu/goc/pkg/github"
 	"github.com/qiniu/goc/pkg/mock/clients"
 	"github.com/qiniu/goc/pkg/qiniu"
@@ -35,7 +37,8 @@ qiniu.com/kodo/bd/bdgetter/source.go:19.118,22.2 2 0
 qiniu.com/kodo/bd/bdgetter/source.go:37.34,39.2 1 0
 qiniu.com/kodo/bd/pfd/locker/app/qboxbdlocker/main.go:50.2,53.52 4 1
 qiniu.com/kodo/bd/pfd/locker/bdlocker/locker.go:33.51,35.2 1 0`
-	defaultLocalPath = "local.cov"
+	defaultLocalPath   = "local.cov"
+	defaultChangedPath = "changed.cov"
 )
 
 func TestTrimGhFileToProfile(t *testing.T) {
@@ -76,7 +79,7 @@ qiniu.com/kodo/bd/pfd/locker/bdlocker/locker.go:33.51,35.2 1 0
 	defer os.Remove(savePath)
 	j := &Job{
 		LocalProfilePath: path,
-		LocalArtifacts:   &qiniu.Artifacts{ChangedProfileName: savePath},
+		LocalArtifacts:   &qiniu.ProfileArtifacts{ChangedProfileName: savePath},
 	}
 	j.WriteChangedCov(changedFiles)
 
@@ -133,7 +136,7 @@ func TestRunPresubmitFulldiff(t *testing.T) {
 		PostSubmitJob:          "kodo-postsubmits-go-st-coverage",
 		PostSubmitCoverProfile: "filterd.cov",
 		LocalProfilePath:       localPath,
-		LocalArtifacts:         &qiniu.Artifacts{ChangedProfileName: ChangedProfilePath},
+		LocalArtifacts:         &qiniu.ProfileArtifacts{ChangedProfileName: ChangedProfilePath},
 		QiniuClient:            qc,
 		GithubComment:          prClient,
 		FullDiff:               true,
@@ -144,44 +147,60 @@ func TestRunPresubmitFulldiff(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestRunPresubmitErrorGetRemoteCoverProfile(t *testing.T) {
-	j := &Job{
-		LocalProfilePath: "unkown",
+func TestRunPresubmitError(t *testing.T) {
+	items := []struct {
+		prepare bool // 是否需要准备本地cov
+		j       Job
+		err     string
+	}{
+		{
+			prepare: false,
+			j: Job{
+				LocalProfilePath: "unkown",
+			},
+			err: "no such file or directory",
+		},
+		{
+			prepare: true,
+			j: Job{
+				LocalProfilePath: defaultLocalPath,
+				QiniuClient:      &clients.MockQnClient{},
+			},
+		},
+		{
+			prepare: true,
+			j: Job{
+				LocalProfilePath: defaultLocalPath,
+				QiniuClient:      &clients.MockQnClient{ListSubDirsErr: errors.New("mock error")},
+			},
+			err: "mock error",
+		},
+		{
+			prepare: true,
+			j: Job{
+				LocalProfilePath: defaultLocalPath,
+				QiniuClient:      &MockProfileQnClient{},
+				GithubComment:    &clients.MockPrComment{GetPrChangedFilesRes: []string{"qiniu.com/kodo/apiserver/server/main.go"}},
+				FullDiff:         true,
+				LocalArtifacts:   &qiniu.ProfileArtifacts{ChangedProfileName: defaultChangedPath},
+			},
+			err: "",
+		},
 	}
-	err := j.RunPresubmit()
-	assert.Contains(t, err.Error(), "no such file or directory")
-}
-
-func TestRunPresubmitGetEmptyProfile(t *testing.T) {
-	path := "local.cov"
-	setup(path, defaultContent)
-	defer os.Remove(path)
-	j := &Job{
-		LocalProfilePath: path,
-		QiniuClient:      &clients.MockQnClient{},
+	for _, tc := range items {
+		if tc.prepare {
+			path := defaultLocalPath
+			setup(path, defaultContent)
+			defer os.Remove(path)
+			defer os.Remove(defaultChangedPath)
+		}
+		err := tc.j.RunPresubmit()
+		if tc.err == "" {
+			assert.NoError(t, err)
+		} else {
+			assert.Contains(t, err.Error(), tc.err)
+		}
 	}
-	err := j.RunPresubmit()
-	assert.NoError(t, err)
-}
-
-type MockErrorListSubDirsQnClient struct {
-	*clients.MockQnClient
-}
-
-func (s *MockErrorListSubDirsQnClient) ListSubDirs(prefix string) ([]string, error) {
-	return nil, errors.New("mock error")
-}
-
-func TestRunPresubmitErrorGetBaseProfile(t *testing.T) {
-	path := "local.cov"
-	setup(path, defaultContent)
-	defer os.Remove(path)
-	j := &Job{
-		LocalProfilePath: path,
-		QiniuClient:      &MockErrorListSubDirsQnClient{},
-	}
-	err := j.RunPresubmit()
-	assert.Contains(t, err.Error(), "mock error")
 }
 
 type MockProfileQnClient struct {
@@ -189,7 +208,7 @@ type MockProfileQnClient struct {
 }
 
 func (s *MockProfileQnClient) ListSubDirs(prefix string) ([]string, error) {
-	return []string{"1"}, nil
+	return []string{defaultContent}, nil
 }
 
 func (s *MockProfileQnClient) ReadObject(key string) ([]byte, error) {
@@ -200,43 +219,93 @@ func (s *MockProfileQnClient) ReadObject(key string) ([]byte, error) {
 	return []byte(""), nil
 }
 
-// 无法实现coverList报错
-//func TestRunPresubmitErrorReadBaseProfile(t *testing.T) {
-//	path := "local.cov"
-//	setup(path, defaultContent)
-//	defer os.Remove(path)
-//	j := &Job{
-//		LocalProfilePath: path,
-//		QiniuClient:      &MockProfileQnClient{},
-//	}
-//	err := j.RunPresubmit()
-//	assert.Contains(t, err.Error(), "mock error")
-//}
+func TestGetFilesAndCovList(t *testing.T) {
+	items := []struct {
+		fullDiff   bool
+		prComment  github.PrComment
+		localP     cover.CoverageList
+		baseP      cover.CoverageList
+		err        string
+		lenFiles   int
+		lenCovList int
+	}{
+		{
+			fullDiff:  true,
+			prComment: &clients.MockPrComment{},
+			localP: cover.CoverageList{
+				{FileName: "qiniu.com/kodo/apiserver/server/main.go", NCoveredStmts: 2, NAllStmts: 2},
+				{FileName: "qiniu.com/kodo/apiserver/server/test.go", NCoveredStmts: 2, NAllStmts: 2},
+			},
+			baseP: cover.CoverageList{
+				{FileName: "qiniu.com/kodo/apiserver/server/main.go", NCoveredStmts: 1, NAllStmts: 2},
+				{FileName: "qiniu.com/kodo/apiserver/server/test.go", NCoveredStmts: 1, NAllStmts: 2},
+			},
+			lenFiles:   2,
+			lenCovList: 2,
+		},
+		{
+			fullDiff:  false,
+			prComment: &clients.MockPrComment{GetPrChangedFilesErr: errors.New("mock error")},
+			err:       "mock error",
+		},
+		{
+			fullDiff:   false,
+			prComment:  &clients.MockPrComment{},
+			lenFiles:   0,
+			lenCovList: 0,
+		},
+		{
+			fullDiff:  false,
+			prComment: &clients.MockPrComment{GetPrChangedFilesRes: []string{"qiniu.com/kodo/apiserver/server/main.go"}},
+			localP: cover.CoverageList{
+				{FileName: "qiniu.com/kodo/apiserver/server/main.go", NCoveredStmts: 2, NAllStmts: 2},
+				{FileName: "qiniu.com/kodo/apiserver/server/test.go", NCoveredStmts: 2, NAllStmts: 2},
+			},
+			baseP: cover.CoverageList{
+				{FileName: "qiniu.com/kodo/apiserver/server/main.go", NCoveredStmts: 1, NAllStmts: 2},
+				{FileName: "qiniu.com/kodo/apiserver/server/test.go", NCoveredStmts: 1, NAllStmts: 2},
+			},
+			lenFiles:   1,
+			lenCovList: 1,
+		},
+	}
 
-//type MockErrorPrComment struct {
-//	*clients.MockPrComment
-//}
-//
-//func (s *MockErrorPrComment) GetPrChangedFiles() (files []string, err error) {
-//	return []string{"aaa"}, nil
-//}
-//
-//func TestGetFilesAndCovList(t *testing.T){
-//	items := []struct {
-//		fullDiff bool
-//		prComment github.PrComment
-//		localP cover.CoverageList
-//		baseP cover.CoverageList
-//	}{
-//		{
-//			inputFiles:  []string{"src/qiniu.com/kodo/io/io/io_svr.go", "README.md"},
-//			expectFiles: []string{"qiniu.com/kodo/io/io/io_svr.go", "README.md"},
-//		},
-//	}
-//
-//	for _, tc := range items {
-//		f := trimGhFileToProfile(tc.inputFiles)
-//		assert.Equal(t, f, tc.expectFiles)
-//	}
-//	getFilesAndCovList
-//}
+	for i, tc := range items {
+		fmt.Println(i)
+		files, covList, err := getFilesAndCovList(tc.fullDiff, tc.prComment, tc.localP, tc.baseP)
+		if err != nil {
+			assert.Equal(t, err.Error(), tc.err)
+		} else {
+			assert.Equal(t, len(files), tc.lenFiles)
+			assert.Equal(t, len(covList), tc.lenCovList)
+		}
+	}
+}
+
+func TestSetDeltaCovLinks(t *testing.T) {
+	covList := cover.DeltaCovList{{FileName: "file1", BasePer: "5%", NewPer: "5%", DeltaPer: "0"}}
+	j := &Job{
+		QiniuClient: &clients.MockQnClient{},
+	}
+	j.SetDeltaCovLinks(covList)
+}
+
+// functions to be done
+
+func TestRunPostsubmit(t *testing.T) {
+	j := &Job{}
+	err := j.RunPostsubmit()
+	assert.NoError(t, err)
+}
+
+func TestRunPeriodic(t *testing.T) {
+	j := &Job{}
+	err := j.RunPeriodic()
+	assert.NoError(t, err)
+}
+
+func TestFetch(t *testing.T) {
+	j := &Job{}
+	res := j.Fetch("buidID", "name")
+	assert.Equal(t, res, []byte{})
+}

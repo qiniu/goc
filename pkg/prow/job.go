@@ -55,7 +55,7 @@ type Job struct {
 	CovThreshold           int
 	LocalProfilePath       string
 	QiniuClient            qiniu.Client
-	LocalArtifacts         *qiniu.Artifacts
+	LocalArtifacts         qiniu.Artifacts
 	GithubComment          github.PrComment
 	FullDiff               bool
 }
@@ -70,16 +70,13 @@ func (j *Job) RunPresubmit() error {
 	// step1: get local profile cov
 	localP, err := cover.ReadFileToCoverList(j.LocalProfilePath)
 	if err != nil {
-		logrus.Errorf("failed to get remote cover profile: %s", err.Error())
-		return err
+		return fmt.Errorf("failed to get remote cover profile: %s", err.Error())
 	}
-	logrus.Warnf("localP: [%+v]", localP)
 
 	//step2: find the remote healthy cover profile from qiniu bucket
 	remoteProfile, err := qiniu.FindBaseProfileFromQiniu(j.QiniuClient, j.PostSubmitJob, j.PostSubmitCoverProfile)
 	if err != nil {
-		logrus.Errorf("failed to get remote cover profile: %s", err.Error())
-		return err
+		return fmt.Errorf("failed to get remote cover profile: %s", err.Error())
 	}
 	if remoteProfile == nil {
 		logrus.Infof("get non healthy remoteProfile, do nothing")
@@ -87,31 +84,27 @@ func (j *Job) RunPresubmit() error {
 	}
 	baseP, err := cover.CovList(bytes.NewReader(remoteProfile))
 	if err != nil {
-		logrus.Errorf("failed to get remote cover profile: %s", err.Error())
-		return err
+		return fmt.Errorf("failed to get remote cover profile: %s", err.Error())
 	}
-
-	logrus.Warnf("baseP: [%+v]", baseP)
 
 	// step3: get github pull request changed files' name and calculate diff cov between local and remote profile
 	changedFiles, deltaCovList, err := getFilesAndCovList(j.FullDiff, j.GithubComment, localP, baseP)
 	if err != nil {
-		logrus.Errorf("Get files and covlist failed: %s", err.Error())
-		return err
+		return fmt.Errorf("Get files and covlist failed: %s", err.Error())
 	}
 
 	// step4: generate changed file html coverage
 	err = j.WriteChangedCov(changedFiles)
 	if err != nil {
-		logrus.WithError(err).Fatalf("filter local profile to %s with changed files failed", j.LocalArtifacts.ChangedProfileName)
+		return fmt.Errorf("filter local profile to %s with changed files failed: %s", j.LocalArtifacts.GetChangedProfileName(), err.Error())
 	}
 	err = j.CreateChangedCovHtml()
 	if err != nil {
-		logrus.WithError(err).Fatalf("create changed file related coverage html failed")
+		return fmt.Errorf("create changed file related coverage html failed: %s", err.Error())
 	}
 	j.SetDeltaCovLinks(deltaCovList)
 
-	// step6: post comment to github
+	// step5: post comment to github
 	commentPrefix := github.CommentsPrefix
 	if j.GithubComment.GetCommentFlag() != "" {
 		commentPrefix = fmt.Sprintf("**%s** ", j.GithubComment.GetCommentFlag()) + commentPrefix
@@ -122,7 +115,7 @@ func (j *Job) RunPresubmit() error {
 	}
 	err = j.GithubComment.CreateGithubComment(commentPrefix, deltaCovList)
 	if err != nil {
-		logrus.WithError(err).Fatalf("Post comment to github failed.")
+		return fmt.Errorf("Post comment to github failed: %s", err.Error())
 	}
 
 	return nil
@@ -202,10 +195,10 @@ func (j *Job) SetDeltaCovLinks(c cover.DeltaCovList) {
 
 // CreateChangedCovHtml create changed file related coverage html base on the local artifact
 func (j *Job) CreateChangedCovHtml() error {
-	if j.LocalArtifacts.ChangedProfileName == "" {
+	if j.LocalArtifacts.GetChangedProfileName() == "" {
 		logrus.Errorf("param LocalArtifacts.ChangedProfileName is empty")
 	}
-	pathProfileCov := j.LocalArtifacts.ChangedProfileName
+	pathProfileCov := j.LocalArtifacts.GetChangedProfileName()
 	pathHtmlCov := path.Join(os.Getenv("ARTIFACTS"), j.HtmlProfile())
 	cmdTxt := fmt.Sprintf("go tool cover -html=%s -o %s", pathProfileCov, pathHtmlCov)
 	logrus.Printf("Running command '%s'\n", cmdTxt)

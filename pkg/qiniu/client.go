@@ -58,7 +58,7 @@ type QnClient struct {
 	BucketManager *storage.BucketManager
 }
 
-// NewQnClient creates a new QnClient to work with qiniu cloud
+// NewClient creates a new QnClient to work with qiniu cloud
 func NewClient(cfg *Config) *QnClient {
 	return &QnClient{
 		cfg:           cfg,
