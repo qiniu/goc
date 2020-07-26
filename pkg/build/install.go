@@ -45,6 +45,7 @@ func NewInstall(buildflags string, args []string, workingDir string) (*Build, er
 	return b, nil
 }
 
+// Install use the 'go install' tool to install packages
 func (b *Build) Install() error {
 	log.Println("Go building in temp...")
 	cmd := exec.Command("/bin/bash", "-c", "go install "+b.BuildFlags+" "+b.Packages)

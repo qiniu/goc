@@ -38,6 +38,7 @@ type ObjectHandle struct {
 	client *client.Client
 }
 
+// Attrs get the object's metainfo
 func (o *ObjectHandle) Attrs(ctx context.Context) (storage.FileInfo, error) {
 	//TODO(CarlJi): need retry when errors
 	return o.bm.Stat(o.cfg.Bucket, o.key)

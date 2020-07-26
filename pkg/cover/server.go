@@ -116,7 +116,7 @@ func registerService(c *gin.Context) {
 
 	realIP := c.ClientIP()
 	if host != realIP {
-		log.Printf("the registed host %s of service %s is different with the real one %s, here we choose the real one", service.Name, host, realIP)
+		log.Printf("the registered host %s of service %s is different with the real one %s, here we choose the real one", service.Name, host, realIP)
 		service.Address = fmt.Sprintf("http://%s:%s", realIP, port)
 	}
 

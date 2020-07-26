@@ -70,7 +70,7 @@ func addRunFlags(cmdset *pflag.FlagSet) {
 	viper.BindPFlags(cmdset)
 }
 
-// add Cover Mode check
+// CoverMode represents the covermode when doing cover for source code
 type CoverMode struct {
 	mode string
 }
@@ -79,6 +79,7 @@ func (m *CoverMode) String() string {
 	return m.mode
 }
 
+// Set sets the value to the CoverMode struct, use 'count' as default if v is empty
 func (m *CoverMode) Set(v string) error {
 	if v == "" {
 		m.mode = "count"
@@ -91,11 +92,12 @@ func (m *CoverMode) Set(v string) error {
 	return nil
 }
 
+// Type returns the type of CoverMode
 func (m *CoverMode) Type() string {
 	return "string"
 }
 
-// add agentPort check
+// AgentPort is the struct to do agentPort check
 type AgentPort struct {
 	port string
 }
@@ -104,6 +106,7 @@ func (agent *AgentPort) String() string {
 	return agent.port
 }
 
+// Set sets the value to the AgentPort struct
 func (agent *AgentPort) Set(v string) error {
 	if v == "" {
 		agent.port = ""
@@ -117,6 +120,7 @@ func (agent *AgentPort) Set(v string) error {
 	return nil
 }
 
+// Type returns the type of AgentPort
 func (agent *AgentPort) Type() string {
 	return "string"
 }

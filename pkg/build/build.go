@@ -79,6 +79,7 @@ func NewBuild(buildflags string, args []string, workingDir string, outputDir str
 	return b, nil
 }
 
+// Build calls 'go build' tool to do building
 func (b *Build) Build() error {
 	log.Infoln("Go building in temp...")
 	// new -o will overwrite  previous ones

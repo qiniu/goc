@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// MvProjectsToTmp moves the projects into a temporary directory
 func (b *Build) MvProjectsToTmp() error {
 	listArgs := []string{"-json"}
 	if len(b.BuildFlags) != 0 {
@@ -67,7 +68,7 @@ func (b *Build) MvProjectsToTmp() error {
 }
 
 func (b *Build) mvProjectsToTmp() error {
-	b.TmpDir = filepath.Join(os.TempDir(), TmpFolderName(b.WorkingDir))
+	b.TmpDir = filepath.Join(os.TempDir(), tmpFolderName(b.WorkingDir))
 
 	// Delete previous tmp folder and its content
 	os.RemoveAll(b.TmpDir)
@@ -110,7 +111,9 @@ func (b *Build) mvProjectsToTmp() error {
 	return nil
 }
 
-func TmpFolderName(path string) string {
+// tmpFolderName uses the first six characters of the input path's SHA256 checksum
+// as the suffix.
+func tmpFolderName(path string) string {
 	sum := sha256.Sum256([]byte(path))
 	h := fmt.Sprintf("%x", sum[:6])
 
