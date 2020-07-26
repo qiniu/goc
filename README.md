@@ -57,7 +57,7 @@ Goc can collect code coverages at runtime for your long-run golang applications.
 ## RoadMap
 - [x] Support code coverage collection for system testing.
 - [x] Support code coverage counters clear for the services under test at runtime.
-- [ ] Support develop mode towards accurate testing.
+- [x] Support develop mode towards accurate testing.
 - [ ] Support code coverage diff based on Pull Request.
 - [ ] Optimize the performance costed by code coverage counters.
 
