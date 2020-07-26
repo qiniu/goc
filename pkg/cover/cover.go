@@ -39,7 +39,9 @@ import (
 )
 
 var (
-	ErrCoverPkgFailed  = errors.New("fail to inject code to project")
+	// ErrCoverPkgFailed represents the error that fails to inject the package
+	ErrCoverPkgFailed = errors.New("fail to inject code to project")
+	// ErrCoverListFailed represents the error that fails to list package dependencies
 	ErrCoverListFailed = errors.New("fail to list package dependencies")
 )
 
@@ -94,6 +96,7 @@ type Package struct {
 	DepsErrors []*PackageError `json:"DepsErrors,omitempty"` // errors loading dependencies
 }
 
+// ModulePublic represents the package info of a module
 type ModulePublic struct {
 	Path      string        `json:",omitempty"` // module path
 	Version   string        `json:",omitempty"` // module version
@@ -109,6 +112,7 @@ type ModulePublic struct {
 	Error     *ModuleError  `json:",omitempty"` // error loading module
 }
 
+// ModuleError represents the error loading module
 type ModuleError struct {
 	Err string // error text
 }
@@ -200,7 +204,7 @@ func Execute(args, newGopath, target, mode, agentPort, center string) error {
 
 						// Some internal package have same parent dir or import path
 						// Cache all vars by internal parent dir for all child internal counter vars
-						cacheCover := AddCacheCover(pkg, inPkgCover)
+						cacheCover := addCacheCover(pkg, inPkgCover)
 						if v, ok := tc.CacheCover[cacheCover.Package.Dir]; ok {
 							for cVar, val := range v.Vars {
 								cacheCover.Vars[cVar] = val
@@ -211,7 +215,7 @@ func Execute(args, newGopath, target, mode, agentPort, center string) error {
 						}
 
 						// Cache all internal vars to internal parent package
-						inCover := CacheInternalCover(inPkgCover)
+						inCover := cacheInternalCover(inPkgCover)
 						if v, ok := internalPkgCache[cacheCover.Package.Dir]; ok {
 							v = append(v, inCover)
 							internalPkgCache[cacheCover.Package.Dir] = v
@@ -417,7 +421,7 @@ func declareCacheVars(in *PackageCover) map[string]*FileVar {
 	return vars
 }
 
-func CacheInternalCover(in *PackageCover) *PackageCover {
+func cacheInternalCover(in *PackageCover) *PackageCover {
 	c := &PackageCover{}
 	vars := declareCacheVars(in)
 	c.Package = in.Package
@@ -425,7 +429,7 @@ func CacheInternalCover(in *PackageCover) *PackageCover {
 	return c
 }
 
-func AddCacheCover(pkg *Package, in *PackageCover) *PackageCover {
+func addCacheCover(pkg *Package, in *PackageCover) *PackageCover {
 	c := &PackageCover{}
 	sum := sha256.Sum256([]byte(pkg.ImportPath))
 	h := fmt.Sprintf("%x", sum[:6])
@@ -458,7 +462,7 @@ type codeBlock struct {
 	coverageCount int    // number of times the block is covered
 }
 
-//convert profile to CoverageList struct
+// CovList converts profile to CoverageList struct
 func CovList(f io.Reader) (g CoverageList, err error) {
 	scanner := bufio.NewScanner(f)
 	scanner.Scan() // discard first line
@@ -475,7 +479,7 @@ func CovList(f io.Reader) (g CoverageList, err error) {
 	return
 }
 
-// covert profile file to CoverageList struct
+// ReadFileToCoverList coverts profile file to CoverageList struct
 func ReadFileToCoverList(path string) (g CoverageList, err error) {
 	f, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -538,13 +542,14 @@ func (g *CoverageList) append(c *Coverage) {
 	*g = append(*g, *c)
 }
 
-// sort CoverageList with filenames
+// Sort sorts CoverageList with filenames
 func (g CoverageList) Sort() {
 	sort.SliceStable(g, func(i, j int) bool {
 		return g[i].Name() < g[j].Name()
 	})
 }
 
+// TotalPercentage returns the total percentage of coverage
 func (g CoverageList) TotalPercentage() string {
 	ratio, err := g.TotalRatio()
 	if err == nil {
@@ -553,6 +558,7 @@ func (g CoverageList) TotalPercentage() string {
 	return "N/A"
 }
 
+// TotalRatio returns the total ratio of covered statements
 func (g CoverageList) TotalRatio() (ratio float32, err error) {
 	var total Coverage
 	for _, c := range g {
@@ -586,6 +592,7 @@ func (c *Coverage) Percentage() string {
 	return "N/A"
 }
 
+// Ratio calculates the ratio of statements in a profile
 func (c *Coverage) Ratio() (ratio float32, err error) {
 	if c.NAllStmts == 0 {
 		err = fmt.Errorf("[%s] has 0 statement", c.Name())

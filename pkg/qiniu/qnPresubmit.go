@@ -19,11 +19,12 @@ package qiniu
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"path"
 	"sort"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -33,10 +34,10 @@ const (
 	// ArtifactsDirName is the name of directory defined in prow to store test artifacts
 	ArtifactsDirName = "artifacts"
 
-	//default prow coverage file
+	//PostSubmitCoverProfile represents the default output coverage file generated in prow environment
 	PostSubmitCoverProfile = "filtered.cov"
 
-	//default to save changed file related coverage profile
+	//ChangedProfileName represents the default changed coverage profile based on files changed in Pull Request
 	ChangedProfileName = "changed-file-profile.cov"
 )
 
@@ -106,16 +107,19 @@ func FindBaseProfileFromQiniu(qc *Client, prowJobName, covProfileName string) ([
 	return qc.ReadObject(profilePath)
 }
 
+// Artifacts prepresents the rule to store test artifacts in prow
 type Artifacts struct {
 	Directory          string
 	ProfileName        string
 	ChangedProfileName string // create temporary to save changed file related coverage profile
 }
 
+// ProfilePath returns a full path for profile
 func (a *Artifacts) ProfilePath() string {
 	return path.Join(a.Directory, a.ProfileName)
 }
 
+// CreateChangedProfile creates a profile in order to store the most related files based on Github Pull Request
 func (a *Artifacts) CreateChangedProfile() *os.File {
 	if a.ChangedProfileName == "" {
 		log.Fatalf("param Artifacts.ChangedProfileName should not be empty")
