@@ -110,7 +110,7 @@ func (b *Build) Build() error {
 // the binary name is always same as the directory name of current directory
 func (b *Build) determineOutputDir(outputDir string) (string, error) {
 	if b.TmpDir == "" {
-		return "", fmt.Errorf("can only be called after Build.MvProjectsToTmp(): %w", ErrWrongCallSequence)
+		return "", fmt.Errorf("can only be called after Build.MvProjectsToTmp(): %w", ErrEmptyTempWorkingDir)
 	}
 
 	// fix #43

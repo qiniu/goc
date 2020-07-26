@@ -70,7 +70,7 @@ func TestCheckParameters(t *testing.T) {
 func TestDetermineOutputDir(t *testing.T) {
 	b := &Build{}
 	_, err := b.determineOutputDir("")
-	assert.Equal(t, errors.Is(err, ErrWrongCallSequence), true, "called before Build.MvProjectsToTmp() should fail")
+	assert.Equal(t, errors.Is(err, ErrEmptyTempWorkingDir), true, "called before Build.MvProjectsToTmp() should fail")
 
 	b.TmpDir = "fake"
 	_, err = b.determineOutputDir("xx")

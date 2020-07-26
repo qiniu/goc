@@ -172,7 +172,7 @@ func (b *Build) findWhereToInstall() (string, error) {
 
 	if false == b.IsMod {
 		if b.Root == "" {
-			return "", ErrNoplaceToInstall
+			return "", ErrNoPlaceToInstall
 		}
 		return filepath.Join(b.Root, "bin"), nil
 	}
