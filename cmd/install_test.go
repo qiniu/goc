@@ -52,7 +52,7 @@ func TestInstalledBinaryForMod(t *testing.T) {
 	assert.Equal(t, cnt > 0, true, "main.registerSelf function should be in the binary")
 
 	cnt = strings.Count(string(out), "GoCover")
-	assert.Equal(t, cnt > 0, true, "GoCover varibale should be in the binary")
+	assert.Equal(t, cnt > 0, true, "GoCover variable should be in the binary")
 }
 
 func TestInstalledBinaryForLegacy(t *testing.T) {
@@ -80,5 +80,5 @@ func TestInstalledBinaryForLegacy(t *testing.T) {
 	assert.Equal(t, cnt > 0, true, "main.registerSelf function should be in the binary")
 
 	cnt = strings.Count(string(out), "GoCover")
-	assert.Equal(t, cnt > 0, true, "GoCover varibale should be in the binary")
+	assert.Equal(t, cnt > 0, true, "GoCover variable should be in the binary")
 }

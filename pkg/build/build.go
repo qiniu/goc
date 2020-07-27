@@ -79,6 +79,7 @@ func NewBuild(buildflags string, args []string, workingDir string, outputDir str
 	return b, nil
 }
 
+// Build calls 'go build' tool to do building
 func (b *Build) Build() error {
 	log.Infoln("Go building in temp...")
 	// new -o will overwrite  previous ones
@@ -109,7 +110,7 @@ func (b *Build) Build() error {
 // the binary name is always same as the directory name of current directory
 func (b *Build) determineOutputDir(outputDir string) (string, error) {
 	if b.TmpDir == "" {
-		return "", fmt.Errorf("can only be called after Build.MvProjectsToTmp(): %w", ErrWrongCallSequence)
+		return "", fmt.Errorf("can only be called after Build.MvProjectsToTmp(): %w", ErrEmptyTempWorkingDir)
 	}
 
 	// fix #43

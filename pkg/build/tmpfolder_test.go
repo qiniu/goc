@@ -133,7 +133,7 @@ func TestFindWhereToInstall(t *testing.T) {
 		Root:  "",
 	}
 	_, err := b.findWhereToInstall()
-	assert.EqualError(t, err, ErrNoplaceToInstall.Error())
+	assert.EqualError(t, err, ErrNoPlaceToInstall.Error())
 
 	// if $GOBIN not found
 	// and if $GOPATH not found

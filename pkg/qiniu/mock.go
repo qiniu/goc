@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// MockQiniuServer simulate qiniu cloud for testing
 func MockQiniuServer(config *Config) (client *Client, router *httprouter.Router, serverURL string, teardown func()) {
 	// router is the HTTP request multiplexer used with the test server.
 	router = httprouter.New()
@@ -54,7 +55,7 @@ func MockRouterAPI(router *httprouter.Router, profile string, count int) {
 		logrus.Infof("request url is: %s", r.URL.String())
 
 		if timeout > 0 {
-			timeout -= 1
+			timeout--
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}

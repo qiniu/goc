@@ -364,6 +364,9 @@ func TestCoverResultForInternalPackage(t *testing.T) {
 	}
 
 	out, err := ioutil.ReadFile(filepath.Join(testDir, "http_cover_apis_auto_generated.go"))
+	if err != nil {
+		assert.FailNow(t, "failed to read http_cover_apis_auto_generated.go file")
+	}
 	cnt := strings.Count(string(out), "GoCacheCover")
 	assert.Equal(t, cnt > 0, true, "GoCacheCover variable should be in http_cover_apis_auto_generated.go")
 

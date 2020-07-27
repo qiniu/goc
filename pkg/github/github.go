@@ -34,8 +34,11 @@ import (
 	"github.com/qiniu/goc/pkg/cover"
 )
 
+// CommentsPrefix is the prefix when commenting on Github Pull Requests
+// It is also the flag when checking whether the target comment exists or not to avoid duplicate
 const CommentsPrefix = "The following is the coverage report on the affected files."
 
+// PrComment is the entry which is able to comment on Github Pull Requests
 type PrComment struct {
 	RobotUserName string
 	RepoOwner     string
@@ -81,7 +84,7 @@ func NewPrClient(githubTokenPath, repoOwner, repoName, prNumStr, botUserName, co
 	}
 }
 
-//post github comment of diff coverage
+// CreateGithubComment post github comment of diff coverage
 func (c *PrComment) CreateGithubComment(commentPrefix string, diffCovList cover.DeltaCovList) (err error) {
 	if len(diffCovList) == 0 {
 		logrus.Printf("Detect 0 files coverage diff, will not comment to github.")
@@ -97,6 +100,7 @@ func (c *PrComment) CreateGithubComment(commentPrefix string, diffCovList cover.
 	return
 }
 
+// PostComment post comment on github. It erased the old one if existed to avoid duplicate
 func (c *PrComment) PostComment(content, commentPrefix string) error {
 	//step1: erase history similar comment to avoid too many comment for same job
 	err := c.EraseHistoryComment(commentPrefix)
@@ -116,7 +120,7 @@ func (c *PrComment) PostComment(content, commentPrefix string) error {
 	return nil
 }
 
-// erase history similar comment before post again
+// EraseHistoryComment erase history similar comment before post again
 func (c *PrComment) EraseHistoryComment(commentPrefix string) error {
 	comments, _, err := c.GithubClient.Issues.ListComments(c.Ctx, c.RepoOwner, c.RepoName, c.PrNumber, nil)
 	if err != nil {
@@ -161,7 +165,7 @@ func (c *PrComment) GetPrChangedFiles() (files []string, err error) {
 	return
 }
 
-//generate github comment content based on diff coverage and commentFlag
+// GenCommentContent generate github comment content based on diff coverage and commentFlag
 func GenCommentContent(commentPrefix string, delta cover.DeltaCovList) string {
 	var buf bytes.Buffer
 	table := tablewriter.NewWriter(&buf)
