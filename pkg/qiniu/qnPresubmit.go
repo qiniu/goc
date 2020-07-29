@@ -107,13 +107,14 @@ func FindBaseProfileFromQiniu(qc Client, prowJobName, covProfileName string) ([]
 	return qc.ReadObject(profilePath)
 }
 
+// Artifacts is the interface of the rule to store test artifacts in prow
 type Artifacts interface {
 	ProfilePath() string
 	CreateChangedProfile() *os.File
 	GetChangedProfileName() string
 }
 
-// ProfileArtifacts prepresents the rule to store test artifacts in prow
+// ProfileArtifacts presents the rule to store test artifacts in prow
 type ProfileArtifacts struct {
 	Directory          string
 	ProfileName        string
@@ -139,6 +140,7 @@ func (a *ProfileArtifacts) CreateChangedProfile() *os.File {
 	return p
 }
 
+// GetChangedProfileName get ChangedProfileName of the ProfileArtifacts
 func (a *ProfileArtifacts) GetChangedProfileName() string {
 	return a.ChangedProfileName
 }

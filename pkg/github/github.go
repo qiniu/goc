@@ -38,6 +38,7 @@ import (
 // It is also the flag when checking whether the target comment exists or not to avoid duplicate
 const CommentsPrefix = "The following is the coverage report on the affected files."
 
+// PrComment is the interface of the entry which is able to comment on Github Pull Requests
 type PrComment interface {
 	CreateGithubComment(commentPrefix string, diffCovList cover.DeltaCovList) (err error)
 	PostComment(content, commentPrefix string) error
@@ -150,7 +151,7 @@ func (c *GithubPrComment) EraseHistoryComment(commentPrefix string) error {
 	return nil
 }
 
-//GetPrChangedFiles get github pull request changes file list
+// GetPrChangedFiles get github pull request changes file list
 func (c *GithubPrComment) GetPrChangedFiles() (files []string, err error) {
 	var commitFiles []*github.CommitFile
 	for {

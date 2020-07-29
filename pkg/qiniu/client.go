@@ -43,6 +43,7 @@ type Config struct {
 	Domain string `json:"domain"`
 }
 
+// Client is the interface contains the operation with qiniu cloud
 type Client interface {
 	QiniuObjectHandle(key string) ObjectHandle
 	ReadObject(key string) ([]byte, error)
@@ -103,7 +104,7 @@ func (q *QnClient) ListAll(ctx context.Context, prefix string, delimiter string)
 	return files, nil
 }
 
-// ListAll to list all the entries with contains the expected prefix
+// listEntries to list all the entries with contains the expected prefix
 func (q *QnClient) listEntries(prefix string, delimiter string) ([]storage.ListItem, error) {
 	var marker string
 	var artifacts []storage.ListItem

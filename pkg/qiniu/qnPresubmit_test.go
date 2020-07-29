@@ -17,10 +17,10 @@
 package qiniu
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"os"
 )
 
 func TestFindBaseProfileFromQiniu(t *testing.T) {
@@ -55,8 +55,10 @@ func TestProfileArtifacts_CreateChangedProfile(t *testing.T) {
 		ChangedProfileName: "test.cov",
 	}
 	file := p.CreateChangedProfile()
-	defer file.Close()
+	file.Close()
 	defer os.Remove(p.ChangedProfileName)
+	_, err := os.Stat(p.ChangedProfileName)
+	assert.NoError(t, err)
 }
 
 func TestProfileArtifacts_GetChangedProfileName(t *testing.T) {

@@ -29,8 +29,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ObjectHandle is the interface contains the operations on an object in a qiniu cloud bucket
 type ObjectHandle interface {
-	Attrs(ctx context.Context) (storage.FileInfo, error)
 	NewReader(ctx context.Context) (io.ReadCloser, error)
 	NewRangeReader(ctx context.Context, offset, length int64) (io.ReadCloser, error)
 }
@@ -42,12 +42,6 @@ type QnObjectHandle struct {
 	bm     *storage.BucketManager
 	mac    *qbox.Mac
 	client *client.Client
-}
-
-// Attrs get the object's metainfo
-func (o *QnObjectHandle) Attrs(ctx context.Context) (storage.FileInfo, error) {
-	//TODO(CarlJi): need retry when errors
-	return o.bm.Stat(o.cfg.Bucket, o.key)
 }
 
 // NewReader creates a reader to read the contents of the object.

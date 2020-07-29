@@ -215,8 +215,7 @@ func getFilesAndCovList(fullDiff bool, prComment github.PrComment, localP, baseP
 		// get github pull request changed files' name
 		var ghChangedFiles, err = prComment.GetPrChangedFiles()
 		if err != nil {
-			logrus.Errorf("Get pull request changed file failed.")
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("Get pull request changed file failed: %s", err.Error())
 		}
 		if len(ghChangedFiles) == 0 {
 			logrus.Printf("0 files changed in github pull request, don't need to run coverage profile in presubmit.\n")
@@ -226,14 +225,13 @@ func getFilesAndCovList(fullDiff bool, prComment github.PrComment, localP, baseP
 
 		// calculate diff cov between local and remote profile
 		deltaCovList = cover.GetChFileDeltaCov(localP, baseP, changedFiles)
+		logrus.Printf("Get changed files and delta cover list success. ChangedFiles: [%+v], DeltaCovList: [%+v]", changedFiles, deltaCovList)
 		return changedFiles, deltaCovList, nil
 	}
 	deltaCovList = cover.GetDeltaCov(localP, baseP)
-	logrus.Infof("get delta file name is:")
 	for _, d := range deltaCovList {
-		logrus.Infof("%s", d.FileName)
 		changedFiles = append(changedFiles, d.FileName)
 	}
-
+	logrus.Printf("Get all files and delta cover list success. Files: [%+v], DeltaCovList: [%+v]", changedFiles, deltaCovList)
 	return changedFiles, deltaCovList, nil
 }

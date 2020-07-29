@@ -17,18 +17,21 @@
 package prow
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"github.com/qiniu/goc/pkg/cover"
-	"github.com/qiniu/goc/pkg/github"
-	"github.com/qiniu/goc/pkg/mock/clients"
-	"github.com/qiniu/goc/pkg/qiniu"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"path"
 	"testing"
+	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/qiniu/goc/pkg/cover"
+	"github.com/qiniu/goc/pkg/github"
+	"github.com/qiniu/goc/pkg/qiniu"
 )
 
 var (
@@ -40,6 +43,72 @@ qiniu.com/kodo/bd/pfd/locker/bdlocker/locker.go:33.51,35.2 1 0`
 	defaultLocalPath   = "local.cov"
 	defaultChangedPath = "changed.cov"
 )
+
+type MockQnClient struct {
+	QiniuObjectHandleRes  qiniu.ObjectHandle
+	ReadObjectRes         []byte
+	ReadObjectErr         error
+	ListAllRes            []string
+	ListAllErr            error
+	GetAccessURLRes       string
+	GetArtifactDetailsRes *qiniu.LogHistoryTemplate
+	GetArtifactDetailsErr error
+	ListSubDirsRes        []string
+	ListSubDirsErr        error
+}
+
+func (s *MockQnClient) QiniuObjectHandle(key string) qiniu.ObjectHandle {
+	return s.QiniuObjectHandleRes
+}
+
+func (s *MockQnClient) ReadObject(key string) ([]byte, error) {
+	return s.ReadObjectRes, s.ReadObjectErr
+}
+
+func (s *MockQnClient) ListAll(ctx context.Context, prefix string, delimiter string) ([]string, error) {
+	return s.ListAllRes, s.ListAllErr
+}
+
+func (s *MockQnClient) GetAccessURL(key string, timeout time.Duration) string {
+	return s.GetAccessURLRes
+}
+
+func (s *MockQnClient) GetArtifactDetails(key string) (*qiniu.LogHistoryTemplate, error) {
+	return s.GetArtifactDetailsRes, s.GetArtifactDetailsErr
+}
+
+func (s *MockQnClient) ListSubDirs(prefix string) ([]string, error) {
+	return s.ListSubDirsRes, s.ListSubDirsErr
+}
+
+type MockPrComment struct {
+	GetPrChangedFilesRes   []string
+	GetPrChangedFilesErr   error
+	PostCommentErr         error
+	EraseHistoryCommentErr error
+	CreateGithubCommentErr error
+	CommentFlag            string
+}
+
+func (s *MockPrComment) GetPrChangedFiles() (files []string, err error) {
+	return s.GetPrChangedFilesRes, s.GetPrChangedFilesErr
+}
+
+func (s *MockPrComment) PostComment(content, commentPrefix string) error {
+	return s.PostCommentErr
+}
+
+func (s *MockPrComment) EraseHistoryComment(commentPrefix string) error {
+	return s.EraseHistoryCommentErr
+}
+
+func (s *MockPrComment) CreateGithubComment(commentPrefix string, diffCovList cover.DeltaCovList) (err error) {
+	return s.CreateGithubCommentErr
+}
+
+func (s *MockPrComment) GetCommentFlag() string {
+	return s.CommentFlag
+}
 
 func TestTrimGhFileToProfile(t *testing.T) {
 	items := []struct {
@@ -149,7 +218,7 @@ func TestRunPresubmitFulldiff(t *testing.T) {
 
 func TestRunPresubmitError(t *testing.T) {
 	items := []struct {
-		prepare bool // 是否需要准备本地cov
+		prepare bool // prepare local profile
 		j       Job
 		err     string
 	}{
@@ -164,14 +233,14 @@ func TestRunPresubmitError(t *testing.T) {
 			prepare: true,
 			j: Job{
 				LocalProfilePath: defaultLocalPath,
-				QiniuClient:      &clients.MockQnClient{},
+				QiniuClient:      &MockQnClient{},
 			},
 		},
 		{
 			prepare: true,
 			j: Job{
 				LocalProfilePath: defaultLocalPath,
-				QiniuClient:      &clients.MockQnClient{ListSubDirsErr: errors.New("mock error")},
+				QiniuClient:      &MockQnClient{ListSubDirsErr: errors.New("mock error")},
 			},
 			err: "mock error",
 		},
@@ -180,7 +249,7 @@ func TestRunPresubmitError(t *testing.T) {
 			j: Job{
 				LocalProfilePath: defaultLocalPath,
 				QiniuClient:      &MockProfileQnClient{},
-				GithubComment:    &clients.MockPrComment{GetPrChangedFilesRes: []string{"qiniu.com/kodo/apiserver/server/main.go"}},
+				GithubComment:    &MockPrComment{GetPrChangedFilesRes: []string{"qiniu.com/kodo/apiserver/server/main.go"}},
 				FullDiff:         true,
 				LocalArtifacts:   &qiniu.ProfileArtifacts{ChangedProfileName: defaultChangedPath},
 			},
@@ -204,7 +273,7 @@ func TestRunPresubmitError(t *testing.T) {
 }
 
 type MockProfileQnClient struct {
-	*clients.MockQnClient
+	*MockQnClient
 }
 
 func (s *MockProfileQnClient) ListSubDirs(prefix string) ([]string, error) {
@@ -231,7 +300,7 @@ func TestGetFilesAndCovList(t *testing.T) {
 	}{
 		{
 			fullDiff:  true,
-			prComment: &clients.MockPrComment{},
+			prComment: &MockPrComment{},
 			localP: cover.CoverageList{
 				{FileName: "qiniu.com/kodo/apiserver/server/main.go", NCoveredStmts: 2, NAllStmts: 2},
 				{FileName: "qiniu.com/kodo/apiserver/server/test.go", NCoveredStmts: 2, NAllStmts: 2},
@@ -245,18 +314,18 @@ func TestGetFilesAndCovList(t *testing.T) {
 		},
 		{
 			fullDiff:  false,
-			prComment: &clients.MockPrComment{GetPrChangedFilesErr: errors.New("mock error")},
+			prComment: &MockPrComment{GetPrChangedFilesErr: errors.New("mock error")},
 			err:       "mock error",
 		},
 		{
 			fullDiff:   false,
-			prComment:  &clients.MockPrComment{},
+			prComment:  &MockPrComment{},
 			lenFiles:   0,
 			lenCovList: 0,
 		},
 		{
 			fullDiff:  false,
-			prComment: &clients.MockPrComment{GetPrChangedFilesRes: []string{"qiniu.com/kodo/apiserver/server/main.go"}},
+			prComment: &MockPrComment{GetPrChangedFilesRes: []string{"qiniu.com/kodo/apiserver/server/main.go"}},
 			localP: cover.CoverageList{
 				{FileName: "qiniu.com/kodo/apiserver/server/main.go", NCoveredStmts: 2, NAllStmts: 2},
 				{FileName: "qiniu.com/kodo/apiserver/server/test.go", NCoveredStmts: 2, NAllStmts: 2},
@@ -274,7 +343,7 @@ func TestGetFilesAndCovList(t *testing.T) {
 		fmt.Println(i)
 		files, covList, err := getFilesAndCovList(tc.fullDiff, tc.prComment, tc.localP, tc.baseP)
 		if err != nil {
-			assert.Equal(t, err.Error(), tc.err)
+			assert.Contains(t, err.Error(), tc.err)
 		} else {
 			assert.Equal(t, len(files), tc.lenFiles)
 			assert.Equal(t, len(covList), tc.lenCovList)
@@ -285,7 +354,7 @@ func TestGetFilesAndCovList(t *testing.T) {
 func TestSetDeltaCovLinks(t *testing.T) {
 	covList := cover.DeltaCovList{{FileName: "file1", BasePer: "5%", NewPer: "5%", DeltaPer: "0"}}
 	j := &Job{
-		QiniuClient: &clients.MockQnClient{},
+		QiniuClient: &MockQnClient{},
 	}
 	j.SetDeltaCovLinks(covList)
 }
