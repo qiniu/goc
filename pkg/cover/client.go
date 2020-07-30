@@ -76,15 +76,15 @@ func (c *client) RegisterService(srv Service) ([]byte, error) {
 		return nil, fmt.Errorf("invalid service name")
 	}
 	u := fmt.Sprintf("%s%s?name=%s&address=%s", c.Host, CoverRegisterServiceAPI, srv.Name, srv.Address)
-	res, err := c.do("POST", u, nil)
+	_, res, err := c.do("POST", u, nil)
 	return res, err
 }
 
 func (c *client) ListServices() ([]byte, error) {
 	u := fmt.Sprintf("%s%s", c.Host, CoverServicesListAPI)
-	services, err := c.do("GET", u, nil)
+	_, services, err := c.do("GET", u, nil)
 	if err != nil && isNetworkError(err) {
-		services, err = c.do("GET", u, nil)
+		_, services, err = c.do("GET", u, nil)
 	}
 
 	return services, err
@@ -102,42 +102,46 @@ func (c *client) Profile(param ProfileParam) ([]byte, error) {
 	for _, addr := range param.Address {
 		u = u + "&address=" + addr
 	}
-	profile, err := c.do("GET", u, nil)
+	res, profile, err := c.do("GET", u, nil)
 	if err != nil && isNetworkError(err) {
-		profile, err = c.do("GET", u, nil)
+		res, profile, err = c.do("GET", u, nil)
+	}
+	if err == nil && res.StatusCode != 200 {
+		err = fmt.Errorf(string(profile))
 	}
 	return profile, err
 }
 
 func (c *client) Clear() ([]byte, error) {
 	u := fmt.Sprintf("%s%s", c.Host, CoverProfileClearAPI)
-	resp, err := c.do("POST", u, nil)
+	_, resp, err := c.do("POST", u, nil)
 	if err != nil && isNetworkError(err) {
-		resp, err = c.do("POST", u, nil)
+		_, resp, err = c.do("POST", u, nil)
 	}
 	return resp, err
 }
 
 func (c *client) InitSystem() ([]byte, error) {
 	u := fmt.Sprintf("%s%s", c.Host, CoverInitSystemAPI)
-	return c.do("POST", u, nil)
+	_, body, err := c.do("POST", u, nil)
+	return body, err
 }
 
-func (c *client) do(method, url string, body io.Reader) ([]byte, error) {
+func (c *client) do(method, url string, body io.Reader) (*http.Response, []byte, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	res, err := c.client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer res.Body.Close()
 	responseBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return res, nil, err
 	}
-	return responseBody, nil
+	return res, responseBody, nil
 }
 
 func isNetworkError(err error) bool {
