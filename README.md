@@ -14,9 +14,10 @@ Enjoy, Have Fun!
 ![Demo](docs/images/intro.gif)
 
 ## Installation
-To install goc tool, you need to install Go first (**version 1.11+ is required**), then:
 
-```go get -u github.com/qiniu/goc```
+Download the latest version from [Github Releases](https://github.com/qiniu/goc/releases) page.
+
+For developing, you need install Go first (**version 1.13+ is required**).
 
 ## Examples
 You can use goc tool in many scenarios.
