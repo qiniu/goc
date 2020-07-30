@@ -93,6 +93,12 @@ func TestCovList(t *testing.T) {
 	}
 }
 
+func TestReadFileToCoverList(t *testing.T) {
+	path := "unknown"
+	_, err := ReadFileToCoverList(path)
+	assert.Equal(t, err.Error(), "open unknown: no such file or directory")
+}
+
 func TestTotalPercentage(t *testing.T) {
 	items := []struct {
 		list      CoverageList

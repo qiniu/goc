@@ -27,7 +27,7 @@ import (
 )
 
 // MockQiniuServer simulate qiniu cloud for testing
-func MockQiniuServer(config *Config) (client *Client, router *httprouter.Router, serverURL string, teardown func()) {
+func MockQiniuServer(config *Config) (client *QnClient, router *httprouter.Router, serverURL string, teardown func()) {
 	// router is the HTTP request multiplexer used with the test server.
 	router = httprouter.New()
 

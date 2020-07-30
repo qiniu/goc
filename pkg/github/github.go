@@ -38,8 +38,17 @@ import (
 // It is also the flag when checking whether the target comment exists or not to avoid duplicate
 const CommentsPrefix = "The following is the coverage report on the affected files."
 
-// PrComment is the entry which is able to comment on Github Pull Requests
-type PrComment struct {
+// PrComment is the interface of the entry which is able to comment on Github Pull Requests
+type PrComment interface {
+	CreateGithubComment(commentPrefix string, diffCovList cover.DeltaCovList) (err error)
+	PostComment(content, commentPrefix string) error
+	EraseHistoryComment(commentPrefix string) error
+	GetPrChangedFiles() (files []string, err error)
+	GetCommentFlag() string
+}
+
+// GithubPrComment is the entry which is able to comment on Github Pull Requests
+type GithubPrComment struct {
 	RobotUserName string
 	RepoOwner     string
 	RepoName      string
@@ -51,7 +60,7 @@ type PrComment struct {
 }
 
 // NewPrClient creates an Client which be able to comment on Github Pull Request
-func NewPrClient(githubTokenPath, repoOwner, repoName, prNumStr, botUserName, commentFlag string) *PrComment {
+func NewPrClient(githubTokenPath, repoOwner, repoName, prNumStr, botUserName, commentFlag string) *GithubPrComment {
 	var client *github.Client
 
 	// performs automatic retries when connection error occurs or a 500-range response code received (except 501)
@@ -72,7 +81,7 @@ func NewPrClient(githubTokenPath, repoOwner, repoName, prNumStr, botUserName, co
 	tc := oauth2.NewClient(ctx, ts)
 	client = github.NewClient(tc)
 
-	return &PrComment{
+	return &GithubPrComment{
 		RobotUserName: botUserName,
 		RepoOwner:     repoOwner,
 		RepoName:      repoName,
@@ -85,7 +94,7 @@ func NewPrClient(githubTokenPath, repoOwner, repoName, prNumStr, botUserName, co
 }
 
 // CreateGithubComment post github comment of diff coverage
-func (c *PrComment) CreateGithubComment(commentPrefix string, diffCovList cover.DeltaCovList) (err error) {
+func (c *GithubPrComment) CreateGithubComment(commentPrefix string, diffCovList cover.DeltaCovList) (err error) {
 	if len(diffCovList) == 0 {
 		logrus.Printf("Detect 0 files coverage diff, will not comment to github.")
 		return nil
@@ -101,7 +110,7 @@ func (c *PrComment) CreateGithubComment(commentPrefix string, diffCovList cover.
 }
 
 // PostComment post comment on github. It erased the old one if existed to avoid duplicate
-func (c *PrComment) PostComment(content, commentPrefix string) error {
+func (c *GithubPrComment) PostComment(content, commentPrefix string) error {
 	//step1: erase history similar comment to avoid too many comment for same job
 	err := c.EraseHistoryComment(commentPrefix)
 	if err != nil {
@@ -121,7 +130,7 @@ func (c *PrComment) PostComment(content, commentPrefix string) error {
 }
 
 // EraseHistoryComment erase history similar comment before post again
-func (c *PrComment) EraseHistoryComment(commentPrefix string) error {
+func (c *GithubPrComment) EraseHistoryComment(commentPrefix string) error {
 	comments, _, err := c.GithubClient.Issues.ListComments(c.Ctx, c.RepoOwner, c.RepoName, c.PrNumber, nil)
 	if err != nil {
 		logrus.Errorf("list PR comments failed.")
@@ -142,8 +151,8 @@ func (c *PrComment) EraseHistoryComment(commentPrefix string) error {
 	return nil
 }
 
-//GetPrChangedFiles get github pull request changes file list
-func (c *PrComment) GetPrChangedFiles() (files []string, err error) {
+// GetPrChangedFiles get github pull request changes file list
+func (c *GithubPrComment) GetPrChangedFiles() (files []string, err error) {
 	var commitFiles []*github.CommitFile
 	for {
 		f, resp, err := c.GithubClient.PullRequests.ListFiles(c.Ctx, c.RepoOwner, c.RepoName, c.PrNumber, c.opt)
@@ -163,6 +172,11 @@ func (c *PrComment) GetPrChangedFiles() (files []string, err error) {
 		logrus.Infof("%s", *file.Filename)
 	}
 	return
+}
+
+// GetCommentFlag get CommentFlag from the GithubPrComment
+func (c *GithubPrComment) GetCommentFlag() string {
+	return c.CommentFlag
 }
 
 // GenCommentContent generate github comment content based on diff coverage and commentFlag

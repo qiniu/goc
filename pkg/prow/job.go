@@ -54,9 +54,9 @@ type Job struct {
 	PostSubmitCoverProfile string
 	CovThreshold           int
 	LocalProfilePath       string
-	QiniuClient            *qiniu.Client
-	LocalArtifacts         *qiniu.Artifacts
-	GithubComment          *github.PrComment
+	QiniuClient            qiniu.Client
+	LocalArtifacts         qiniu.Artifacts
+	GithubComment          github.PrComment
 	FullDiff               bool
 }
 
@@ -67,32 +67,16 @@ func (j *Job) Fetch(BuildID, name string) []byte {
 
 // RunPresubmit run a presubmit job
 func (j *Job) RunPresubmit() error {
-	var changedFiles []string
-	var deltaCovList cover.DeltaCovList
-
-	// step1: get github pull request changed files' name
-	if !j.FullDiff {
-		var ghChangedFiles, err = j.GithubComment.GetPrChangedFiles()
-		if err != nil {
-			logrus.WithError(err).Fatalf("Get pull request changed file failed.")
-		}
-		if len(ghChangedFiles) == 0 {
-			logrus.Printf("0 files changed in github pull request, don't need to run coverage profile in presubmit.\n")
-			return nil
-		}
-		changedFiles = trimGhFileToProfile(ghChangedFiles)
-	}
-
-	// step2: get local profile cov
+	// step1: get local profile cov
 	localP, err := cover.ReadFileToCoverList(j.LocalProfilePath)
 	if err != nil {
-		logrus.WithError(err).Fatalf("failed to get remote cover profile")
+		return fmt.Errorf("failed to get remote cover profile: %s", err.Error())
 	}
 
-	//step3: find the remote healthy cover profile from qiniu bucket
+	//step2: find the remote healthy cover profile from qiniu bucket
 	remoteProfile, err := qiniu.FindBaseProfileFromQiniu(j.QiniuClient, j.PostSubmitJob, j.PostSubmitCoverProfile)
 	if err != nil {
-		logrus.WithError(err).Fatalf("failed to get remote cover profile")
+		return fmt.Errorf("failed to get remote cover profile: %s", err.Error())
 	}
 	if remoteProfile == nil {
 		logrus.Infof("get non healthy remoteProfile, do nothing")
@@ -100,36 +84,30 @@ func (j *Job) RunPresubmit() error {
 	}
 	baseP, err := cover.CovList(bytes.NewReader(remoteProfile))
 	if err != nil {
-		logrus.WithError(err).Fatalf("failed to get remote cover profile")
+		return fmt.Errorf("failed to get remote cover profile: %s", err.Error())
 	}
 
-	// step4: calculate diff cov between local and remote profile
-	if !j.FullDiff {
-		deltaCovList = cover.GetChFileDeltaCov(localP, baseP, changedFiles)
-	} else {
-		deltaCovList = cover.GetDeltaCov(localP, baseP)
-		logrus.Infof("get delta file name is:")
-		for _, d := range deltaCovList {
-			logrus.Infof("%s", d.FileName)
-			changedFiles = append(changedFiles, d.FileName)
-		}
+	// step3: get github pull request changed files' name and calculate diff cov between local and remote profile
+	changedFiles, deltaCovList, err := getFilesAndCovList(j.FullDiff, j.GithubComment, localP, baseP)
+	if err != nil {
+		return fmt.Errorf("Get files and covlist failed: %s", err.Error())
 	}
 
-	// step5: generate changed file html coverage
+	// step4: generate changed file html coverage
 	err = j.WriteChangedCov(changedFiles)
 	if err != nil {
-		logrus.WithError(err).Fatalf("filter local profile to %s with changed files failed", j.LocalArtifacts.ChangedProfileName)
+		return fmt.Errorf("filter local profile to %s with changed files failed: %s", j.LocalArtifacts.GetChangedProfileName(), err.Error())
 	}
 	err = j.CreateChangedCovHtml()
 	if err != nil {
-		logrus.WithError(err).Fatalf("create changed file related coverage html failed")
+		return fmt.Errorf("create changed file related coverage html failed: %s", err.Error())
 	}
 	j.SetDeltaCovLinks(deltaCovList)
 
-	// step6: post comment to github
+	// step5: post comment to github
 	commentPrefix := github.CommentsPrefix
-	if j.GithubComment.CommentFlag != "" {
-		commentPrefix = fmt.Sprintf("**%s** ", j.GithubComment.CommentFlag) + commentPrefix
+	if j.GithubComment.GetCommentFlag() != "" {
+		commentPrefix = fmt.Sprintf("**%s** ", j.GithubComment.GetCommentFlag()) + commentPrefix
 	}
 	if len(deltaCovList) > 0 {
 		totalDelta := cover.PercentStr(cover.TotalDelta(localP, baseP))
@@ -137,7 +115,7 @@ func (j *Job) RunPresubmit() error {
 	}
 	err = j.GithubComment.CreateGithubComment(commentPrefix, deltaCovList)
 	if err != nil {
-		logrus.WithError(err).Fatalf("Post comment to github failed.")
+		return fmt.Errorf("Post comment to github failed: %s", err.Error())
 	}
 
 	return nil
@@ -217,10 +195,10 @@ func (j *Job) SetDeltaCovLinks(c cover.DeltaCovList) {
 
 // CreateChangedCovHtml create changed file related coverage html base on the local artifact
 func (j *Job) CreateChangedCovHtml() error {
-	if j.LocalArtifacts.ChangedProfileName == "" {
+	if j.LocalArtifacts.GetChangedProfileName() == "" {
 		logrus.Errorf("param LocalArtifacts.ChangedProfileName is empty")
 	}
-	pathProfileCov := j.LocalArtifacts.ChangedProfileName
+	pathProfileCov := j.LocalArtifacts.GetChangedProfileName()
 	pathHtmlCov := path.Join(os.Getenv("ARTIFACTS"), j.HtmlProfile())
 	cmdTxt := fmt.Sprintf("go tool cover -html=%s -o %s", pathProfileCov, pathHtmlCov)
 	logrus.Printf("Running command '%s'\n", cmdTxt)
@@ -230,4 +208,30 @@ func (j *Job) CreateChangedCovHtml() error {
 		logrus.Printf("Error executing cmd: %v; combinedOutput=%s", err, stdOut)
 	}
 	return err
+}
+
+func getFilesAndCovList(fullDiff bool, prComment github.PrComment, localP, baseP cover.CoverageList) (changedFiles []string, deltaCovList cover.DeltaCovList, err error) {
+	if !fullDiff {
+		// get github pull request changed files' name
+		var ghChangedFiles, err = prComment.GetPrChangedFiles()
+		if err != nil {
+			return nil, nil, fmt.Errorf("Get pull request changed file failed: %s", err.Error())
+		}
+		if len(ghChangedFiles) == 0 {
+			logrus.Printf("0 files changed in github pull request, don't need to run coverage profile in presubmit.\n")
+			return nil, nil, nil
+		}
+		changedFiles = trimGhFileToProfile(ghChangedFiles)
+
+		// calculate diff cov between local and remote profile
+		deltaCovList = cover.GetChFileDeltaCov(localP, baseP, changedFiles)
+		logrus.Printf("Get changed files and delta cover list success. ChangedFiles: [%+v], DeltaCovList: [%+v]", changedFiles, deltaCovList)
+		return changedFiles, deltaCovList, nil
+	}
+	deltaCovList = cover.GetDeltaCov(localP, baseP)
+	for _, d := range deltaCovList {
+		changedFiles = append(changedFiles, d.FileName)
+	}
+	logrus.Printf("Get all files and delta cover list success. Files: [%+v], DeltaCovList: [%+v]", changedFiles, deltaCovList)
+	return changedFiles, deltaCovList, nil
 }

@@ -29,8 +29,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ObjectHandle provides operations on an object in a qiniu cloud bucket
-type ObjectHandle struct {
+// ObjectHandle is the interface contains the operations on an object in a qiniu cloud bucket
+type ObjectHandle interface {
+	NewReader(ctx context.Context) (io.ReadCloser, error)
+	NewRangeReader(ctx context.Context, offset, length int64) (io.ReadCloser, error)
+}
+
+// QnObjectHandle provides operations on an object in a qiniu cloud bucket
+type QnObjectHandle struct {
 	key    string
 	cfg    *Config
 	bm     *storage.BucketManager
@@ -38,22 +44,16 @@ type ObjectHandle struct {
 	client *client.Client
 }
 
-// Attrs get the object's metainfo
-func (o *ObjectHandle) Attrs(ctx context.Context) (storage.FileInfo, error) {
-	//TODO(CarlJi): need retry when errors
-	return o.bm.Stat(o.cfg.Bucket, o.key)
-}
-
 // NewReader creates a reader to read the contents of the object.
 // ErrObjectNotExist will be returned if the object is not found.
 // The caller must call Close on the returned Reader when done reading.
-func (o *ObjectHandle) NewReader(ctx context.Context) (io.ReadCloser, error) {
+func (o *QnObjectHandle) NewReader(ctx context.Context) (io.ReadCloser, error) {
 	return o.NewRangeReader(ctx, 0, -1)
 }
 
 // NewRangeReader reads parts of an object, reading at most length bytes starting
 // from the given offset. If length is negative, the object is read until the end.
-func (o *ObjectHandle) NewRangeReader(ctx context.Context, offset, length int64) (io.ReadCloser, error) {
+func (o *QnObjectHandle) NewRangeReader(ctx context.Context, offset, length int64) (io.ReadCloser, error) {
 	verb := "GET"
 	if length == 0 {
 		verb = "HEAD"

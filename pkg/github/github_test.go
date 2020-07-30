@@ -121,7 +121,7 @@ func TestCreateGithubComment(t *testing.T) {
 	router.HandlerFunc("DELETE", "/repos/qiniu/goc/issues/comments/1", func(w http.ResponseWriter, r *http.Request) {
 	})
 
-	p := PrComment{
+	p := GithubPrComment{
 		RobotUserName: "qiniu-bot",
 		RepoOwner:     "qiniu",
 		RepoName:      "goc",
@@ -135,6 +135,12 @@ func TestCreateGithubComment(t *testing.T) {
 	p.CreateGithubComment("", coverList)
 }
 
+func TestCreateGithubCommentError(t *testing.T) {
+	p := &GithubPrComment{}
+	err := p.CreateGithubComment("", cover.DeltaCovList{})
+	assert.NoError(t, err)
+}
+
 func TestGetPrChangedFiles(t *testing.T) {
 	client, router, _, teardown := setup()
 	defer teardown()
@@ -146,7 +152,7 @@ func TestGetPrChangedFiles(t *testing.T) {
 		fmt.Fprint(w, `[{"filename":"src/qiniu.com/kodo/s3apiv2/bucket/bucket.go"}]`)
 	})
 
-	p := PrComment{
+	p := GithubPrComment{
 		RobotUserName: "qiniu-bot",
 		RepoOwner:     "qiniu",
 		RepoName:      "goc",
@@ -159,4 +165,12 @@ func TestGetPrChangedFiles(t *testing.T) {
 	changedFiles, err := p.GetPrChangedFiles()
 	assert.Equal(t, err, nil)
 	assert.Equal(t, changedFiles, expectFiles)
+}
+
+func TestGetCommentFlag(t *testing.T) {
+	p := GithubPrComment{
+		CommentFlag: "flag",
+	}
+	flag := p.GetCommentFlag()
+	assert.Equal(t, flag, p.CommentFlag)
 }

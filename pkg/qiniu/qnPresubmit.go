@@ -70,7 +70,7 @@ func isBuildSucceeded(jsonText []byte) bool {
 
 // FindBaseProfileFromQiniu finds the coverage profile file from the latest healthy build
 // stored in given gcs directory
-func FindBaseProfileFromQiniu(qc *Client, prowJobName, covProfileName string) ([]byte, error) {
+func FindBaseProfileFromQiniu(qc Client, prowJobName, covProfileName string) ([]byte, error) {
 	dirOfJob := path.Join("logs", prowJobName)
 	prefix := dirOfJob + "/"
 	strBuilds, err := qc.ListSubDirs(prefix)
@@ -107,20 +107,27 @@ func FindBaseProfileFromQiniu(qc *Client, prowJobName, covProfileName string) ([
 	return qc.ReadObject(profilePath)
 }
 
-// Artifacts prepresents the rule to store test artifacts in prow
-type Artifacts struct {
+// Artifacts is the interface of the rule to store test artifacts in prow
+type Artifacts interface {
+	ProfilePath() string
+	CreateChangedProfile() *os.File
+	GetChangedProfileName() string
+}
+
+// ProfileArtifacts presents the rule to store test artifacts in prow
+type ProfileArtifacts struct {
 	Directory          string
 	ProfileName        string
 	ChangedProfileName string // create temporary to save changed file related coverage profile
 }
 
 // ProfilePath returns a full path for profile
-func (a *Artifacts) ProfilePath() string {
+func (a *ProfileArtifacts) ProfilePath() string {
 	return path.Join(a.Directory, a.ProfileName)
 }
 
 // CreateChangedProfile creates a profile in order to store the most related files based on Github Pull Request
-func (a *Artifacts) CreateChangedProfile() *os.File {
+func (a *ProfileArtifacts) CreateChangedProfile() *os.File {
 	if a.ChangedProfileName == "" {
 		log.Fatalf("param Artifacts.ChangedProfileName should not be empty")
 	}
@@ -131,4 +138,9 @@ func (a *Artifacts) CreateChangedProfile() *os.File {
 	}
 
 	return p
+}
+
+// GetChangedProfileName get ChangedProfileName of the ProfileArtifacts
+func (a *ProfileArtifacts) GetChangedProfileName() string {
+	return a.ChangedProfileName
 }
