@@ -18,6 +18,7 @@ package cover
 
 import "sort"
 
+// DeltaCov contains the info of a delta coverage
 type DeltaCov struct {
 	FileName    string
 	BasePer     string
@@ -26,9 +27,10 @@ type DeltaCov struct {
 	LineCovLink string
 }
 
+// DeltaCovList is the list of DeltaCov
 type DeltaCovList []DeltaCov
 
-// get full delta coverage between new and base profile
+// GetFullDeltaCov get full delta coverage between new and base profile
 func GetFullDeltaCov(newList CoverageList, baseList CoverageList) (delta DeltaCovList) {
 	newMap := newList.Map()
 	baseMap := baseList.Map()
@@ -64,7 +66,7 @@ func GetFullDeltaCov(newList CoverageList, baseList CoverageList) (delta DeltaCo
 	return
 }
 
-//get two profile diff cov
+// GetDeltaCov get two profile diff cov
 func GetDeltaCov(newList CoverageList, baseList CoverageList) (delta DeltaCovList) {
 	d := GetFullDeltaCov(newList, baseList)
 	for _, v := range d {
@@ -76,7 +78,7 @@ func GetDeltaCov(newList CoverageList, baseList CoverageList) (delta DeltaCovLis
 	return
 }
 
-//get two profile diff cov of changed files
+// GetChFileDeltaCov get two profile diff cov of changed files
 func GetChFileDeltaCov(newList CoverageList, baseList CoverageList, changedFiles []string) (list DeltaCovList) {
 	d := GetFullDeltaCov(newList, baseList)
 	dMap := d.Map()
@@ -88,14 +90,14 @@ func GetChFileDeltaCov(newList CoverageList, baseList CoverageList, changedFiles
 	return
 }
 
-//calculate two coverage delta
+// Delta calculate two coverage delta
 func Delta(new Coverage, base Coverage) float32 {
 	baseRatio, _ := base.Ratio()
 	newRatio, _ := new.Ratio()
 	return newRatio - baseRatio
 }
 
-//calculate two coverage delta
+// TotalDelta calculate two coverage delta
 func TotalDelta(new CoverageList, base CoverageList) float32 {
 	baseRatio, _ := base.TotalRatio()
 	newRatio, _ := new.TotalRatio()
@@ -111,7 +113,7 @@ func (d DeltaCovList) Map() map[string]DeltaCov {
 	return m
 }
 
-// sort DeltaCovList with filenames
+// Sort sort DeltaCovList with filenames
 func (d DeltaCovList) Sort() {
 	sort.SliceStable(d, func(i, j int) bool {
 		return d[i].Name() < d[j].Name()
@@ -123,10 +125,12 @@ func (c *DeltaCov) Name() string {
 	return c.FileName
 }
 
+// GetLineCovLink get the LineCovLink of the DeltaCov
 func (c *DeltaCov) GetLineCovLink() string {
 	return c.LineCovLink
 }
 
+// SetLineCovLink set LineCovLink of the DeltaCov
 func (c *DeltaCov) SetLineCovLink(link string) {
 	c.LineCovLink = link
 }

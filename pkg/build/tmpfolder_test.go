@@ -144,6 +144,7 @@ func TestFindWhereToInstall(t *testing.T) {
 		OriGOPATH: "",
 	}
 	placeToInstall, err := b.findWhereToInstall()
+	assert.NoError(t, err)
 	expectedPlace := filepath.Join(os.Getenv("HOME"), "go", "bin")
 	assert.Equal(t, placeToInstall, expectedPlace)
 }

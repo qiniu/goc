@@ -54,6 +54,7 @@ func TestNewRangeReader(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	bodyBytes, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
 	assert.Equal(t, string(bodyBytes), "mock server ok")
 
 	// test with HEAD method
@@ -61,6 +62,7 @@ func TestNewRangeReader(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	bodyBytes, err = ioutil.ReadAll(body)
+	assert.NoError(t, err)
 	assert.Equal(t, string(bodyBytes), "")
 
 }
@@ -92,6 +94,7 @@ func TestNewRangeReaderWithTimeoutAndRecover(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	bodyBytes, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
 	assert.Equal(t, string(bodyBytes), "mock server ok")
 
 	// test with retry with statuscode=571, 573
@@ -100,6 +103,7 @@ func TestNewRangeReaderWithTimeoutAndRecover(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	bodyBytes, err = ioutil.ReadAll(body)
+	assert.NoError(t, err)
 	assert.Equal(t, string(bodyBytes), "mock server ok")
 }
 

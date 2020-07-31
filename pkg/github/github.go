@@ -47,8 +47,8 @@ type PrComment interface {
 	GetCommentFlag() string
 }
 
-// GithubPrComment is the entry which is able to comment on Github Pull Requests
-type GithubPrComment struct {
+// GitPrComment is the entry which is able to comment on Github Pull Requests
+type GitPrComment struct {
 	RobotUserName string
 	RepoOwner     string
 	RepoName      string
@@ -60,7 +60,7 @@ type GithubPrComment struct {
 }
 
 // NewPrClient creates an Client which be able to comment on Github Pull Request
-func NewPrClient(githubTokenPath, repoOwner, repoName, prNumStr, botUserName, commentFlag string) *GithubPrComment {
+func NewPrClient(githubTokenPath, repoOwner, repoName, prNumStr, botUserName, commentFlag string) *GitPrComment {
 	var client *github.Client
 
 	// performs automatic retries when connection error occurs or a 500-range response code received (except 501)
@@ -81,7 +81,7 @@ func NewPrClient(githubTokenPath, repoOwner, repoName, prNumStr, botUserName, co
 	tc := oauth2.NewClient(ctx, ts)
 	client = github.NewClient(tc)
 
-	return &GithubPrComment{
+	return &GitPrComment{
 		RobotUserName: botUserName,
 		RepoOwner:     repoOwner,
 		RepoName:      repoName,
@@ -94,7 +94,7 @@ func NewPrClient(githubTokenPath, repoOwner, repoName, prNumStr, botUserName, co
 }
 
 // CreateGithubComment post github comment of diff coverage
-func (c *GithubPrComment) CreateGithubComment(commentPrefix string, diffCovList cover.DeltaCovList) (err error) {
+func (c *GitPrComment) CreateGithubComment(commentPrefix string, diffCovList cover.DeltaCovList) (err error) {
 	if len(diffCovList) == 0 {
 		logrus.Printf("Detect 0 files coverage diff, will not comment to github.")
 		return nil
@@ -110,7 +110,7 @@ func (c *GithubPrComment) CreateGithubComment(commentPrefix string, diffCovList 
 }
 
 // PostComment post comment on github. It erased the old one if existed to avoid duplicate
-func (c *GithubPrComment) PostComment(content, commentPrefix string) error {
+func (c *GitPrComment) PostComment(content, commentPrefix string) error {
 	//step1: erase history similar comment to avoid too many comment for same job
 	err := c.EraseHistoryComment(commentPrefix)
 	if err != nil {
@@ -130,7 +130,7 @@ func (c *GithubPrComment) PostComment(content, commentPrefix string) error {
 }
 
 // EraseHistoryComment erase history similar comment before post again
-func (c *GithubPrComment) EraseHistoryComment(commentPrefix string) error {
+func (c *GitPrComment) EraseHistoryComment(commentPrefix string) error {
 	comments, _, err := c.GithubClient.Issues.ListComments(c.Ctx, c.RepoOwner, c.RepoName, c.PrNumber, nil)
 	if err != nil {
 		logrus.Errorf("list PR comments failed.")
@@ -152,7 +152,7 @@ func (c *GithubPrComment) EraseHistoryComment(commentPrefix string) error {
 }
 
 // GetPrChangedFiles get github pull request changes file list
-func (c *GithubPrComment) GetPrChangedFiles() (files []string, err error) {
+func (c *GitPrComment) GetPrChangedFiles() (files []string, err error) {
 	var commitFiles []*github.CommitFile
 	for {
 		f, resp, err := c.GithubClient.PullRequests.ListFiles(c.Ctx, c.RepoOwner, c.RepoName, c.PrNumber, c.opt)
@@ -174,8 +174,8 @@ func (c *GithubPrComment) GetPrChangedFiles() (files []string, err error) {
 	return
 }
 
-// GetCommentFlag get CommentFlag from the GithubPrComment
-func (c *GithubPrComment) GetCommentFlag() string {
+// GetCommentFlag get CommentFlag from the GitPrComment
+func (c *GitPrComment) GetCommentFlag() string {
 	return c.CommentFlag
 }
 

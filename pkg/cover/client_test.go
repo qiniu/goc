@@ -107,7 +107,7 @@ func TestClientAction(t *testing.T) {
 	}
 	for _, item := range profileItems {
 		// init server
-		res, err := client.InitSystem()
+		_, err = client.InitSystem()
 		assert.NoError(t, err)
 		// register server
 		res, err = client.RegisterService(item.service)
@@ -122,7 +122,7 @@ func TestClientAction(t *testing.T) {
 	}
 
 	// init system and check service again
-	res, err = client.InitSystem()
+	_, err = client.InitSystem()
 	assert.NoError(t, err)
 	res, err = client.ListServices()
 	assert.NoError(t, err)

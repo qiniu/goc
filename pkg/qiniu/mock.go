@@ -98,7 +98,7 @@ func MockRouterListAllAPI(router *httprouter.Router, count int) {
 		logrus.Infof("request url is: %s", r.URL.String())
 
 		if timeout > 0 {
-			timeout -= 1
+			timeout--
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
@@ -136,7 +136,7 @@ func MockPrivateDomainUrl(router *httprouter.Router, count int) {
 		logrus.Infof("request url is: %s", r.URL.String())
 
 		if timeout1 > 0 {
-			timeout1 -= 1
+			timeout1--
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
@@ -148,7 +148,7 @@ func MockPrivateDomainUrl(router *httprouter.Router, count int) {
 		logrus.Infof("request url is: %s", r.URL.String())
 
 		if timeout2 > 0 {
-			timeout2 -= 1
+			timeout2--
 			if timeout2%2 == 0 {
 				http.Error(w, "not found", 571)
 			} else {
