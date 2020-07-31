@@ -145,7 +145,7 @@ func (b *Build) traversePkgsList() (isMod bool, root string, err error) {
 // and store it in the Build.tmpWorkdingDir
 func (b *Build) getTmpwd() (string, error) {
 	for _, pkg := range b.Pkgs {
-		index := -1
+		var index int
 		var parentPath string
 		if b.IsMod == false {
 			index = strings.Index(b.WorkingDir, pkg.Root)

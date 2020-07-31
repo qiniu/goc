@@ -144,7 +144,7 @@ func trimGhFileToProfile(ghFiles []string) (pFiles []string) {
 	return
 }
 
-// filter local profile with changed files and save to j.LocalArtifacts.ChangedProfileName
+// WriteChangedCov filter local profile with changed files and save to j.LocalArtifacts.ChangedProfileName
 func (j *Job) WriteChangedCov(changedFiles []string) error {
 	p, err := ioutil.ReadFile(j.LocalProfilePath)
 	if err != nil {
@@ -175,14 +175,17 @@ func writeLine(file *os.File, content string) {
 	}
 }
 
+// JobPrefixOnQiniu generates the prefix string of the job on qiniu
 func (j *Job) JobPrefixOnQiniu() string {
 	return path.Join("pr-logs", "pull", j.Org+"_"+j.RepoName, j.PRNumStr, j.JobName, j.BuildId)
 }
 
+// HtmlProfile generates the name of the profile html file
 func (j *Job) HtmlProfile() string {
 	return fmt.Sprintf("%s-%s-pr%s-coverage.html", j.Org, j.RepoName, j.PRNumStr)
 }
 
+// SetDeltaCovLinks set DeltaCovLinks to the job
 func (j *Job) SetDeltaCovLinks(c cover.DeltaCovList) {
 	c.Sort()
 	for i := 0; i < len(c); i++ {

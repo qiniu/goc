@@ -139,12 +139,14 @@ func (q *QnClient) GetAccessURL(key string, timeout time.Duration) string {
 	return storage.MakePrivateURL(qbox.NewMac(q.cfg.AccessKey, q.cfg.SecretKey), q.cfg.Domain, key, deadline)
 }
 
+// LogHistoryTemplate is the template of the log history
 type LogHistoryTemplate struct {
 	BucketName string
 	KeyPath    string
 	Items      []logHistoryItem
 }
 
+// logHistoryItem represents a log history item
 type logHistoryItem struct {
 	Name string
 	Size string
@@ -152,7 +154,7 @@ type logHistoryItem struct {
 	Url  string
 }
 
-// Artifacts lists all artifacts available for the given job source
+// GetArtifactDetails lists all artifacts available for the given job source
 func (q *QnClient) GetArtifactDetails(key string) (*LogHistoryTemplate, error) {
 	tmpl := new(LogHistoryTemplate)
 	item := logHistoryItem{}
@@ -193,6 +195,7 @@ func timeConv(ptime int64) string {
 	return tm.Format("2006-01-02 03:04:05 PM")
 }
 
+// ListSubDirs list all the sub directions of the prefix string in qiniu client
 func (q *QnClient) ListSubDirs(prefix string) ([]string, error) {
 	var dirs []string
 	var marker string
