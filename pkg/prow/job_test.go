@@ -225,7 +225,7 @@ func TestRunPresubmitError(t *testing.T) {
 		{
 			prepare: false,
 			j: Job{
-				LocalProfilePath: "unkown",
+				LocalProfilePath: "unknown",
 			},
 			err: "no such file or directory",
 		},
