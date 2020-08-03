@@ -153,7 +153,7 @@ func registerHandlers() {
 	if resp, err := registerSelf(profileAddr); err != nil {
 		log.Fatalf("register address %v failed, err: %v, response: %v", profileAddr, err, string(resp))
 	}
-	go genProfileAddr(host)
+
 	mux := http.NewServeMux()
 	// Coverage reports the current code coverage as a fraction in the range [0, 1].
 	// If coverage is not enabled, Coverage returns 0.
@@ -206,7 +206,7 @@ func registerHandlers() {
 	mux.HandleFunc("/v1/cover/clear", func(w http.ResponseWriter, r *http.Request) {
 		clearValues()
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w,"clear call successfully")
+		fmt.Fprintln(w, "clear call successfully")
 	})
 
 	log.Fatal(http.Serve(ln, mux))
@@ -252,26 +252,37 @@ func isNetworkError(err error) bool {
 }
 
 func listen() (ln net.Listener, host string, err error) {
-	// 获取上次使用的监听地址
-	if previousAddr := getPreviousAddr(); previousAddr != "" {
-		ss := strings.Split(previousAddr, ":")
-		// listen on all network interface
-		ln, err = net.Listen("tcp4", ":"+ss[len(ss)-1])
-		if err == nil {
-			host = previousAddr
-			return
-		}
-	}
 	agentPort := "{{.AgentPort }}"
 	if agentPort != "" {
-		ln, err = net.Listen("tcp4", agentPort)
+		if ln, err = net.Listen("tcp4", agentPort); err != nil {
+			return
+		}
+		if host, err = getRealHost(ln); err != nil {
+			return
+		}
 	} else {
-		ln, err = net.Listen("tcp4", ":0")
+		// 获取上次使用的监听地址
+		if previousAddr := getPreviousAddr(); previousAddr != "" {
+			ss := strings.Split(previousAddr, ":")
+			// listen on all network interface
+			ln, err = net.Listen("tcp4", ":"+ss[len(ss)-1])
+			if err == nil {
+				host = previousAddr
+				return
+			}
+		}
+		if ln, err = net.Listen("tcp4", ":0"); err != nil {
+			return
+		}
+		if host, err = getRealHost(ln); err != nil {
+			return 
+		}
 	}
-	if err != nil {
-		return
-	}
+	go genProfileAddr(host)
+	return
+}
 
+func getRealHost(ln net.Listener) (host string, err error) {
 	adds, err := net.InterfaceAddrs()
 	if err != nil {
 		return
@@ -293,6 +304,7 @@ func listen() (ln net.Listener, host string, err error) {
 	} else {
 		host = fmt.Sprintf("%s:%d", localIPV4, ln.Addr().(*net.TCPAddr).Port)
 	}
+
 	return
 }
 

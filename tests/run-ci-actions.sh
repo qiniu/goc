@@ -41,4 +41,6 @@ bats -t diff.bats
 
 bats -t cover.bats
 
+bats -t agent.bats
+
 bash <(curl -s https://codecov.io/bash) -f 'filtered*' -F e2e-$GOVERSION
