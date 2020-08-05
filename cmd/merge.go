@@ -17,7 +17,7 @@
 package cmd
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/tools/cover"
@@ -34,7 +34,7 @@ same paths, then the contents of those source files were identical for the binar
 each file.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		run(cmd, args)
+		runMerge(args, outputMergeProfile)
 	},
 }
 
@@ -46,9 +46,10 @@ func init() {
 	rootCmd.AddCommand(mergeCmd)
 }
 
-func run(cmd *cobra.Command, args []string) {
+func runMerge(args []string, output string) {
 	if len(args) == 0 {
 		log.Fatalln("Expected at least one coverage file.")
+		return
 	}
 
 	profiles := make([][]*cover.Profile, len(args))
@@ -56,6 +57,7 @@ func run(cmd *cobra.Command, args []string) {
 		profile, err := util.LoadProfile(path)
 		if err != nil {
 			log.Fatalf("failed to open %s: %v", path, err)
+			return
 		}
 		profiles = append(profiles, profile)
 	}
@@ -63,10 +65,12 @@ func run(cmd *cobra.Command, args []string) {
 	merged, err := cov.MergeMultipleProfiles(profiles)
 	if err != nil {
 		log.Fatalf("failed to merge files: %v", err)
+		return
 	}
 
-	err = util.DumpProfile(outputMergeProfile, merged)
+	err = util.DumpProfile(output, merged)
 	if err != nil {
 		log.Fatalln(err)
+		return
 	}
 }
