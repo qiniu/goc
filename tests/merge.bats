@@ -33,25 +33,32 @@ setup() {
     goc init
 }
 
-@test "test goc merge command" {
+@test "test goc merge with same binary" {
     cd samples/merge_profile_samples
 
     wait_profile_backend "merge1" &
     profile_pid=$!
 
     # merge two profiles with same binary
-    run gocc merge a.voc b.voc --debug --debugcisyncfile ci-sync.bak;
+    run gocc merge a.voc b.voc --output mergeprofile.voc1 --debug --debugcisyncfile ci-sync.bak;
     info merge1 output: $output
     [ "$status" -eq 0 ]
-    run cat mergeprofile.cov
+    run cat mergeprofile.voc1
     [[ "$output" == *"qiniu.com/kodo/apiserver/server/main.go:32.49,33.13 1 60"* ]]
     [[ "$output" == *"qiniu.com/kodo/apiserver/server/main.go:42.49,43.13 1 2"* ]]
+}
+
+@test "test goc merge with two binaries, but has some source code in common" {
+    cd samples/merge_profile_samples
+
+    wait_profile_backend "merge2" &
+    profile_pid=$!
 
     # merge two profiles from two binaries, but has some source code in common
-    run gocc merge a.voc c.voc --debug --debugcisyncfile ci-sync.bak;
-    info merge1 output: $output
+    run gocc merge a.voc c.voc --output mergeprofile.voc2 --debug --debugcisyncfile ci-sync.bak;
+    info merge2 output: $output
     [ "$status" -eq 0 ]
-    run cat mergeprofile.cov
+    run cat mergeprofile.voc2
     [[ "$output" == *"qiniu.com/kodo/apiserver/server/main.go:32.49,33.13 1 60"* ]]
     [[ "$output" == *"qiniu.com/kodo/apiserver/server/main.go:42.49,43.13 1 0"* ]]
     [[ "$output" == *"qiniu.com/kodo/apiserver/server/wala.go:42.49,43.13 1 0"* ]]
