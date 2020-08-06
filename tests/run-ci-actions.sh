@@ -43,4 +43,6 @@ bats -t cover.bats
 
 bats -t agent.bats
 
+bats -t merge.bats
+
 bash <(curl -s https://codecov.io/bash) -f 'filtered*' -F e2e-$GOVERSION
