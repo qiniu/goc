@@ -134,6 +134,7 @@ func (b *Build) traversePkgsList() (isMod bool, root string, err error) {
 			return
 		}
 		isMod = true
+		b.ModRoot = v.Module.Dir
 		return
 	}
 	log.Error(ErrShouldNotReached)

@@ -17,8 +17,13 @@
 package build
 
 import (
+	"io/ioutil"
+	"path/filepath"
+	"strings"
+
 	"github.com/otiai10/copy"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/mod/modfile"
 )
 
 func (b *Build) cpGoModulesProject() {
@@ -35,4 +40,42 @@ func (b *Build) cpGoModulesProject() {
 			continue
 		}
 	}
+}
+
+func (b *Build) updateGoModFile() (string, error) {
+	tempModfile := filepath.Join(b.TmpDir, "go.mod")
+	buf, err := ioutil.ReadFile(tempModfile)
+	if err != nil {
+		return "", err
+	}
+	oriGoModFile, err := modfile.Parse(tempModfile, buf, nil)
+	if err != nil {
+		return "", err
+	}
+
+	for index := range oriGoModFile.Replace {
+		replace := oriGoModFile.Replace[index]
+		oldPath := replace.Old.Path
+		oldVersion := replace.Old.Version
+		newPath := replace.New.Path
+		newVersion := replace.New.Version
+		if strings.HasPrefix(replace.New.Path, "..") {
+			fullPath := filepath.Join(b.ModRoot, newPath)
+			absPath, err := filepath.Abs(fullPath)
+			if err != nil {
+				return "", err
+			}
+			err = oriGoModFile.DropReplace(oldPath, oldVersion)
+			err = oriGoModFile.AddReplace(oldPath, oldVersion, absPath, newVersion)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+	oriGoModFile.Cleanup()
+	newGoModFile, err := oriGoModFile.Format()
+	if err != nil {
+		return "", err
+	}
+	return string(newGoModFile), nil
 }
