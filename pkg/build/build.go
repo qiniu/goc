@@ -41,7 +41,8 @@ type Build struct {
 	// Project Root:
 	// 1. legacy, root == GOPATH
 	// 2. mod, root == go.mod Dir
-	Target string // the binary name that go build generate
+	ModRoot string // path for go.mod
+	Target  string // the binary name that go build generate
 	// keep compatible with go commands:
 	// go run [build flags] [-exec xprog] package [arguments...]
 	// go build [-o output] [-i] [build flags] [packages]

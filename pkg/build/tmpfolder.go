@@ -20,6 +20,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -75,10 +76,9 @@ func (b *Build) mvProjectsToTmp() error {
 	// Create a new tmp folder
 	err := os.MkdirAll(filepath.Join(b.TmpDir, "src"), os.ModePerm)
 	if err != nil {
-		log.Errorf("Fail to create the temporary build directory. The err is: %v", err)
-		return err
+		return fmt.Errorf("Fail to create the temporary build directory. The err is: %v", err)
 	}
-	log.Printf("Tmp project generated in: %v", b.TmpDir)
+	log.Infof("Tmp project generated in: %v", b.TmpDir)
 
 	// traverse pkg list to get project meta info
 	b.IsMod, b.Root, err = b.traversePkgsList()
@@ -89,7 +89,6 @@ func (b *Build) mvProjectsToTmp() error {
 	// we should get corresponding working directory in temporary directory
 	b.TmpWorkingDir, err = b.getTmpwd()
 	if err != nil {
-		log.Errorf("fail to get workding directory in temporary directory: %v", err)
 		return fmt.Errorf("getTmpwd failed with error: %w", err)
 	}
 	// issue #14
@@ -100,6 +99,18 @@ func (b *Build) mvProjectsToTmp() error {
 		b.cpLegacyProject()
 	} else if b.IsMod == true { // go 1.11, 1.12 has no Build.Root
 		b.cpGoModulesProject()
+		updated, newGoModContent, err := b.updateGoModFile()
+		if err != nil {
+			return fmt.Errorf("fail to generate new go.mod: %v", err)
+		}
+		if updated {
+			log.Infoln("go.mod needs rewrite")
+			tmpModFile := filepath.Join(b.TmpDir, "go.mod")
+			err := ioutil.WriteFile(tmpModFile, newGoModContent, os.ModePerm)
+			if err != nil {
+				return fmt.Errorf("fail to update go.mod: %v", err)
+			}
+		}
 	} else if b.IsMod == false && b.Root == "" {
 		b.TmpWorkingDir = b.TmpDir
 		b.cpNonStandardLegacy()
@@ -134,6 +145,7 @@ func (b *Build) traversePkgsList() (isMod bool, root string, err error) {
 			return
 		}
 		isMod = true
+		b.ModRoot = v.Module.Dir
 		return
 	}
 	log.Error(ErrShouldNotReached)

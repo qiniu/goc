@@ -18,7 +18,9 @@ package build
 
 import (
 	"bytes"
+	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -52,4 +54,50 @@ func TestModProjectCopyWithUnexistedDir(t *testing.T) {
 
 	output := captureOutput(b.cpGoModulesProject)
 	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
+}
+
+// test go mod file udpate
+func TestUpdateModFileIfContainsReplace(t *testing.T) {
+	workingDir := filepath.Join(baseDir, "../../tests/samples/gomod_samples/a")
+	b := &Build{
+		TmpDir:  workingDir,
+		ModRoot: "/aa/bb/cc",
+	}
+
+	// replace with relative local file path should be rewrite
+	updated, newmod, err := b.updateGoModFile()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, updated, true)
+	assert.Contains(t, string(newmod), "replace github.com/qiniu/bar => /aa/bb/home/foo/bar")
+
+	// old replace should be removed
+	assert.NotContains(t, string(newmod), "github.com/qiniu/bar => ../home/foo/bar")
+
+	// normal replace should not be rewrite
+	assert.Contains(t, string(newmod), "github.com/qiniu/bar2 => github.com/baniu/bar3 v1.2.3")
+}
+
+// test wrong go mod file
+func TestWithWrongGoModFile(t *testing.T) {
+	// go.mod not exist
+	workingDir := filepath.Join(baseDir, "../../tests/samples/xxxxxxxxxxxx/a")
+	b := &Build{
+		TmpDir:  workingDir,
+		ModRoot: "/aa/bb/cc",
+	}
+
+	updated, _, err := b.updateGoModFile()
+	assert.Equal(t, errors.Is(err, os.ErrNotExist), true)
+	assert.Equal(t, updated, false)
+
+	// a wrong format go mod
+	workingDir = filepath.Join(baseDir, "../../tests/samples/gomod_samples/b")
+	b = &Build{
+		TmpDir:  workingDir,
+		ModRoot: "/aa/bb/cc",
+	}
+
+	updated, _, err = b.updateGoModFile()
+	assert.NotEqual(t, err, nil)
+	assert.Equal(t, updated, false)
 }
