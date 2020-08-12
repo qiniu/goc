@@ -103,8 +103,8 @@ func (b *Build) mvProjectsToTmp() error {
 		if err != nil {
 			return fmt.Errorf("fail to generate new go.mod: %v", err)
 		}
-		log.Infof("go.mod needs rewrite? %v", updated)
 		if updated {
+			log.Infoln("go.mod needs rewrite")
 			tmpModFile := filepath.Join(b.TmpDir, "go.mod")
 			err := ioutil.WriteFile(tmpModFile, newGoModContent, os.ModePerm)
 			if err != nil {
