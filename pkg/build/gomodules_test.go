@@ -79,6 +79,7 @@ func TestUpdateModFileIfContainsReplace(t *testing.T) {
 
 // test wrong go mod file
 func TestWithWrongGoModFile(t *testing.T) {
+	// go.mod not exist
 	workingDir := filepath.Join(baseDir, "../../tests/samples/xxxxxxxxxxxx/a")
 	b := &Build{
 		TmpDir:  workingDir,

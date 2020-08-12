@@ -74,3 +74,16 @@ setup() {
 
     wait $profile_pid
 }
+
+@test "test goc build with go.mod project which contains replace directive" {
+    cd samples/gomod_replace_project
+
+    wait_profile_backend "build4" &
+    profile_pid=$!
+
+    run gocc build --debug --debugcisyncfile ci-sync.bak;
+    info build4 output: $output
+    [ "$status" -eq 0 ]
+
+    wait $profile_pid
+}

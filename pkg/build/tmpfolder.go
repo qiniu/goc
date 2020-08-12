@@ -76,10 +76,9 @@ func (b *Build) mvProjectsToTmp() error {
 	// Create a new tmp folder
 	err := os.MkdirAll(filepath.Join(b.TmpDir, "src"), os.ModePerm)
 	if err != nil {
-		log.Errorf("Fail to create the temporary build directory. The err is: %v", err)
-		return err
+		return fmt.Errorf("Fail to create the temporary build directory. The err is: %v", err)
 	}
-	log.Printf("Tmp project generated in: %v", b.TmpDir)
+	log.Infof("Tmp project generated in: %v", b.TmpDir)
 
 	// traverse pkg list to get project meta info
 	b.IsMod, b.Root, err = b.traversePkgsList()
@@ -90,7 +89,6 @@ func (b *Build) mvProjectsToTmp() error {
 	// we should get corresponding working directory in temporary directory
 	b.TmpWorkingDir, err = b.getTmpwd()
 	if err != nil {
-		log.Errorf("fail to get workding directory in temporary directory: %v", err)
 		return fmt.Errorf("getTmpwd failed with error: %w", err)
 	}
 	// issue #14
@@ -108,7 +106,7 @@ func (b *Build) mvProjectsToTmp() error {
 		log.Infof("go.mod needs rewrite? %v", updated)
 		if updated {
 			tmpModFile := filepath.Join(b.TmpDir, "go.mod")
-			err := ioutil.WriteFile(tmpModFile, newGoModContent, 0666)
+			err := ioutil.WriteFile(tmpModFile, newGoModContent, os.ModePerm)
 			if err != nil {
 				return fmt.Errorf("fail to update go.mod: %v", err)
 			}
