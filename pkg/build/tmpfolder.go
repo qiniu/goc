@@ -20,6 +20,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -100,6 +101,18 @@ func (b *Build) mvProjectsToTmp() error {
 		b.cpLegacyProject()
 	} else if b.IsMod == true { // go 1.11, 1.12 has no Build.Root
 		b.cpGoModulesProject()
+		updated, newGoModContent, err := b.updateGoModFile()
+		if err != nil {
+			return fmt.Errorf("fail to generate new go.mod: %v", err)
+		}
+		log.Infof("go.mod needs rewrite? %v", updated)
+		if updated {
+			tmpModFile := filepath.Join(b.TmpDir, "go.mod")
+			err := ioutil.WriteFile(tmpModFile, newGoModContent, 0666)
+			if err != nil {
+				return fmt.Errorf("fail to update go.mod: %v", err)
+			}
+		}
 	} else if b.IsMod == false && b.Root == "" {
 		b.TmpWorkingDir = b.TmpDir
 		b.cpNonStandardLegacy()

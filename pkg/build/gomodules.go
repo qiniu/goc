@@ -19,7 +19,6 @@ package build
 import (
 	"io/ioutil"
 	"path/filepath"
-	"strings"
 
 	"github.com/otiai10/copy"
 	log "github.com/sirupsen/logrus"
@@ -42,40 +41,42 @@ func (b *Build) cpGoModulesProject() {
 	}
 }
 
-func (b *Build) updateGoModFile() (string, error) {
+func (b *Build) updateGoModFile() (updateFlag bool, newModFile []byte, err error) {
 	tempModfile := filepath.Join(b.TmpDir, "go.mod")
 	buf, err := ioutil.ReadFile(tempModfile)
 	if err != nil {
-		return "", err
+		return
 	}
 	oriGoModFile, err := modfile.Parse(tempModfile, buf, nil)
 	if err != nil {
-		return "", err
+		return
 	}
 
+	updateFlag = false
 	for index := range oriGoModFile.Replace {
 		replace := oriGoModFile.Replace[index]
 		oldPath := replace.Old.Path
 		oldVersion := replace.Old.Version
 		newPath := replace.New.Path
 		newVersion := replace.New.Version
-		if strings.HasPrefix(replace.New.Path, "..") {
+		// replace to a local filesystem does not have a version
+		// absolute path no need to rewrite
+		if newVersion == "" && !filepath.IsAbs(newPath) {
+			var absPath string
 			fullPath := filepath.Join(b.ModRoot, newPath)
-			absPath, err := filepath.Abs(fullPath)
+			absPath, err = filepath.Abs(fullPath)
 			if err != nil {
-				return "", err
+				return
 			}
-			err = oriGoModFile.DropReplace(oldPath, oldVersion)
-			err = oriGoModFile.AddReplace(oldPath, oldVersion, absPath, newVersion)
-			if err != nil {
-				return "", err
-			}
+			_ = oriGoModFile.DropReplace(oldPath, oldVersion)
+			_ = oriGoModFile.AddReplace(oldPath, oldVersion, absPath, newVersion)
+			updateFlag = true
 		}
 	}
 	oriGoModFile.Cleanup()
-	newGoModFile, err := oriGoModFile.Format()
+	newModFile, err = oriGoModFile.Format()
 	if err != nil {
-		return "", err
+		return
 	}
-	return string(newGoModFile), nil
+	return
 }
