@@ -27,7 +27,7 @@ import (
 )
 
 // use a variable to record if the tested function has failed
-// so unittest can only be exectued sequential
+// so unittest can only be executed sequential
 var fatal = false
 var fatalStr string
 
