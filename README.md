@@ -7,7 +7,7 @@
 [![codecov](https://codecov.io/gh/qiniu/goc/branch/master/graph/badge.svg)](https://codecov.io/gh/qiniu/goc)
 [![GoDoc](https://godoc.org/github.com/qiniu/goc?status.svg)](https://godoc.org/github.com/qiniu/goc)
 
-goc is a comprehensive coverage testing system for The Go Programming Language, especially for some complex scenarios，like system testing code coverage collection and
+goc is a comprehensive coverage testing system for The Go Programming Language, especially for some complex scenarios, like system testing code coverage collection and
 accurate testing.
 
 Enjoy, Have Fun!
@@ -54,6 +54,12 @@ Goc can collect code coverages at runtime for your long-run golang applications.
 2. By default, the covered service will listen a random port in order to communicate with the goc server. this may not be suitable in [docker](https://docs.docker.com/engine/reference/commandline/run/#publish-or-expose-port--p---expose) or [kubernetes](https://kubernetes.io/docs/concepts/services-networking/service/#defining-a-service) environment since the port must be exposed explicitly in order to be accessible by others in such environment. For this kind of scenario, you can use `--agentport` flag to specific a fixed port when calling `goc build` or `goc install`.
 
 3. To use a remote goc server, you can use `--center` flag to compile the target service with `goc build` or `goc install` command.
+
+4. The coverage data is stored on each covered service side, so if one service needs to restart during test, this service's coverage data will be lost. For this case, you can use following steps to handle:
+
+    1. Before the service restarts, collect coverage with `goc profile -o a.cov`
+    2. After service restarted and test finished, collect coverage again with `goc profile -o b.cov`
+    3. Merge two coverage profiles together: `goc merge a.cov b.cov -o merge.cov`
 
 ## RoadMap
 - [x] Support code coverage collection for system testing.
