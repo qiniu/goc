@@ -1,8 +1,12 @@
 {
 	"name": "goc",
 	"displayName": "Goc Coverage",
-	"description": "Goc Coverage is a comprehensive coverage testing system for The Go Programming Language, especially for some complex scenarios, like system testing code coverage collection and accurate testing. It can display coverage vairation in real time.",
+	"description": "Goc Coverage can display coverage vairation in real time. Goc is a comprehensive coverage testing system for The Go Programming Language, especially for some complex scenarios, like system testing code coverage collection and accurate testing.",
 	"version": "0.0.1",
+	"publisher": "lyyyuna",
+	"repository": {
+		"url": "https://github.com/qiniu/goc"
+	},
 	"engines": {
 		"vscode": "^1.43.0"
 	},
@@ -45,7 +49,7 @@
 		"@types/glob": "^7.1.1",
 		"@types/mocha": "^5.2.7",
 		"@types/node": "^12.11.7",
-		"@types/vscode": "^1.47.0",
+		"@types/vscode": "^1.43.0",
 		"glob": "^7.1.5",
 		"mocha": "^6.2.2",
 		"typescript": "^3.6.4",
