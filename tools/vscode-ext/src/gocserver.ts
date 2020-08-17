@@ -15,6 +15,7 @@ export class GocServer {
         color:  'white'
     });;
     private lastProfile = '';
+    private lastFileNeedsRender = '';
 
     construct() { }
 
@@ -30,16 +31,14 @@ export class GocServer {
 
             this.getConfigurations();
             let profile = await this.getLatestProfile();
-            if (profile == this.lastProfile) {
-                continue;
-            }
-            this.lastProfile = profile;
             this.renderFile(packages, profile);
         }
     }
 
     stopQueryLoop() {
         this.timer = false;
+        this.lastProfile = '';
+        this.lastFileNeedsRender = '';
 
         this.clearHightlight()
     }
@@ -91,7 +90,14 @@ export class GocServer {
 
     renderFile(packages: Array<any>, profile: string) {
         let activeTextEditor = vscode.window.activeTextEditor;
-        let fileNeedsRender = activeTextEditor?.document.fileName;
+        let fileNeedsRender = activeTextEditor?.document.fileName || '---';
+
+        // check if needs to rerender
+        if (profile == this.lastProfile && fileNeedsRender == this.lastFileNeedsRender) {
+            return;
+        }
+        this.lastProfile = profile;
+        this.lastFileNeedsRender = fileNeedsRender;
 
         for (let i=0; i<packages.length; i++) {
             let p = packages[i];
