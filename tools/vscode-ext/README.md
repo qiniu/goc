@@ -1,0 +1,3 @@
+# Goc Coverage README
+
+**Enjoy!**
