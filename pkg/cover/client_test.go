@@ -115,7 +115,7 @@ func TestClientAction(t *testing.T) {
 		assert.Contains(t, string(res), "success")
 		res, err = client.Profile(item.param)
 		if err != nil {
-			assert.Equal(t, err.Error(), item.res)
+			assert.Contains(t, err.Error(), item.res)
 		} else {
 			assert.Contains(t, string(res), item.res)
 		}
@@ -156,4 +156,12 @@ func TestClientListServices(t *testing.T) {
 	}
 	_, err := c.ListServices()
 	assert.Contains(t, err.Error(), "connect: connection refused")
+}
+
+func TestClientDo(t *testing.T) {
+	c := &client{
+		client: http.DefaultClient,
+	}
+	_, _, err := c.do(" ", "http://127.0.0.1:7777", nil) // a invalid method
+	assert.Contains(t, err.Error(), "invalid method")
 }
