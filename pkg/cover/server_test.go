@@ -214,3 +214,12 @@ func TestInitService(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, w.Body.String(), "lala error")
 }
+
+func TestFilterProfile(t *testing.T) {
+	// var tcs = []struct {
+	// 	pattern  []string
+	// 	profile  []*cover.Profile
+	// 	expected []*cover.Profile
+	// 	err      error
+	// }{}
+}

@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -83,11 +84,13 @@ type Service struct {
 	Address string `form:"address" json:"address" binding:"required"`
 }
 
-// ProfileParam is param of profile API (TODO)
+// ProfileParam is param of profile API
 type ProfileParam struct {
 	Force   bool     `form:"force"`
 	Service []string `form:"service" json:"service"`
 	Address []string `form:"address" json:"address"`
+
+	CoverPkg []string
 }
 
 //listServices list all the registered services
@@ -138,6 +141,7 @@ func profile(c *gin.Context) {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": "invalid param"})
 		return
 	}
+
 	serviceList := removeDuplicateElement(c.QueryArray("service"))
 	addressList := removeDuplicateElement(c.QueryArray("address"))
 	allInfos := DefaultStore.GetAll()
@@ -181,6 +185,25 @@ func profile(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+}
+
+// filterProfile output profiles of the packages matching the coverPkg
+func filterProfile(coverPkg []string, profiles []*cover.Profile) ([]*cover.Profile, error) {
+	var out = make([]*cover.Profile, 0)
+
+	for _, profile := range profiles {
+		for _, pattern := range coverPkg {
+			matched, err := regexp.MatchString(pattern, profile.FileName)
+			if err != nil {
+				return nil, fmt.Errorf("filterProfile failed with pattern %s for profile %s", pattern, profile.FileName)
+			}
+			if matched {
+				out = append(out, profile)
+			}
+		}
+	}
+
+	return out, nil
 }
 
 func clear(c *gin.Context) {

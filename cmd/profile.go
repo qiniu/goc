@@ -19,11 +19,11 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
 
 	"github.com/qiniu/goc/pkg/cover"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -74,16 +74,24 @@ goc profile --force
 	},
 }
 
-var output string
-var force bool
-var svrList []string
-var addrList []string
+var (
+	svrList  []string // --service flag
+	addrList []string // --address flag
+	force    bool     // --force flag
+	output   string   // --output flag
+	coverPkg []string // --coverpkg flag
+)
 
 func init() {
 	profileCmd.Flags().StringVarP(&output, "output", "o", "", "download cover profile")
 	profileCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "service name to fetch profile, see 'goc list' for all services.")
 	profileCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "address to fetch profile, see 'goc list' for all addresses.")
 	profileCmd.Flags().BoolVarP(&force, "force", "f", false, "force fetching all available profiles")
+	profileCmd.Flags().StringSliceVarP(&coverPkg, "coverpkg", "", nil, "only output coverage data of the packages matching the patterns")
 	addBasicFlags(profileCmd.Flags())
 	rootCmd.AddCommand(profileCmd)
+}
+
+func filterProfile() {
+
 }
