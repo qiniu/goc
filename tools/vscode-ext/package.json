@@ -2,7 +2,7 @@
 	"name": "goc",
 	"displayName": "Goc Coverage",
 	"description": "Goc Coverage can display coverage vairation in real time. Goc is a comprehensive coverage testing system for The Go Programming Language, especially for some complex scenarios, like system testing code coverage collection and accurate testing.",
-	"version": "0.0.1",
+	"version": "0.0.3",
 	"publisher": "lyyyuna",
 	"repository": {
 		"url": "https://github.com/qiniu/goc"

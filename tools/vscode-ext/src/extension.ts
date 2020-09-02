@@ -16,6 +16,12 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let disposable2 = vscode.commands.registerCommand('extension.switch', async () => {
 		if (gocStatusBarItem.text == 'Goc Coverage OFF') {
+			let err = gocserver.checkGoEnv()
+			// check if pc meets extension's requirement
+			if (err) {
+				vscode.window.showErrorMessage('Cannot get Golang version, please check your go environment.')
+				return
+			}
 			gocStatusBarItem.text = 'Goc Coverage ON';
 			// get current project package structure
 			let packages = gocserver.getGoList();

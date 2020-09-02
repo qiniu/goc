@@ -67,6 +67,15 @@ export class GocServer {
         return "";
     }
 
+    checkGoEnv() : Boolean {
+        let output = spawnSync('go', ['version']);
+        if (output.status != 0 || output.status == null) {
+            console.error(output.stderr.toString())
+            return true;
+        }
+        return false;
+    }
+
     getGoList(): Array<any> {
         let cwd = "";
         let workspaces = vscode.workspace.workspaceFolders || [];
@@ -80,7 +89,7 @@ export class GocServer {
             'cwd': cwd
         };
         let output = spawnSync('go', ['list', '-json', './...'], opts);
-        if (output.error != null) {
+        if (output.status != 0 || output.status == null) {
             console.error(output.stderr.toString());
             return [];
         } 
