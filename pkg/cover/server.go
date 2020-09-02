@@ -187,7 +187,7 @@ func profile(c *gin.Context) {
 	}
 }
 
-// filterProfile output profiles of the packages matching the coverPkg
+// filterProfile filters profiles of the packages matching the coverPkg
 func filterProfile(coverPkg []string, profiles []*cover.Profile) ([]*cover.Profile, error) {
 	var out = make([]*cover.Profile, 0)
 
