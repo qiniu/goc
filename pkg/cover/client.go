@@ -17,13 +17,14 @@
 package cover
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -76,35 +77,34 @@ func (c *client) RegisterService(srv Service) ([]byte, error) {
 		return nil, fmt.Errorf("invalid service name")
 	}
 	u := fmt.Sprintf("%s%s?name=%s&address=%s", c.Host, CoverRegisterServiceAPI, srv.Name, srv.Address)
-	_, res, err := c.do("POST", u, nil)
+	_, res, err := c.do("POST", u, "", nil)
 	return res, err
 }
 
 func (c *client) ListServices() ([]byte, error) {
 	u := fmt.Sprintf("%s%s", c.Host, CoverServicesListAPI)
-	_, services, err := c.do("GET", u, nil)
+	_, services, err := c.do("GET", u, "", nil)
 	if err != nil && isNetworkError(err) {
-		_, services, err = c.do("GET", u, nil)
+		_, services, err = c.do("GET", u, "", nil)
 	}
 
 	return services, err
 }
 
 func (c *client) Profile(param ProfileParam) ([]byte, error) {
-	u := fmt.Sprintf("%s%s?force=%s", c.Host, CoverProfileAPI, strconv.FormatBool(param.Force))
+	u := fmt.Sprintf("%s%s", c.Host, CoverProfileAPI)
 	if len(param.Service) != 0 && len(param.Address) != 0 {
 		return nil, fmt.Errorf("use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")
 	}
 
-	for _, svr := range param.Service {
-		u = u + "&service=" + svr
+	body, err := json.Marshal(param)
+	if err != nil {
+		return nil, fmt.Errorf("json.Marshal failed, param: %v, err:%v", param, err)
 	}
-	for _, addr := range param.Address {
-		u = u + "&address=" + addr
-	}
-	res, profile, err := c.do("GET", u, nil)
+
+	res, profile, err := c.do("POST", u, "application/json", bytes.NewReader(body))
 	if err != nil && isNetworkError(err) {
-		res, profile, err = c.do("GET", u, nil)
+		res, profile, err = c.do("POST", u, "application/json", bytes.NewReader(body))
 	}
 	if err == nil && res.StatusCode != 200 {
 		err = fmt.Errorf(string(profile))
@@ -114,29 +114,35 @@ func (c *client) Profile(param ProfileParam) ([]byte, error) {
 
 func (c *client) Clear() ([]byte, error) {
 	u := fmt.Sprintf("%s%s", c.Host, CoverProfileClearAPI)
-	_, resp, err := c.do("POST", u, nil)
+	_, resp, err := c.do("POST", u, "", nil)
 	if err != nil && isNetworkError(err) {
-		_, resp, err = c.do("POST", u, nil)
+		_, resp, err = c.do("POST", u, "", nil)
 	}
 	return resp, err
 }
 
 func (c *client) InitSystem() ([]byte, error) {
 	u := fmt.Sprintf("%s%s", c.Host, CoverInitSystemAPI)
-	_, body, err := c.do("POST", u, nil)
+	_, body, err := c.do("POST", u, "", nil)
 	return body, err
 }
 
-func (c *client) do(method, url string, body io.Reader) (*http.Response, []byte, error) {
+func (c *client) do(method, url, contentType string, body io.Reader) (*http.Response, []byte, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, nil, err
 	}
+
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+
 	res, err := c.client.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer res.Body.Close()
+
 	responseBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return res, nil, err

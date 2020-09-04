@@ -162,6 +162,6 @@ func TestClientDo(t *testing.T) {
 	c := &client{
 		client: http.DefaultClient,
 	}
-	_, _, err := c.do(" ", "http://127.0.0.1:7777", nil) // a invalid method
+	_, _, err := c.do(" ", "http://127.0.0.1:7777", "", nil) // a invalid method
 	assert.Contains(t, err.Error(), "invalid method")
 }

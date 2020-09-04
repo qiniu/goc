@@ -180,7 +180,7 @@ func TestProfileService(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusExpectationFailed, w.Code)
-	assert.Contains(t, w.Body.String(), "invalid param")
+	assert.Contains(t, w.Body.String(), "invalid syntax")
 }
 
 func TestClearService(t *testing.T) {
@@ -226,7 +226,7 @@ func TestFilterProfile(t *testing.T) {
 		expectErr bool
 	}{
 		{
-			name:    "valid test",
+			name:    "normal path",
 			pattern: []string{"some/fancy/gopath", "a/fancy/gopath"},
 			input: []*cover.Profile{
 				{
@@ -260,6 +260,38 @@ func TestFilterProfile(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:    "with regular expression",
+			pattern: []string{"fancy/gopath/a.go$", "^b/a/"},
+			input: []*cover.Profile{
+				{
+					FileName: "some/fancy/gopath/a.go",
+				},
+				{
+					FileName: "some/fancy/gopath/b/a.go",
+				},
+				{
+					FileName: "a/fancy/gopath/a.go",
+				},
+				{
+					FileName: "b/fancy/gopath/c/a.go",
+				},
+				{
+					FileName: "b/a/fancy/gopath/a.go",
+				},
+			},
+			output: []*cover.Profile{
+				{
+					FileName: "some/fancy/gopath/a.go",
+				},
+				{
+					FileName: "a/fancy/gopath/a.go",
+				},
+				{
+					FileName: "b/a/fancy/gopath/a.go",
+				},
+			},
+		},
 	}
 
 	for _, tc := range tcs {
@@ -279,7 +311,6 @@ func TestFilterProfile(t *testing.T) {
 			if !reflect.DeepEqual(out, tc.output) {
 				t.Errorf("Mismatched results. \nExpected: %s\nActual:%s", stringifyCoverProfile(tc.output), stringifyCoverProfile(out))
 			}
-
 		})
 	}
 }

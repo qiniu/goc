@@ -26,7 +26,6 @@ import (
 	"net/url"
 	"os"
 	"regexp"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -70,6 +69,7 @@ func GocServer(w io.Writer) *gin.Engine {
 	{
 		v1.POST("/cover/register", registerService)
 		v1.GET("/cover/profile", profile)
+		v1.POST("/cover/profile", profile)
 		v1.POST("/cover/clear", clear)
 		v1.POST("/cover/init", initSystem)
 		v1.GET("/cover/list", listServices)
@@ -86,11 +86,10 @@ type Service struct {
 
 // ProfileParam is param of profile API
 type ProfileParam struct {
-	Force   bool     `form:"force"`
-	Service []string `form:"service" json:"service"`
-	Address []string `form:"address" json:"address"`
-
-	CoverPkg []string
+	Force             bool     `form:"force" json:"force"`
+	Service           []string `form:"service" json:"service"`
+	Address           []string `form:"address" json:"address"`
+	CoverFilePatterns []string `form:"coverfile" json:"coverfile"`
 }
 
 //listServices list all the registered services
@@ -135,17 +134,18 @@ func registerService(c *gin.Context) {
 	return
 }
 
+// profile API examples:
+// POST /v1/cover/profile
+// { "force": "true", "service":["a","b"], "address":["c","d"],"coverfile":["e","f"] }
 func profile(c *gin.Context) {
-	force, err := strconv.ParseBool(c.Query("force"))
-	if err != nil {
-		c.JSON(http.StatusExpectationFailed, gin.H{"error": "invalid param"})
+	var body ProfileParam
+	if err := c.ShouldBind(&body); err != nil {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		return
 	}
 
-	serviceList := removeDuplicateElement(c.QueryArray("service"))
-	addressList := removeDuplicateElement(c.QueryArray("address"))
 	allInfos := DefaultStore.GetAll()
-	filterAddrList, err := filterAddrs(serviceList, addressList, force, allInfos)
+	filterAddrList, err := filterAddrs(body.Service, body.Address, body.Force, allInfos)
 	if err != nil {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		return
@@ -155,13 +155,15 @@ func profile(c *gin.Context) {
 	for _, addr := range filterAddrList {
 		pp, err := NewWorker(addr).Profile(ProfileParam{})
 		if err != nil {
-			if force {
+			if body.Force {
 				log.Warnf("get profile from [%s] failed, error: %s", addr, err.Error())
 				continue
 			}
-			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": fmt.Sprintf("failed to get profile from %s, error %s", addr, err.Error())})
 			return
 		}
+
 		profile, err := convertProfile(pp)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -181,24 +183,32 @@ func profile(c *gin.Context) {
 		return
 	}
 
+	if len(body.CoverFilePatterns) > 0 {
+		merged, err = filterProfile(body.CoverFilePatterns, merged)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to filter profile based on the patterns: %v, error: %v", body.CoverFilePatterns, err)})
+			return
+		}
+	}
+
 	if err := cov.DumpProfile(merged, c.Writer); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 }
 
-// filterProfile filters profiles of the packages matching the coverPkg
-func filterProfile(coverPkg []string, profiles []*cover.Profile) ([]*cover.Profile, error) {
+// filterProfile filters profiles of the packages matching the coverFile pattern
+func filterProfile(coverFile []string, profiles []*cover.Profile) ([]*cover.Profile, error) {
 	var out = make([]*cover.Profile, 0)
-
 	for _, profile := range profiles {
-		for _, pattern := range coverPkg {
+		for _, pattern := range coverFile {
 			matched, err := regexp.MatchString(pattern, profile.FileName)
 			if err != nil {
 				return nil, fmt.Errorf("filterProfile failed with pattern %s for profile %s", pattern, profile.FileName)
 			}
 			if matched {
 				out = append(out, profile)
+				break // no need to check again for the file
 			}
 		}
 	}
@@ -261,9 +271,11 @@ func filterAddrs(serviceList, addressList []string, force bool, allInfos map[str
 	for _, addr := range allInfos {
 		addressAll = append(addressAll, addr...)
 	}
+
 	if len(serviceList) != 0 && len(addressList) != 0 {
 		return nil, fmt.Errorf("use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")
 	}
+
 	// Add matched services to map
 	for _, name := range serviceList {
 		if addr, ok := allInfos[name]; ok {
@@ -275,6 +287,7 @@ func filterAddrs(serviceList, addressList []string, force bool, allInfos map[str
 		}
 		log.Warnf("service [%s] not found", name)
 	}
+
 	// Add matched addresses to map
 	for _, addr := range addressList {
 		if contains(addressAll, addr) {
@@ -286,9 +299,11 @@ func filterAddrs(serviceList, addressList []string, force bool, allInfos map[str
 		}
 		log.Warnf("address [%s] not found", addr)
 	}
+
 	if len(addressList) == 0 && len(serviceList) == 0 {
 		filterAddrList = addressAll
 	}
+
 	// Return all servers when all param is nil
 	return filterAddrList, nil
 }

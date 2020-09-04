@@ -44,14 +44,18 @@ goc profile --service=service1,service2,service3
 # Get coverage counter of several specified addresses. You can get all available addresses from command 'goc list'. Use 'service' and 'address' flag at the same time may cause ambiguity, please use them separately.
 goc profile --address=address1,address2,address3
 
+# Only get the coverage data of files matching the special patterns
+goc profile --coverfile=pattern1,pattern2,pattern3
+
 # Force fetching all available profiles.
 goc profile --force
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		p := cover.ProfileParam{
-			Force:   force,
-			Service: svrList,
-			Address: addrList,
+			Force:             force,
+			Service:           svrList,
+			Address:           addrList,
+			CoverFilePatterns: coverFilePatterns,
 		}
 		res, err := cover.NewWorker(center).Profile(p)
 		if err != nil {
@@ -75,11 +79,11 @@ goc profile --force
 }
 
 var (
-	svrList  []string // --service flag
-	addrList []string // --address flag
-	force    bool     // --force flag
-	output   string   // --output flag
-	coverPkg []string // --coverpkg flag
+	svrList           []string // --service flag
+	addrList          []string // --address flag
+	force             bool     // --force flag
+	output            string   // --output flag
+	coverFilePatterns []string // --coverfile flag
 )
 
 func init() {
@@ -87,11 +91,7 @@ func init() {
 	profileCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "service name to fetch profile, see 'goc list' for all services.")
 	profileCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "address to fetch profile, see 'goc list' for all addresses.")
 	profileCmd.Flags().BoolVarP(&force, "force", "f", false, "force fetching all available profiles")
-	profileCmd.Flags().StringSliceVarP(&coverPkg, "coverpkg", "", nil, "only output coverage data of the packages matching the patterns")
+	profileCmd.Flags().StringSliceVarP(&coverFilePatterns, "coverfile", "", nil, "only output coverage data of the files matching the patterns")
 	addBasicFlags(profileCmd.Flags())
 	rootCmd.AddCommand(profileCmd)
-}
-
-func filterProfile() {
-
 }
