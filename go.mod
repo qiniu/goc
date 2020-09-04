@@ -19,7 +19,7 @@ require (
 	golang.org/x/mod v0.3.0
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	golang.org/x/tools v0.0.0-20200730221956-1ac65761fe2c
-	k8s.io/kubernetes v1.13.0
 	k8s.io/test-infra v0.0.0-20200511080351-8ac9dbfab055
 )

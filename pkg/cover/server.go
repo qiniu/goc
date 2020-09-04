@@ -18,6 +18,7 @@ package cover
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -26,9 +27,11 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 	"golang.org/x/tools/cover"
 	"k8s.io/test-infra/gopherage/pkg/cov"
 )
@@ -151,25 +154,47 @@ func profile(c *gin.Context) {
 		return
 	}
 
-	var mergedProfiles = make([][]*cover.Profile, 0)
+	mergedProfiles := make([][]*cover.Profile, 0)
+	errs := make([]error, 0)
+	// maximum 20/seconds, burst 5
+	limiter := rate.NewLimiter(20, 5)
+	var lock sync.Mutex
+	var wg sync.WaitGroup
+	wg.Add(len(filterAddrList))
 	for _, addr := range filterAddrList {
-		pp, err := NewWorker(addr).Profile(ProfileParam{})
-		if err != nil {
-			if body.Force {
-				log.Warnf("get profile from [%s] failed, error: %s", addr, err.Error())
-				continue
+		// add limiter
+		limiter.Wait(context.Background())
+		// closure var
+		coveredServiceAddr := addr
+		go func() {
+			defer wg.Done()
+			// call client is time consuming, so only concurrent this step
+			// other steps are protected by lock
+			pp, err := NewWorker(coveredServiceAddr).Profile(ProfileParam{})
+			lock.Lock()
+			defer lock.Unlock()
+			if err != nil {
+				errs = append(errs, err)
+				return
 			}
+			profile, err := convertProfile(pp)
+			if err != nil {
+				errs = append(errs, err)
+				return
+			}
+			mergedProfiles = append(mergedProfiles, profile)
+		}()
+	}
 
-			c.JSON(http.StatusExpectationFailed, gin.H{"error": fmt.Sprintf("failed to get profile from %s, error %s", addr, err.Error())})
+	wg.Wait()
+	if len(errs) != 0 {
+		for _, err := range errs {
+			log.Warnf("get one profile failed, error: %s", err.Error())
+		}
+		if true != body.Force {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": errs})
 			return
 		}
-
-		profile, err := convertProfile(pp)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		mergedProfiles = append(mergedProfiles, profile)
 	}
 
 	if len(mergedProfiles) == 0 {
