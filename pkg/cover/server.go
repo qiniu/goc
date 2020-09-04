@@ -162,8 +162,8 @@ func profile(c *gin.Context) {
 	var wg sync.WaitGroup
 	wg.Add(len(filterAddrList))
 	for _, addr := range filterAddrList {
-		// add limiter
-		limiter.Wait(context.Background())
+		// add limiter, ignore err
+		_ = limiter.Wait(context.Background())
 		// closure var
 		coveredServiceAddr := addr
 		go func() {
@@ -189,9 +189,9 @@ func profile(c *gin.Context) {
 	wg.Wait()
 	if len(errs) != 0 {
 		for _, err := range errs {
-			log.Warnf("get one profile failed, error: %s", err.Error())
+			log.Errorf("get one profile failed, error: %s", err.Error())
 		}
-		if true != body.Force {
+		if !body.Force {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": errs})
 			return
 		}
