@@ -204,7 +204,7 @@ func filterProfile(coverFile []string, profiles []*cover.Profile) ([]*cover.Prof
 		for _, pattern := range coverFile {
 			matched, err := regexp.MatchString(pattern, profile.FileName)
 			if err != nil {
-				return nil, fmt.Errorf("filterProfile failed with pattern %s for profile %s", pattern, profile.FileName)
+				return nil, fmt.Errorf("filterProfile failed with pattern %s for profile %s, err: %v", pattern, profile.FileName, err)
 			}
 			if matched {
 				out = append(out, profile)
