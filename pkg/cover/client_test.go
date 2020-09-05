@@ -36,7 +36,7 @@ func TestClientAction(t *testing.T) {
 	profileMockResponse := []byte("mode: count\nmockService/main.go:30.13,48.33 13 1\nb/b.go:30.13,48.33 13 1")
 	profileSuccessMockSvr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write(profileMockResponse)
+		_, _ = w.Write(profileMockResponse)
 	}))
 	defer profileSuccessMockSvr.Close()
 

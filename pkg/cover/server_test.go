@@ -287,6 +287,16 @@ func TestFilterProfile(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:    "with invalid regular expression",
+			pattern: []string{"(?!a)"},
+			input: []*cover.Profile{
+				{
+					FileName: "some/fancy/gopath/a.go",
+				},
+			},
+			expectErr: true,
+		},
 	}
 
 	for _, tc := range tcs {
