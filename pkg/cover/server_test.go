@@ -110,11 +110,6 @@ func TestFilterAddrs(t *testing.T) {
 	}
 }
 
-func TestRemoveDuplicateElement(t *testing.T) {
-	strArr := []string{"a", "a", "b"}
-	assert.Equal(t, removeDuplicateElement(strArr), []string{"a", "b"})
-}
-
 func TestRegisterService(t *testing.T) {
 	router := GocServer(os.Stdout)
 

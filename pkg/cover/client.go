@@ -106,6 +106,7 @@ func (c *client) Profile(param ProfileParam) ([]byte, error) {
 	if err != nil && isNetworkError(err) {
 		res, profile, err = c.do("POST", u, "application/json", bytes.NewReader(body))
 	}
+
 	if err == nil && res.StatusCode != 200 {
 		err = fmt.Errorf(string(profile))
 	}

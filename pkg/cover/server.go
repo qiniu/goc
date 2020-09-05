@@ -173,7 +173,7 @@ func profile(c *gin.Context) {
 	}
 
 	if len(mergedProfiles) == 0 {
-		c.JSON(http.StatusOK, "no profiles")
+		c.JSON(http.StatusOK, gin.H{"message": "no profiles"})
 		return
 	}
 
@@ -306,17 +306,4 @@ func filterAddrs(serviceList, addressList []string, force bool, allInfos map[str
 
 	// Return all servers when all param is nil
 	return filterAddrList, nil
-}
-
-// removeDuplicateElement remove duplicate element in slice
-func removeDuplicateElement(addrs []string) []string {
-	result := make([]string, 0, len(addrs))
-	temp := map[string]struct{}{}
-	for _, item := range addrs {
-		if _, ok := temp[item]; !ok {
-			temp[item] = struct{}{}
-			result = append(result, item)
-		}
-	}
-	return result
 }
