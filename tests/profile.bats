@@ -77,3 +77,23 @@ setup() {
     wait $profile_pid
     kill -9 $SAMPLE_PID
 }
+
+@test "test goc profile with coverfile flag" {
+    ./simple-project 3>&- &
+    SAMPLE_PID=$!
+    sleep 2
+
+    wait_profile_backend "profile3" &
+    profile_pid=$!
+
+    run gocc profile --center=http://127.0.0.1:60001 --coverfile="a.go$,b.go$" --debug --debugcisyncfile ci-sync.bak;
+    info $output
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"mode: count"* ]]
+    [[ "$output" == *"a.go"* ]] # contains a.go file
+    [[ "$output" == *"b.go"* ]] # contains b.go file
+    [[ "$output" != *"main.go"* ]] # not contains main.go file
+
+    wait $profile_pid
+    kill -9 $SAMPLE_PID
+}
