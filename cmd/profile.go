@@ -59,7 +59,7 @@ goc profile --force
 		}
 		res, err := cover.NewWorker(center).Profile(p)
 		if err != nil {
-			log.Fatalf("call host %v failed, err: %v, response: %v", center, err, string(res))
+			log.Fatalf("Goc server %v return an error: %v", center, err)
 		}
 
 		if output == "" {

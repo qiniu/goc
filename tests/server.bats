@@ -41,7 +41,8 @@ teardown_file() {
     [ "$status" -eq 0 ]
     # connect to covered goc
     run goc profile --center=http://127.0.0.1:60001
-    [ "$status" -eq 0 ]
+    # no profiles
+    [ "$status" -eq 1 ]
 }
 
 @test "register a covered service" {
@@ -54,5 +55,5 @@ teardown_file() {
     sleep 1
     # connect to covered goc
     run goc profile --center=http://127.0.0.1:60001
-    [ "$status" -eq 0 ]    
+    [ "$status" -eq 0 ]
 }
