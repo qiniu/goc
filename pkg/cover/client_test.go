@@ -189,3 +189,16 @@ func TestClientDo(t *testing.T) {
 	_, _, err := c.do(" ", "http://127.0.0.1:7777", "", nil) // a invalid method
 	assert.Contains(t, err.Error(), "invalid method")
 }
+
+func TestClientClearWithInvalidParam(t *testing.T) {
+	p := ProfileParam{
+		Service: []string{"goc"},
+		Address: []string{"http://127.0.0.1:777"},
+	}
+	c := &client{
+		client: http.DefaultClient,
+	}
+	_, err := c.Clear(p)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")
+}
