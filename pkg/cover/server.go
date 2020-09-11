@@ -217,17 +217,26 @@ func filterProfile(coverFile []string, profiles []*cover.Profile) ([]*cover.Prof
 }
 
 func clear(c *gin.Context) {
-	svrsUnderTest := DefaultStore.GetAll()
-	for svc, addrs := range svrsUnderTest {
-		for _, addr := range addrs {
-			pp, err := NewWorker(addr).Clear()
-			if err != nil {
-				c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
-				return
-			}
-			fmt.Fprintf(c.Writer, "Register service %s: %s coverage counter %s", svc, addr, string(pp))
-		}
+	var body ProfileParam
+	if err := c.ShouldBind(&body); err != nil {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		return
 	}
+	svrsUnderTest := DefaultStore.GetAll()
+	filterAddrList, err := filterAddrs(body.Service, body.Address, true, svrsUnderTest)
+	if err != nil {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		return
+	}
+	for _, addr := range filterAddrList {
+		pp, err := NewWorker(addr).Clear(ProfileParam{})
+		if err != nil {
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+			return
+		}
+		fmt.Fprintf(c.Writer, "Register service %s coverage counter %s", addr, string(pp))
+	}
+
 }
 
 func initSystem(c *gin.Context) {
