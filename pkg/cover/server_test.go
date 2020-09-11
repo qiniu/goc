@@ -1,6 +1,7 @@
 package cover
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -188,7 +189,7 @@ func TestClearService(t *testing.T) {
 
 	// get profile with invalid force parameter
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/v1/cover/clear", nil)
+	req, _ := http.NewRequest("POST", "/v1/cover/clear", bytes.NewBuffer([]byte(`{}`)))
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusExpectationFailed, w.Code)
