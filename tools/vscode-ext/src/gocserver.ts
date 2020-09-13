@@ -5,6 +5,7 @@ import { spawnSync } from 'child_process';
 import * as path from 'path';
 import { promisify } from 'util';
 import * as log4js from 'log4js';
+import * as upath from 'upath';
 const sleep = promisify(setTimeout);
 
 export class GocServer {
@@ -100,7 +101,7 @@ export class GocServer {
             this._logger.error("no workspace found");
             return [];
         } else {
-            cwd = workspaces[0].uri.path;
+            cwd = workspaces[0].uri.fsPath;
         }
         this._logger.debug('current project root directory: ', cwd);
         let opts = {
@@ -160,6 +161,9 @@ export class GocServer {
             let importPath: string = line.split(':')[0];
             let blockInfo: string = line.split(':')[1];
             
+            // on windows the path is different from posix
+            // needs transform
+            importPathNeedsRender = upath.toUnix(importPathNeedsRender)
             if (importPath != importPathNeedsRender) {
                 continue;
             }
