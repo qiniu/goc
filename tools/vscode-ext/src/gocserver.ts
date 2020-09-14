@@ -4,10 +4,14 @@ import * as vscode from 'vscode';
 import { spawnSync } from 'child_process';
 import * as path from 'path';
 import { promisify } from 'util';
+import * as log4js from 'log4js';
+import * as upath from 'upath';
 const sleep = promisify(setTimeout);
 
 export class GocServer {
     private _serverUrl: string = '';
+    private _debug: Boolean = false;
+    private _logger: log4js.Logger = log4js.getLogger();
     private timer = true;
     private highlightDecorationType = vscode.window.createTextEditorDecorationType({
         backgroundColor: 'green',
@@ -30,6 +34,7 @@ export class GocServer {
             }
 
             this.getConfigurations();
+            this.setDebugLogger();
             let profile = await this.getLatestProfile();
             this.renderFile(packages, profile);
         }
@@ -51,6 +56,17 @@ export class GocServer {
 
     getConfigurations() {
         this._serverUrl = vscode.workspace.getConfiguration().get('goc.serverUrl') || '';
+        this._debug = vscode.workspace.getConfiguration().get('goc.debug') || false;
+    }
+
+    setDebugLogger() {
+        if (this._debug == false) {
+            this._logger.level = "info";
+        } else {
+            this._logger.level = "debug";
+        }
+
+        this._logger.info('goc server url: ', this._serverUrl);
     }
 
     async getLatestProfile(): Promise<string> {
@@ -59,9 +75,10 @@ export class GocServer {
         try {
             let res = await axios.get(profileApi, );
             let body: string = res.data.toString();
+            this._logger.debug(body);
             return body;
         } catch(err) {
-            console.error(err)
+            this._logger.error(err.message);
         } 
 
         return "";
@@ -70,9 +87,10 @@ export class GocServer {
     checkGoEnv() : Boolean {
         let output = spawnSync('go', ['version']);
         if (output.status != 0 || output.status == null) {
-            console.error(output.stderr.toString())
+            this._logger.error(output.stderr.toString());
             return true;
         }
+        this._logger.debug('go version: ', output.stdout.toString());
         return false;
     }
 
@@ -80,17 +98,18 @@ export class GocServer {
         let cwd = "";
         let workspaces = vscode.workspace.workspaceFolders || [];
         if (workspaces.length == 0) {
-            console.error("no workspace found");
+            this._logger.error("no workspace found");
             return [];
         } else {
-            cwd = workspaces[0].uri.path;
+            cwd = workspaces[0].uri.fsPath;
         }
+        this._logger.debug('current project root directory: ', cwd);
         let opts = {
             'cwd': cwd
         };
         let output = spawnSync('go', ['list', '-json', './...'], opts);
         if (output.status != 0 || output.status == null) {
-            console.error(output.stderr.toString());
+            this._logger.error(output.stderr.toString());
             return [];
         } 
         let packages = JSON.parse('[' + output.stdout.toString().replace(/}\n{/g, '},\n{') + ']');
@@ -101,6 +120,7 @@ export class GocServer {
         let activeTextEditor = vscode.window.activeTextEditor;
         let fileNeedsRender = activeTextEditor?.document.fileName || '---';
 
+        this._logger.debug('current active source code file: ', fileNeedsRender);
         // check if needs to rerender
         if (profile == this.lastProfile && fileNeedsRender == this.lastFileNeedsRender) {
             return;
@@ -108,15 +128,18 @@ export class GocServer {
         this.lastProfile = profile;
         this.lastFileNeedsRender = fileNeedsRender;
 
+        this._logger.debug('go list packages length: ', packages.length);
+
         for (let i=0; i<packages.length; i++) {
             let p = packages[i];
             let baseDir: string = p['Dir'];
             for (let gofile of p['GoFiles']) {
                 let filepath = path.join(baseDir, gofile);
+                // this._logger.debug('compare two path: ', filepath, fileNeedsRender);
                 if (filepath == fileNeedsRender) {
                     let importPath: string = path.join(p['ImportPath'], gofile);
-                    let ranges = this.parseProfile(profile, importPath)
-                    this.triggerUpdateDecoration(ranges)
+                    let ranges = this.parseProfile(profile, importPath);
+                    this.triggerUpdateDecoration(ranges);
                     return;
                 }
             }
@@ -125,8 +148,9 @@ export class GocServer {
 
     parseProfile(profile: string, importPathNeedsRender: string): vscode.Range[] {
         let lines = profile.split('\n');
+        this._logger.debug('profile lines: ', lines.length);
         if (lines.length <= 1) {
-            console.error("empty coverage profile from server");
+            this._logger.error("empty coverage profile from server");
             return [];
         }
 
@@ -137,6 +161,9 @@ export class GocServer {
             let importPath: string = line.split(':')[0];
             let blockInfo: string = line.split(':')[1];
             
+            // on windows the path is different from posix
+            // needs transform
+            importPathNeedsRender = upath.toUnix(importPathNeedsRender)
             if (importPath != importPathNeedsRender) {
                 continue;
             }
@@ -171,7 +198,7 @@ export class GocServer {
             return;
         }
       
-        console.debug('[' + new Date().toUTCString() + '] ' + 'update latest profile success')
+        this._logger.info('[' + new Date().toUTCString() + '] ' + 'update latest profile success')
 
         if (ranges.length == 0) {
             this.clearHightlight();

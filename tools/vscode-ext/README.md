@@ -13,6 +13,8 @@ Welcome! The [goc](https://github.com/qiniu/goc) is a coverage tool for Golang p
 
 This extension provides a frontend to show the covered lines in real time.
 
+![demo](https://github.com/qiniu/goc/raw/master/docs/images/goc-vscode.gif)
+
 ### Basic requirements
 
 Before you started, make sure that you have:
