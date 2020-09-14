@@ -33,7 +33,7 @@ import (
 // Action provides methods to contact with the covered service under test
 type Action interface {
 	Profile(param ProfileParam) ([]byte, error)
-	Clear() ([]byte, error)
+	Clear(param ProfileParam) ([]byte, error)
 	InitSystem() ([]byte, error)
 	ListServices() ([]byte, error)
 	RegisterService(svr Service) ([]byte, error)
@@ -97,10 +97,9 @@ func (c *client) Profile(param ProfileParam) ([]byte, error) {
 		return nil, fmt.Errorf("use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")
 	}
 
-	body, err := json.Marshal(param)
-	if err != nil {
-		return nil, fmt.Errorf("json.Marshal failed, param: %v, err:%v", param, err)
-	}
+	// the json.Marshal function can return two types of errors: UnsupportedTypeError or UnsupportedValueError
+	// so no need to check here
+	body, _ := json.Marshal(param)
 
 	res, profile, err := c.do("POST", u, "application/json", bytes.NewReader(body))
 	if err != nil && isNetworkError(err) {
@@ -113,11 +112,18 @@ func (c *client) Profile(param ProfileParam) ([]byte, error) {
 	return profile, err
 }
 
-func (c *client) Clear() ([]byte, error) {
+func (c *client) Clear(param ProfileParam) ([]byte, error) {
 	u := fmt.Sprintf("%s%s", c.Host, CoverProfileClearAPI)
-	_, resp, err := c.do("POST", u, "", nil)
+	if len(param.Service) != 0 && len(param.Address) != 0 {
+		return nil, fmt.Errorf("use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")
+	}
+
+	// the json.Marshal function can return two types of errors: UnsupportedTypeError or UnsupportedValueError
+	// so no need to check here
+	body, _ := json.Marshal(param)
+	_, resp, err := c.do("POST", u, "application/json", bytes.NewReader(body))
 	if err != nil && isNetworkError(err) {
-		_, resp, err = c.do("POST", u, "", nil)
+		_, resp, err = c.do("POST", u, "application/json", bytes.NewReader(body))
 	}
 	return resp, err
 }

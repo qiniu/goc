@@ -38,6 +38,7 @@ setup_file() {
 }
 
 teardown_file() {
+    rm *_profile_listen_addr
     kill -9 $GOC_PID
     kill -9 $GOCC_PID
     kill -9 $SAMPLE_PID
@@ -65,4 +66,37 @@ teardown_file() {
     [[ "$output" == *"coverage counter clear call successfully"* ]]
 
     wait $profile_pid
+}
+
+@test "test clear by service name" {
+    goc build --output=./test-service
+    ./test-service 3>&- &
+    TEST_SERVICE=$!
+    sleep 1
+
+    # clear by wrong service name
+    run goc clear --service="test-servicej"
+    [ "$status" -eq 0 ]
+    [ "$output" = "" ]
+
+    # check by goc profile, as the last step is wrong
+    # the coverage count should be 1
+    run goc profile --coverfile="simple-project/a/a.go" --force
+    info clear3 output: $output
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "example.com/simple-project/a/a.go:4.12,6.2 1 1" ]]
+
+    # clear by right service name
+    run goc clear --service="test-service"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "coverage counter clear call successfully" ]]
+
+    # check by goc profile, the coverage count should be reset to 0
+    run goc profile --coverfile="simple-project/a/a.go" --force
+    info clear4 output: $output
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "example.com/simple-project/a/a.go:4.12,6.2 1 0" ]]
+
+
+    kill -9 $TEST_SERVICE
 }

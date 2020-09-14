@@ -1,6 +1,8 @@
 package cover
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -186,13 +188,36 @@ func TestClearService(t *testing.T) {
 
 	router := GocServer(os.Stdout)
 
-	// get profile with invalid force parameter
+	// clear profile with non-exist port
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/v1/cover/clear", nil)
+	req, _ := http.NewRequest("POST", "/v1/cover/clear", bytes.NewBuffer([]byte(`{}`)))
+	req.Header.Set("Content-Type", "application/json")
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusExpectationFailed, w.Code)
 	assert.Contains(t, w.Body.String(), "invalid port")
+
+	// clear profile with invalid service
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/v1/cover/clear", nil)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusExpectationFailed, w.Code)
+	assert.Contains(t, w.Body.String(), "invalid request")
+
+	// clear profile with service and address set at at the same time
+	p := ProfileParam{
+		Service: []string{"goc"},
+		Address: []string{"http://127.0.0.1:3333"},
+	}
+	encoded, err := json.Marshal(p)
+	assert.NoError(t, err)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/v1/cover/clear", bytes.NewBuffer(encoded))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusExpectationFailed, w.Code)
+	assert.Contains(t, w.Body.String(), "use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")
 }
 
 func TestInitService(t *testing.T) {

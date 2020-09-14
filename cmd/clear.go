@@ -18,8 +18,9 @@ package cmd
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/qiniu/goc/pkg/cover"
 	"github.com/spf13/cobra"
@@ -37,7 +38,11 @@ goc clear
 goc clear --center=http://192.168.1.1:8080
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		res, err := cover.NewWorker(center).Clear()
+		p := cover.ProfileParam{
+			Service: svrList,
+			Address: addrList,
+		}
+		res, err := cover.NewWorker(center).Clear(p)
 		if err != nil {
 			log.Fatalf("call host %v failed, err: %v, response: %v", center, err, string(res))
 		}
@@ -47,5 +52,7 @@ goc clear --center=http://192.168.1.1:8080
 
 func init() {
 	addBasicFlags(clearCmd.Flags())
+	clearCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "service name to clear profile, see 'goc list' for all services.")
+	clearCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "address to clear profile, see 'goc list' for all addresses.")
 	rootCmd.AddCommand(clearCmd)
 }
