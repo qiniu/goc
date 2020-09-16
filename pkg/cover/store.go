@@ -45,6 +45,9 @@ type Store interface {
 
 	// Set stores the services information into internal state
 	Set(services map[string][]string)
+
+	// Remove the service from the store
+	Remove(s Service) error
 }
 
 // fileStore holds the registered services into memory and persistent to a local file
@@ -244,4 +247,20 @@ func (l *memoryStore) Set(services map[string][]string) {
 	defer l.mu.Unlock()
 
 	l.servicesMap = services
+}
+
+func (l *memoryStore) Remove(s Service) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	services := l.servicesMap[s.Name]
+	newServices := make([]string, 0)
+	for _, addr := range services {
+		if addr != s.Address {
+			newServices = append(newServices, addr)
+		}
+	}
+	l.servicesMap[s.Name] = newServices
+
+	return nil
 }
