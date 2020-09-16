@@ -97,3 +97,37 @@ setup() {
     wait $profile_pid
     kill -9 $SAMPLE_PID
 }
+
+@test "test goc profile with service flag" {
+    ./simple-project 3>&- &
+    SAMPLE_PID=$!
+    sleep 2
+
+    wait_profile_backend "profile4" &
+    profile_pid=$!
+
+    run gocc profile --center=http://127.0.0.1:60001 --service="simple-project" --debug --debugcisyncfile ci-sync.bak;
+    info $output
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"mode: count"* ]]
+
+    wait $profile_pid
+    kill -9 $SAMPLE_PID
+}
+
+@test "test goc profile with force flag" {
+    ./simple-project 3>&- &
+    SAMPLE_PID=$!
+    sleep 2
+
+    wait_profile_backend "profile5" &
+    profile_pid=$!
+
+    run gocc profile --center=http://127.0.0.1:60001 --service="simple-project,unknown" --force --debug --debugcisyncfile ci-sync.bak;
+    info $output
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"mode: count"* ]]
+
+    wait $profile_pid
+    kill -9 $SAMPLE_PID
+}

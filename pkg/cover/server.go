@@ -173,7 +173,7 @@ func profile(c *gin.Context) {
 	}
 
 	if len(mergedProfiles) == 0 {
-		c.JSON(http.StatusOK, gin.H{"message": "no profiles"})
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": "no profiles"})
 		return
 	}
 
