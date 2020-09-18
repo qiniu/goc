@@ -268,6 +268,10 @@ func TestGetInternalParent(t *testing.T) {
 			ImportPath:     "",
 			expectedParent: "",
 		},
+		{
+			ImportPath:     "a/b/internal/c/d/internal/e",
+			expectedParent: "a/b",
+		},
 	}
 
 	for _, tc := range tcs {
@@ -275,6 +279,86 @@ func TestGetInternalParent(t *testing.T) {
 		if actual != tc.expectedParent {
 			t.Errorf("getInternalParent failed for importPath %s, expected %s, got %s", tc.ImportPath, tc.expectedParent, actual)
 		}
+	}
+}
+
+func TestGetInternalCount(t *testing.T) {
+	var tcs = []struct {
+		ImportPath    string
+		expectedCount int
+	}{
+		{
+			ImportPath:    "a/internal/b",
+			expectedCount: 1,
+		},
+		{
+			ImportPath:    "internal/b",
+			expectedCount: 1,
+		},
+		{
+			ImportPath:    "a/b/internal/b",
+			expectedCount: 1,
+		},
+		{
+			ImportPath:    "a/b/internal",
+			expectedCount: 1,
+		},
+		{
+			ImportPath:    "a/b/internal/c",
+			expectedCount: 1,
+		},
+		{
+			ImportPath:    "a/b/c",
+			expectedCount: 0,
+		},
+		{
+			ImportPath:    "",
+			expectedCount: 0,
+		},
+		{
+			ImportPath:    "a/b/internal/c/d/internal/e",
+			expectedCount: 2,
+		},
+		{
+			ImportPath:    "a/b/internal/c/d/internal",
+			expectedCount: 2,
+		},
+		{
+			ImportPath:    "a/b/internal/c/d/internal/e/f",
+			expectedCount: 2,
+		},
+		{
+			ImportPath:    "a/b/internal/internal/e/f",
+			expectedCount: 2,
+		},
+		{
+			ImportPath:    "a/b/internal/internal",
+			expectedCount: 2,
+		},
+		{
+			ImportPath:    "a/b/internal/internal/d/f",
+			expectedCount: 2,
+		},
+		{
+			ImportPath:    "internal/internal/d/f",
+			expectedCount: 2,
+		},
+		{
+			ImportPath:    "internal/internal",
+			expectedCount: 2,
+		},
+		{
+			ImportPath:    "/internal/internal",
+			expectedCount: 2,
+		},
+		{
+			ImportPath:    "/a/b/internal/c/d/internal/e",
+			expectedCount: 2,
+		},
+	}
+	for _, tc := range tcs {
+		actual := getInternalCount(tc.ImportPath)
+		assert.Equal(t, actual, tc.expectedCount, fmt.Sprintf("getInternalCount failed for importPath %s, expected %d, got %d", tc.ImportPath, tc.expectedCount, actual))
 	}
 }
 
