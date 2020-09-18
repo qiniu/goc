@@ -350,7 +350,7 @@ import (
 
 	{{range $i, $pkgCover := .}}
 	_cover{{$i}} {{$pkgCover.Package.ImportPath | printf "%q"}}
-	{{end}} 
+	{{end}}
 
 )
 
@@ -388,7 +388,6 @@ func injectCache(covers []*PackageCover, pkg, dest string) error {
 	if err != nil {
 		return err
 	}
-
 	if err := coverParentFileTmpl.Execute(f, pkg); err != nil {
 		return err
 	}

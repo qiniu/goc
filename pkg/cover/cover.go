@@ -45,6 +45,10 @@ var (
 	ErrCoverListFailed = errors.New("fail to list package dependencies")
 )
 
+// if nested internal package hierarchy >= 2, root level internal package coverage instrumentation is normal
+// other level internal package coverage instrumentation will be ignored
+const InternalPackageHierarchy = 2
+
 // TestCover is a collection of all counters
 type TestCover struct {
 	Mode         string
@@ -143,6 +147,7 @@ func Execute(args, newGopath, target, mode, agentPort, center string) error {
 
 	var seen = make(map[string]*PackageCover)
 	var seenCache = make(map[string]*PackageCover)
+	var seenInternalVars = make(map[string][]*PackageCover)
 	for _, pkg := range pkgs {
 		if pkg.Name == "main" {
 			log.Printf("handle package: %v", pkg.ImportPath)
@@ -173,19 +178,20 @@ func Execute(args, newGopath, target, mode, agentPort, center string) error {
 				//only focus package neither standard Go library nor dependency library
 				if depPkg, ok := pkgs[dep]; ok {
 					if hasInternalPath(dep) {
+						if getInternalCount(depPkg.ImportPath) >= InternalPackageHierarchy {
+							log.Infof("nested internal package: %s cover has been ignored", depPkg.ImportPath)
+							continue
+						}
 						//scan exist cache cover to tc.CacheCover
 						if cache, ok := seenCache[dep]; ok {
-							log.Infof("cache cover exist: %s", cache.Package.ImportPath)
 							tc.CacheCover[cache.Package.Dir] = cache
+							if internalCache, ok := seenInternalVars[dep]; ok {
+								internalPkgCache[cache.Package.Dir] = internalCache
+							}
+							log.Infof("dep package: %s existed and cover cache used", depPkg.ImportPath)
 							continue
 						}
 
-						// add counter for internal package
-						inPkgCover, err := AddCounters(depPkg, mode, newGopath)
-						if err != nil {
-							log.Errorf("failed to add counters for internal pkg %s, err: %v", depPkg.ImportPath, err)
-							return ErrCoverPkgFailed
-						}
 						parentDir := getInternalParent(depPkg.Dir)
 						parentImportPath := getInternalParent(depPkg.ImportPath)
 
@@ -202,6 +208,13 @@ func Execute(args, newGopath, target, mode, agentPort, center string) error {
 							Dir:        parentDir,
 						}
 
+						// add counter for internal package
+						inPkgCover, err := AddCounters(depPkg, mode, newGopath)
+						if err != nil {
+							log.Errorf("failed to add counters for internal pkg %s, err: %v", depPkg.ImportPath, err)
+							return ErrCoverPkgFailed
+						}
+
 						// Some internal package have same parent dir or import path
 						// Cache all vars by internal parent dir for all child internal counter vars
 						cacheCover := addCacheCover(pkg, inPkgCover)
@@ -216,15 +229,16 @@ func Execute(args, newGopath, target, mode, agentPort, center string) error {
 
 						// Cache all internal vars to internal parent package
 						inCover := cacheInternalCover(inPkgCover)
-						if v, ok := internalPkgCache[cacheCover.Package.Dir]; ok {
-							v = append(v, inCover)
-							internalPkgCache[cacheCover.Package.Dir] = v
+						var covers []*PackageCover
+						if covers, ok = internalPkgCache[cacheCover.Package.Dir]; ok {
+							covers = append(covers, inCover)
+							internalPkgCache[cacheCover.Package.Dir] = covers
 						} else {
-							var covers []*PackageCover
 							covers = append(covers, inCover)
 							internalPkgCache[cacheCover.Package.Dir] = covers
 						}
 						seenCache[dep] = cacheCover
+						seenInternalVars[dep] = covers
 						continue
 					}
 
@@ -355,6 +369,16 @@ func getInternalParent(path string) string {
 		return strings.Split(path, "internal/")[0]
 	}
 	return ""
+}
+
+func getInternalCount(path string) int {
+	count := 0
+	for _, v := range strings.Split(path, "/") {
+		if v == "internal" {
+			count++
+		}
+	}
+	return count
 }
 
 func buildCoverCmd(file string, coverVar *FileVar, pkg *Package, mode, newgopath string) *exec.Cmd {
