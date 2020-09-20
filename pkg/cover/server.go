@@ -90,6 +90,7 @@ func (s *server) Route(w io.Writer) *gin.Engine {
 		v1.POST("/cover/clear", s.clear)
 		v1.POST("/cover/init", s.initSystem)
 		v1.GET("/cover/list", s.listServices)
+		v1.POST("/cover/remove", s.removeServices)
 	}
 
 	return r
@@ -263,6 +264,28 @@ func (s *server) initSystem(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, "")
+}
+
+func (s *server) removeServices(c *gin.Context) {
+	var body ProfileParam
+	if err := c.ShouldBind(&body); err != nil {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		return
+	}
+	svrsUnderTest := s.Store.GetAll()
+	filterAddrList, err := filterAddrs(body.Service, body.Address, true, svrsUnderTest)
+	if err != nil {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		return
+	}
+	for _, addr := range filterAddrList {
+		err := s.Store.Remove(addr)
+		if err != nil {
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+			return
+		}
+		fmt.Fprintf(c.Writer, "Register service %s removed from the center.", addr)
+	}
 }
 
 func convertProfile(p []byte) ([]*cover.Profile, error) {

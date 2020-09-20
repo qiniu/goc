@@ -17,6 +17,7 @@
 package cover
 
 import (
+	"fmt"
 	"net/http/httptest"
 	"os"
 	"testing"
@@ -208,4 +209,37 @@ func TestClientClearWithInvalidParam(t *testing.T) {
 	_, err := c.Clear(p)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")
+}
+
+func TestClientRemove(t *testing.T) {
+	// remove by invalid param
+	p := ProfileParam{
+		Service: []string{"goc"},
+		Address: []string{"http://127.0.0.1:777"},
+	}
+	c := &client{
+		client: http.DefaultClient,
+	}
+	_, err := c.Remove(p)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")
+
+	// remove by valid param
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello, client")
+	}))
+	defer ts.Close()
+
+	c.Host = ts.URL
+	p = ProfileParam{
+		Address: []string{"http://127.0.0.1:777"},
+	}
+	res, err := c.Remove(p)
+	assert.NoError(t, err)
+	assert.Equal(t, string(res), "Hello, client\n")
+
+	// remove from a invalid center
+	c.Host = "http://127.0.0.1:11111"
+	_, err = c.Remove(p)
+	assert.Error(t, err)
 }

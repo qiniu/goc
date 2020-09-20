@@ -20,11 +20,13 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var ErrServiceAlreadyRegistered = errors.New("service already registered")
@@ -46,8 +48,8 @@ type Store interface {
 	// Set stores the services information into internal state
 	Set(services map[string][]string)
 
-	// Remove the service from the store
-	Remove(s Service) error
+	// Remove the service from the store by address
+	Remove(addr string) error
 }
 
 // fileStore holds the registered services into memory and persistent to a local file
@@ -100,6 +102,43 @@ func (l *fileStore) Get(name string) []string {
 // Get returns all the registered service information
 func (l *fileStore) GetAll() map[string][]string {
 	return l.memoryStore.GetAll()
+}
+
+// Remove the service from the memory store and the file store
+func (l *fileStore) Remove(addr string) error {
+	err := l.memoryStore.Remove(addr)
+	if err != nil {
+		return err
+	}
+
+	content, err := ioutil.ReadFile(l.persistentFile)
+	if err != nil {
+		return fmt.Errorf("failed to open file, path: %s, err: %v", l.persistentFile, err)
+	}
+
+	newServices := ""
+	for _, line := range strings.Split(string(content), "\n") {
+		// addr(ip:port) is unique, so no need to check name
+		if strings.Contains(line, addr) {
+			// if the service match the string in the store, skip
+		} else {
+			newServices += line + "\n"
+		}
+	}
+
+	// write back to file
+	f, err := os.OpenFile(l.persistentFile, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return fmt.Errorf("failed to open file, path: %s, err: %v", l.persistentFile, err)
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(newServices)
+	if err != nil {
+		return err
+	}
+
+	return f.Sync()
 }
 
 // Init cleanup all the registered service information
@@ -249,18 +288,33 @@ func (l *memoryStore) Set(services map[string][]string) {
 	l.servicesMap = services
 }
 
-func (l *memoryStore) Remove(s Service) error {
+// Remove one service from the memory store
+// if service is not fount, return "no service found" error
+func (l *memoryStore) Remove(removeAddr string) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	services := l.servicesMap[s.Name]
-	newServices := make([]string, 0)
-	for _, addr := range services {
-		if addr != s.Address {
-			newServices = append(newServices, addr)
+	flag := false
+	for name, addrs := range l.servicesMap {
+		newAddrs := make([]string, 0)
+		for _, addr := range addrs {
+			if removeAddr != addr {
+				newAddrs = append(newAddrs, addr)
+			} else {
+				flag = true
+			}
+		}
+		// if no services left, remove by name
+		if len(newAddrs) == 0 {
+			delete(l.servicesMap, name)
+		} else {
+			l.servicesMap[name] = newAddrs
 		}
 	}
-	l.servicesMap[s.Name] = newServices
+
+	if !flag {
+		return fmt.Errorf("no service found")
+	}
 
 	return nil
 }
