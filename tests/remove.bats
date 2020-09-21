@@ -49,14 +49,19 @@ teardown_file() {
     profile_pid=$!
 
     run goc list --center=http://127.0.0.1:60001;
-    info remove1 output: $output
+    info remove1_1 output: $output
     [ "$status" -eq 0 ]
     [[ "$output" =~ "simple-project" ]]
 
-    run gocc remove --address="simple-project" --debug --debugcisyncfile ci-sync.bak;
-    info remove1 output: $output
+    run gocc remove --center=http://127.0.0.1:60001 --service="simple-project" --debug --debugcisyncfile ci-sync.bak;
+    info remove1_2 output: $output
     [ "$status" -eq 0 ]
-    [ "$output" = "" ]
+    [[ "$output" =~ "removed from the center" ]]
+
+    run goc list --center=http://127.0.0.1:60001;
+    info remove1_3 output: $output
+    [ "$status" -eq 0 ]
+    [ "$output" = "{}" ]
 
     wait $profile_pid
 }
