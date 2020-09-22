@@ -55,7 +55,7 @@ goc run . [--buildflags] [--exec] [--arguments]
 
 		// start goc server
 		var l = newLocalListener()
-		go cover.GocServer(ioutil.Discard).RunListener(l)
+		go cover.GocServer(ioutil.Discard,persistenceFile).RunListener(l)
 		gocServer := fmt.Sprintf("http://%s", l.Addr().String())
 		fmt.Printf("[goc] goc server started: %s \n", gocServer)
 

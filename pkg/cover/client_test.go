@@ -28,7 +28,7 @@ import (
 
 func TestClientAction(t *testing.T) {
 	// mock goc server
-	ts := httptest.NewServer(GocServer(os.Stdout))
+	ts := httptest.NewServer(GocServer(os.Stdout,PersistenceFile))
 	defer ts.Close()
 	var client = NewWorker(ts.URL)
 

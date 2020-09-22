@@ -113,7 +113,7 @@ func TestFilterAddrs(t *testing.T) {
 }
 
 func TestRegisterService(t *testing.T) {
-	router := GocServer(os.Stdout)
+	router := GocServer(os.Stdout,PersistenceFile)
 
 	// register with empty service struct
 	w := httptest.NewRecorder()
@@ -169,7 +169,7 @@ func TestRegisterService(t *testing.T) {
 }
 
 func TestProfileService(t *testing.T) {
-	router := GocServer(os.Stdout)
+	router := GocServer(os.Stdout,PersistenceFile)
 
 	// get profile with invalid force parameter
 	w := httptest.NewRecorder()
@@ -186,7 +186,7 @@ func TestClearService(t *testing.T) {
 
 	DefaultStore = testObj
 
-	router := GocServer(os.Stdout)
+	router := GocServer(os.Stdout,PersistenceFile)
 
 	// clear profile with non-exist port
 	w := httptest.NewRecorder()
@@ -226,7 +226,7 @@ func TestInitService(t *testing.T) {
 
 	DefaultStore = testObj
 
-	router := GocServer(os.Stdout)
+	router := GocServer(os.Stdout,PersistenceFile)
 
 	// get profile with invalid force parameter
 	w := httptest.NewRecorder()

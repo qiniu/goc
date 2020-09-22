@@ -56,9 +56,9 @@ type fileStore struct {
 }
 
 // NewFileStore creates a store using local file
-func NewFileStore() Store {
+func NewFileStore(persistenceFile string) Store {
 	l := &fileStore{
-		persistentFile: PersistenceFile,
+		persistentFile: persistenceFile,
 		memoryStore:    NewMemoryStore(),
 	}
 

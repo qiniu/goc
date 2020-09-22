@@ -39,31 +39,28 @@ var DefaultStore Store
 // LogFile a file to save log.
 const LogFile = "goc.log"
 
-func init() {
-	DefaultStore = NewFileStore()
-}
-
 // Run starts coverage host center
-func Run(port string) {
+func Run(port,persistenceFile string) {
 	f, err := os.Create(LogFile)
 	if err != nil {
 		log.Fatalf("failed to create log file %s, err: %v", LogFile, err)
 	}
+	DefaultStore = NewFileStore(persistenceFile)
 
 	// both log to stdout and file by default
 	mw := io.MultiWriter(f, os.Stdout)
-	r := GocServer(mw)
+	r := GocServer(mw,persistenceFile)
 	log.Fatal(r.Run(port))
 }
 
 // GocServer init goc server engine
-func GocServer(w io.Writer) *gin.Engine {
+func GocServer(w io.Writer,persistenceFile string) *gin.Engine {
 	if w != nil {
 		gin.DefaultWriter = w
 	}
 	r := gin.Default()
 	// api to show the registered services
-	r.StaticFile(PersistenceFile, "./"+PersistenceFile)
+	r.StaticFile(persistenceFile, "./"+persistenceFile)
 
 	v1 := r.Group("/v1")
 	{
