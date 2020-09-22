@@ -40,7 +40,7 @@ var DefaultStore Store
 const LogFile = "goc.log"
 
 // Run starts coverage host center
-func Run(port,persistenceFile string) {
+func Run(port, persistenceFile string) {
 	f, err := os.Create(LogFile)
 	if err != nil {
 		log.Fatalf("failed to create log file %s, err: %v", LogFile, err)
@@ -48,12 +48,12 @@ func Run(port,persistenceFile string) {
 
 	// both log to stdout and file by default
 	mw := io.MultiWriter(f, os.Stdout)
-	r := GocServer(mw,persistenceFile)
+	r := GocServer(mw, persistenceFile)
 	log.Fatal(r.Run(port))
 }
 
 // GocServer init goc server engine
-func GocServer(w io.Writer,persistenceFile string) *gin.Engine {
+func GocServer(w io.Writer, persistenceFile string) *gin.Engine {
 	if w != nil {
 		gin.DefaultWriter = w
 	}

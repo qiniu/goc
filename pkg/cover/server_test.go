@@ -113,7 +113,7 @@ func TestFilterAddrs(t *testing.T) {
 }
 
 func TestRegisterService(t *testing.T) {
-	router := GocServer(os.Stdout,PersistenceFile)
+	router := GocServer(os.Stdout, PersistenceFile)
 
 	// register with empty service struct
 	w := httptest.NewRecorder()
@@ -169,7 +169,7 @@ func TestRegisterService(t *testing.T) {
 }
 
 func TestProfileService(t *testing.T) {
-	router := GocServer(os.Stdout,PersistenceFile)
+	router := GocServer(os.Stdout, PersistenceFile)
 
 	// get profile with invalid force parameter
 	w := httptest.NewRecorder()
@@ -184,7 +184,7 @@ func TestClearService(t *testing.T) {
 	testObj := new(MockStore)
 	testObj.On("GetAll").Return(map[string][]string{"foo": {"http://127.0.0.1:66666"}})
 
-	router := GocServer(os.Stdout,PersistenceFile)
+	router := GocServer(os.Stdout, PersistenceFile)
 
 	DefaultStore = testObj
 
@@ -224,7 +224,7 @@ func TestInitService(t *testing.T) {
 	testObj := new(MockStore)
 	testObj.On("Init").Return(fmt.Errorf("lala error"))
 
-	router := GocServer(os.Stdout,PersistenceFile)
+	router := GocServer(os.Stdout, PersistenceFile)
 
 	DefaultStore = testObj
 
