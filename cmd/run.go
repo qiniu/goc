@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 
@@ -26,6 +25,7 @@ import (
 	"github.com/qiniu/goc/pkg/cover"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"io/ioutil"
 )
 
 var runCmd = &cobra.Command{
@@ -55,7 +55,12 @@ goc run . [--buildflags] [--exec] [--arguments]
 
 		// start goc server
 		var l = newLocalListener()
-		go cover.GocServer(ioutil.Discard, persistenceFile).RunListener(l)
+		go func() {
+			err = cover.GocServer(ioutil.Discard, persistenceFile).RunListener(l)
+			if err != nil {
+				log.Fatalf("Fail to start goc server!")
+			}
+		}()
 		gocServer := fmt.Sprintf("http://%s", l.Addr().String())
 		fmt.Printf("[goc] goc server started: %s \n", gocServer)
 
