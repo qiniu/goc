@@ -184,9 +184,9 @@ func TestClearService(t *testing.T) {
 	testObj := new(MockStore)
 	testObj.On("GetAll").Return(map[string][]string{"foo": {"http://127.0.0.1:66666"}})
 
-	DefaultStore = testObj
-
 	router := GocServer(os.Stdout,PersistenceFile)
+
+	DefaultStore = testObj
 
 	// clear profile with non-exist port
 	w := httptest.NewRecorder()
@@ -224,9 +224,9 @@ func TestInitService(t *testing.T) {
 	testObj := new(MockStore)
 	testObj.On("Init").Return(fmt.Errorf("lala error"))
 
-	DefaultStore = testObj
-
 	router := GocServer(os.Stdout,PersistenceFile)
+
+	DefaultStore = testObj
 
 	// get profile with invalid force parameter
 	w := httptest.NewRecorder()

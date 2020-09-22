@@ -45,7 +45,6 @@ func Run(port,persistenceFile string) {
 	if err != nil {
 		log.Fatalf("failed to create log file %s, err: %v", LogFile, err)
 	}
-	DefaultStore = NewFileStore(persistenceFile)
 
 	// both log to stdout and file by default
 	mw := io.MultiWriter(f, os.Stdout)
@@ -59,6 +58,7 @@ func GocServer(w io.Writer,persistenceFile string) *gin.Engine {
 		gin.DefaultWriter = w
 	}
 	r := gin.Default()
+	DefaultStore = NewFileStore(persistenceFile)
 	// api to show the registered services
 	r.StaticFile(persistenceFile, "./"+persistenceFile)
 
