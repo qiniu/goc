@@ -36,7 +36,7 @@ type Action interface {
 	Clear(param ProfileParam) ([]byte, error)
 	InitSystem() ([]byte, error)
 	ListServices() ([]byte, error)
-	RegisterService(svr Service) ([]byte, error)
+	RegisterService(svr ServiceUnderTest) ([]byte, error)
 }
 
 const (
@@ -69,7 +69,7 @@ func NewWorker(host string) Action {
 	}
 }
 
-func (c *client) RegisterService(srv Service) ([]byte, error) {
+func (c *client) RegisterService(srv ServiceUnderTest) ([]byte, error) {
 	if _, err := url.ParseRequestURI(srv.Address); err != nil {
 		return nil, err
 	}

@@ -50,12 +50,18 @@ goc run . [--buildflags] [--exec] [--arguments]
 		gocBuild.GoRunArguments = goRunArguments
 		defer gocBuild.Clean()
 
-		// only save services in memory
-		cover.DefaultStore = cover.NewMemoryStore()
+		server := cover.Server{
+			Store: cover.NewMemoryStore(), // only save services in memory
+		}
 
 		// start goc server
 		var l = newLocalListener()
-		go cover.GocServer(ioutil.Discard).RunListener(l)
+		go func() {
+			err = server.Route(ioutil.Discard).RunListener(l)
+			if err != nil {
+				log.Fatalf("Start goc server failed: %v", err)
+			}
+		}()
 		gocServer := fmt.Sprintf("http://%s", l.Addr().String())
 		fmt.Printf("[goc] goc server started: %s \n", gocServer)
 

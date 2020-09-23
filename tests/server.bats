@@ -22,7 +22,7 @@ setup_file() {
     sleep 2
     goc init
     # run covered goc
-    gocc server --port=:60001 --debug 3>&- &
+    gocc server --port=:60001 --local-persistence="persistence/servicesAll.txt" --debug 3>&- &
     GOCC_PID=$!
     sleep 2
     info "goc gocc server started"
@@ -57,4 +57,11 @@ teardown_file() {
     # connect to covered goc
     run goc profile --center=http://127.0.0.1:60001
     [ "$status" -eq 0 ]
+
+    # verify the persistence file exist
+    [ -f "$WORKDIR/persistence/servicesAll.txt" ]
+    # remove goc persistence file
+    run goc init --center=http://127.0.0.1:60001
+    [ "$status" -eq 0 ]
+    [ ! -f "$WORKDIR/persistence/servicesAll.txt" ]
 }

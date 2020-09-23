@@ -33,18 +33,18 @@ import (
 	"k8s.io/test-infra/gopherage/pkg/cov"
 )
 
-// DefaultStore implements the IPersistence interface
-var DefaultStore Store
+//// DefaultStore implements the IPersistence interface
+//var DefaultStore Store
 
 // LogFile a file to save log.
 const LogFile = "goc.log"
 
-func init() {
-	DefaultStore = NewFileStore()
+type Server struct {
+	Store Store
 }
 
 // Run starts coverage host center
-func Run(port string) {
+func (s *Server) Run(port string) {
 	f, err := os.Create(LogFile)
 	if err != nil {
 		log.Fatalf("failed to create log file %s, err: %v", LogFile, err)
@@ -52,34 +52,34 @@ func Run(port string) {
 
 	// both log to stdout and file by default
 	mw := io.MultiWriter(f, os.Stdout)
-	r := GocServer(mw)
+	r := s.Route(mw)
 	log.Fatal(r.Run(port))
 }
 
-// GocServer init goc server engine
-func GocServer(w io.Writer) *gin.Engine {
+// Router init goc server engine
+func (s *Server) Route(w io.Writer) *gin.Engine {
 	if w != nil {
 		gin.DefaultWriter = w
 	}
 	r := gin.Default()
 	// api to show the registered services
-	r.StaticFile(PersistenceFile, "./"+PersistenceFile)
+	//r.StaticFile(s.Store, "./"+PersistenceFile)
 
 	v1 := r.Group("/v1")
 	{
-		v1.POST("/cover/register", registerService)
-		v1.GET("/cover/profile", profile)
-		v1.POST("/cover/profile", profile)
-		v1.POST("/cover/clear", clear)
-		v1.POST("/cover/init", initSystem)
-		v1.GET("/cover/list", listServices)
+		v1.POST("/cover/register", s.registerService)
+		v1.GET("/cover/profile", s.profile)
+		v1.POST("/cover/profile", s.profile)
+		v1.POST("/cover/clear", s.clear)
+		v1.POST("/cover/init", s.initSystem)
+		v1.GET("/cover/list", s.listServices)
 	}
 
 	return r
 }
 
-// Service is a entry under being tested
-type Service struct {
+// ServiceUnderTest is a entry under being tested
+type ServiceUnderTest struct {
 	Name    string `form:"name" json:"name" binding:"required"`
 	Address string `form:"address" json:"address" binding:"required"`
 }
@@ -93,13 +93,13 @@ type ProfileParam struct {
 }
 
 //listServices list all the registered services
-func listServices(c *gin.Context) {
-	services := DefaultStore.GetAll()
+func (s *Server) listServices(c *gin.Context) {
+	services := s.Store.GetAll()
 	c.JSON(http.StatusOK, services)
 }
 
-func registerService(c *gin.Context) {
-	var service Service
+func (s *Server) registerService(c *gin.Context) {
+	var service ServiceUnderTest
 	if err := c.ShouldBind(&service); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -122,9 +122,9 @@ func registerService(c *gin.Context) {
 		service.Address = fmt.Sprintf("http://%s:%s", realIP, port)
 	}
 
-	address := DefaultStore.Get(service.Name)
+	address := s.Store.Get(service.Name)
 	if !contains(address, service.Address) {
-		if err := DefaultStore.Add(service); err != nil {
+		if err := s.Store.Add(service); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -137,14 +137,14 @@ func registerService(c *gin.Context) {
 // profile API examples:
 // POST /v1/cover/profile
 // { "force": "true", "service":["a","b"], "address":["c","d"],"coverfile":["e","f"] }
-func profile(c *gin.Context) {
+func (s *Server) profile(c *gin.Context) {
 	var body ProfileParam
 	if err := c.ShouldBind(&body); err != nil {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		return
 	}
 
-	allInfos := DefaultStore.GetAll()
+	allInfos := s.Store.GetAll()
 	filterAddrList, err := filterAddrs(body.Service, body.Address, body.Force, allInfos)
 	if err != nil {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
@@ -216,13 +216,13 @@ func filterProfile(coverFile []string, profiles []*cover.Profile) ([]*cover.Prof
 	return out, nil
 }
 
-func clear(c *gin.Context) {
+func (s *Server) clear(c *gin.Context) {
 	var body ProfileParam
 	if err := c.ShouldBind(&body); err != nil {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		return
 	}
-	svrsUnderTest := DefaultStore.GetAll()
+	svrsUnderTest := s.Store.GetAll()
 	filterAddrList, err := filterAddrs(body.Service, body.Address, true, svrsUnderTest)
 	if err != nil {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
@@ -239,8 +239,8 @@ func clear(c *gin.Context) {
 
 }
 
-func initSystem(c *gin.Context) {
-	if err := DefaultStore.Init(); err != nil {
+func (s *Server) initSystem(c *gin.Context) {
+	if err := s.Store.Init(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

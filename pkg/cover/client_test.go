@@ -28,7 +28,10 @@ import (
 
 func TestClientAction(t *testing.T) {
 	// mock goc server
-	ts := httptest.NewServer(GocServer(os.Stdout))
+	server := &Server{
+		Store: NewFileStore("_svrs_address.txt"),
+	}
+	ts := httptest.NewServer(server.Route(os.Stdout))
 	defer ts.Close()
 	var client = NewWorker(ts.URL)
 
@@ -46,15 +49,15 @@ func TestClientAction(t *testing.T) {
 	}))
 	defer profileErrMockSvr.Close()
 
-	// regsiter service into goc server
-	var src Service
+	// regsiter server into goc server
+	var src ServiceUnderTest
 	src.Name = "serviceSuccess"
 	src.Address = profileSuccessMockSvr.URL
 	res, err := client.RegisterService(src)
 	assert.NoError(t, err)
 	assert.Contains(t, string(res), "success")
 
-	// do list and check service
+	// do list and check server
 	res, err = client.ListServices()
 	assert.NoError(t, err)
 	assert.Contains(t, string(res), src.Address)
@@ -63,64 +66,64 @@ func TestClientAction(t *testing.T) {
 	// get profile from goc server
 	tcs := []struct {
 		name        string
-		service     Service
+		service     ServiceUnderTest
 		param       ProfileParam
 		expected    string
 		expectedErr bool
 	}{
 		{
-			name:        "both service and address existed",
-			service:     Service{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
+			name:        "both server and address existed",
+			service:     ServiceUnderTest{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
 			param:       ProfileParam{Force: false, Service: []string{"serviceOK"}, Address: []string{profileSuccessMockSvr.URL}},
 			expectedErr: true,
 		},
 		{
-			name:     "valid test with no service flag provide",
-			service:  Service{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
+			name:     "valid test with no server flag provide",
+			service:  ServiceUnderTest{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
 			param:    ProfileParam{},
 			expected: "mockService/main.go:30.13,48.33 13 1",
 		},
 		{
-			name:     "valid test with service flag provide",
-			service:  Service{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
+			name:     "valid test with server flag provide",
+			service:  ServiceUnderTest{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
 			param:    ProfileParam{Service: []string{"serviceOK"}},
 			expected: "mockService/main.go:30.13,48.33 13 1",
 		},
 		{
 			name:     "valid test with address flag provide",
-			service:  Service{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
+			service:  ServiceUnderTest{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
 			param:    ProfileParam{Address: []string{profileSuccessMockSvr.URL}},
 			expected: "mockService/main.go:30.13,48.33 13 1",
 		},
 		{
-			name:        "invalid test with invalid service flag provide",
-			service:     Service{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
+			name:        "invalid test with invalid server flag provide",
+			service:     ServiceUnderTest{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
 			param:       ProfileParam{Service: []string{"unknown"}},
-			expected:    "service [unknown] not found",
+			expected:    "server [unknown] not found",
 			expectedErr: true,
 		},
 		{
-			name:        "invalid test with invalid profile got by service",
-			service:     Service{Name: "serviceErr", Address: profileErrMockSvr.URL},
+			name:        "invalid test with invalid profile got by server",
+			service:     ServiceUnderTest{Name: "serviceErr", Address: profileErrMockSvr.URL},
 			expected:    "bad mode line: error",
 			expectedErr: true,
 		},
 		{
-			name:        "invalid test with disconnected service",
-			service:     Service{Name: "serviceNotExist", Address: "http://172.0.0.2:7777"},
+			name:        "invalid test with disconnected server",
+			service:     ServiceUnderTest{Name: "serviceNotExist", Address: "http://172.0.0.2:7777"},
 			expected:    "connection refused",
 			expectedErr: true,
 		},
 		{
 			name:        "invalid test with empty profile",
-			service:     Service{Name: "serviceNotExist", Address: "http://172.0.0.2:7777"},
+			service:     ServiceUnderTest{Name: "serviceNotExist", Address: "http://172.0.0.2:7777"},
 			param:       ProfileParam{Force: true},
 			expectedErr: true,
 			expected:    "no profiles",
 		},
 		{
 			name:     "valid test with coverfile flag provide",
-			service:  Service{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
+			service:  ServiceUnderTest{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
 			param:    ProfileParam{CoverFilePatterns: []string{"b.go$"}},
 			expected: "b/b.go",
 		},
@@ -150,7 +153,7 @@ func TestClientAction(t *testing.T) {
 		})
 	}
 
-	// init system and check service again
+	// init system and check server again
 	_, err = client.InitSystem()
 	assert.NoError(t, err)
 	res, err = client.ListServices()
@@ -162,7 +165,7 @@ func TestClientRegisterService(t *testing.T) {
 	c := &client{}
 
 	// client register with empty address
-	testService1 := Service{
+	testService1 := ServiceUnderTest{
 		Address: "",
 		Name:    "abc",
 	}
@@ -170,7 +173,7 @@ func TestClientRegisterService(t *testing.T) {
 	assert.Contains(t, err.Error(), "empty url")
 
 	// client register with empty name
-	testService2 := Service{
+	testService2 := ServiceUnderTest{
 		Address: "http://127.0.0.1:444",
 		Name:    "",
 	}
