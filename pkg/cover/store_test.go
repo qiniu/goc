@@ -22,7 +22,8 @@ import (
 )
 
 func TestLocalStore(t *testing.T) {
-	localStore := NewFileStore("_svrs_address.txt")
+	localStore, err := NewFileStore("_svrs_address.txt")
+	assert.NoError(t, err)
 	var tc1 = ServiceUnderTest{
 		Name:    "a",
 		Address: "http://127.0.0.1",
@@ -40,7 +41,7 @@ func TestLocalStore(t *testing.T) {
 		Address: "http://127.0.0.4",
 	}
 	assert.NoError(t, localStore.Add(tc1))
-	assert.NoError(t, localStore.Add(tc1))
+	assert.Equal(t, localStore.Add(tc1), ErrServiceAlreadyRegistered)
 	assert.NoError(t, localStore.Add(tc2))
 	assert.NoError(t, localStore.Add(tc3))
 	assert.NoError(t, localStore.Add(tc4))
@@ -59,7 +60,8 @@ func TestLocalStore(t *testing.T) {
 		t.Error("local store check failed")
 	}
 
-	localStoreNew := NewFileStore("_svrs_address.txt")
+	localStoreNew, err := NewFileStore("_svrs_address.txt")
+	assert.NoError(t, err)
 	assert.Equal(t, localStore.GetAll(), localStoreNew.GetAll())
 
 	localStore.Init()

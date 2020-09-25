@@ -33,18 +33,35 @@ import (
 	"k8s.io/test-infra/gopherage/pkg/cov"
 )
 
-//// DefaultStore implements the IPersistence interface
-//var DefaultStore Store
-
 // LogFile a file to save log.
 const LogFile = "goc.log"
 
-type Server struct {
-	Store Store
+type server struct {
+	PersistenceFile string
+	Store           Store
+}
+
+// NewFileBasedServer new a file based server with persistenceFile
+func NewFileBasedServer(persistenceFile string) (*server, error) {
+	store, err := NewFileStore(persistenceFile)
+	if err != nil {
+		return nil, err
+	}
+	return &server{
+		PersistenceFile: persistenceFile,
+		Store:           store,
+	}, nil
+}
+
+// NewMemoryBasedServer new a memory based server without persistenceFile
+func NewMemoryBasedServer() *server {
+	return &server{
+		Store: NewMemoryStore(),
+	}
 }
 
 // Run starts coverage host center
-func (s *Server) Run(port string) {
+func (s *server) Run(port string) {
 	f, err := os.Create(LogFile)
 	if err != nil {
 		log.Fatalf("failed to create log file %s, err: %v", LogFile, err)
@@ -57,13 +74,13 @@ func (s *Server) Run(port string) {
 }
 
 // Router init goc server engine
-func (s *Server) Route(w io.Writer) *gin.Engine {
+func (s *server) Route(w io.Writer) *gin.Engine {
 	if w != nil {
 		gin.DefaultWriter = w
 	}
 	r := gin.Default()
 	// api to show the registered services
-	//r.StaticFile(s.Store, "./"+PersistenceFile)
+	r.StaticFile("static", "./"+s.PersistenceFile)
 
 	v1 := r.Group("/v1")
 	{
@@ -93,12 +110,12 @@ type ProfileParam struct {
 }
 
 //listServices list all the registered services
-func (s *Server) listServices(c *gin.Context) {
+func (s *server) listServices(c *gin.Context) {
 	services := s.Store.GetAll()
 	c.JSON(http.StatusOK, services)
 }
 
-func (s *Server) registerService(c *gin.Context) {
+func (s *server) registerService(c *gin.Context) {
 	var service ServiceUnderTest
 	if err := c.ShouldBind(&service); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -124,7 +141,7 @@ func (s *Server) registerService(c *gin.Context) {
 
 	address := s.Store.Get(service.Name)
 	if !contains(address, service.Address) {
-		if err := s.Store.Add(service); err != nil {
+		if err := s.Store.Add(service); err != nil && err != ErrServiceAlreadyRegistered {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -137,7 +154,7 @@ func (s *Server) registerService(c *gin.Context) {
 // profile API examples:
 // POST /v1/cover/profile
 // { "force": "true", "service":["a","b"], "address":["c","d"],"coverfile":["e","f"] }
-func (s *Server) profile(c *gin.Context) {
+func (s *server) profile(c *gin.Context) {
 	var body ProfileParam
 	if err := c.ShouldBind(&body); err != nil {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
@@ -216,7 +233,7 @@ func filterProfile(coverFile []string, profiles []*cover.Profile) ([]*cover.Prof
 	return out, nil
 }
 
-func (s *Server) clear(c *gin.Context) {
+func (s *server) clear(c *gin.Context) {
 	var body ProfileParam
 	if err := c.ShouldBind(&body); err != nil {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
@@ -239,7 +256,7 @@ func (s *Server) clear(c *gin.Context) {
 
 }
 
-func (s *Server) initSystem(c *gin.Context) {
+func (s *server) initSystem(c *gin.Context) {
 	if err := s.Store.Init(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -313,6 +330,6 @@ func filterAddrs(serviceList, addressList []string, force bool, allInfos map[str
 		filterAddrList = addressAll
 	}
 
-	// Return all servers when all param is nil
+	// Return all services when all param is nil
 	return filterAddrList, nil
 }

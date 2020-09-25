@@ -50,9 +50,7 @@ goc run . [--buildflags] [--exec] [--arguments]
 		gocBuild.GoRunArguments = goRunArguments
 		defer gocBuild.Clean()
 
-		server := cover.Server{
-			Store: cover.NewMemoryStore(), // only save services in memory
-		}
+		server := cover.NewMemoryBasedServer() // only save services in memory
 
 		// start goc server
 		var l = newLocalListener()

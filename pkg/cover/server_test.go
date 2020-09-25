@@ -113,9 +113,8 @@ func TestFilterAddrs(t *testing.T) {
 }
 
 func TestRegisterService(t *testing.T) {
-	server := &Server{
-		Store: NewFileStore("_svrs_address.txt"),
-	}
+	server, err := NewFileBasedServer("_svrs_address.txt")
+	assert.NoError(t, err)
 	router := server.Route(os.Stdout)
 
 	// register with empty service struct
@@ -172,9 +171,8 @@ func TestRegisterService(t *testing.T) {
 }
 
 func TestProfileService(t *testing.T) {
-	server := &Server{
-		Store: NewFileStore("_svrs_address.txt"),
-	}
+	server, err := NewFileBasedServer("_svrs_address.txt")
+	assert.NoError(t, err)
 	router := server.Route(os.Stdout)
 
 	// get profile with invalid force parameter
@@ -190,7 +188,7 @@ func TestClearService(t *testing.T) {
 	testObj := new(MockStore)
 	testObj.On("GetAll").Return(map[string][]string{"foo": {"http://127.0.0.1:66666"}})
 
-	server := &Server{
+	server := &server{
 		Store: testObj,
 	}
 	router := server.Route(os.Stdout)
@@ -231,7 +229,7 @@ func TestInitService(t *testing.T) {
 	testObj := new(MockStore)
 	testObj.On("Init").Return(fmt.Errorf("lala error"))
 
-	server := &Server{
+	server := &server{
 		Store: testObj,
 	}
 	router := server.Route(os.Stdout)

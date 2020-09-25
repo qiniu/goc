@@ -28,9 +28,8 @@ import (
 
 func TestClientAction(t *testing.T) {
 	// mock goc server
-	server := &Server{
-		Store: NewFileStore("_svrs_address.txt"),
-	}
+	server, err := NewFileBasedServer("_svrs_address.txt")
+	assert.NoError(t, err)
 	ts := httptest.NewServer(server.Route(os.Stdout))
 	defer ts.Close()
 	var client = NewWorker(ts.URL)
@@ -49,7 +48,7 @@ func TestClientAction(t *testing.T) {
 	}))
 	defer profileErrMockSvr.Close()
 
-	// regsiter server into goc server
+	// register service into goc server
 	var src ServiceUnderTest
 	src.Name = "serviceSuccess"
 	src.Address = profileSuccessMockSvr.URL

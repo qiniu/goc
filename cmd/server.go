@@ -19,6 +19,7 @@ package cmd
 import (
 	"github.com/qiniu/goc/pkg/cover"
 	"github.com/spf13/cobra"
+	"log"
 )
 
 var serverCmd = &cobra.Command{
@@ -36,8 +37,9 @@ goc server --port=:8080
 goc server --port=localhost:8080
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		server := &cover.Server{
-			Store: cover.NewFileStore(localPersistence),
+		server, err := cover.NewFileBasedServer(localPersistence)
+		if err != nil {
+			log.Fatalf("New file based server failed, err: %v", err)
 		}
 		server.Run(port)
 	},

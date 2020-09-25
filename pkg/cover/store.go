@@ -18,14 +18,13 @@ package cover
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
-
-	"errors"
-	log "github.com/sirupsen/logrus"
-	"path/filepath"
 )
 
 var ErrServiceAlreadyRegistered = errors.New("service already registered")
@@ -57,14 +56,14 @@ type fileStore struct {
 }
 
 // NewFileStore creates a store using local file
-func NewFileStore(persistenceFile string) Store {
+func NewFileStore(persistenceFile string) (store Store, err error) {
 	path, err := filepath.Abs(persistenceFile)
 	if err != nil {
-		log.Fatalf("get absolute path of %s fail, err: %v", persistenceFile, err)
+		return nil, err
 	}
 	err = os.MkdirAll(filepath.Dir(path), os.ModePerm)
 	if err != nil {
-		log.Fatalf("create full path of %s fail, err: %v", filepath.Dir(path), err)
+		return nil, err
 	}
 	l := &fileStore{
 		persistentFile: path,
@@ -75,13 +74,13 @@ func NewFileStore(persistenceFile string) Store {
 		log.Fatalf("load failed, file: %s, err: %v", l.persistentFile, err)
 	}
 
-	return l
+	return l, nil
 }
 
 // Add adds the given service to file Store
 func (l *fileStore) Add(s ServiceUnderTest) error {
-	if err := l.memoryStore.Add(s); errors.Is(err, ErrServiceAlreadyRegistered) {
-		return nil
+	if err := l.memoryStore.Add(s); err != nil {
+		return err
 	}
 
 	// persistent to local store
