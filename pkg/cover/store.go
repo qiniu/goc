@@ -18,18 +18,21 @@ package cover
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
-
-	log "github.com/sirupsen/logrus"
 )
+
+var ErrServiceAlreadyRegistered = errors.New("service already registered")
 
 // Store persistents the registered service information
 type Store interface {
 	// Add adds the given service to store
-	Add(s Service) error
+	Add(s ServiceUnderTest) error
 
 	// Get returns the registered service information with the given service's name
 	Get(name string) []string
@@ -44,9 +47,6 @@ type Store interface {
 	Set(services map[string][]string)
 }
 
-// PersistenceFile is the file to save services address information
-const PersistenceFile = "_svrs_address.txt"
-
 // fileStore holds the registered services into memory and persistent to a local file
 type fileStore struct {
 	mu             sync.RWMutex
@@ -56,9 +56,17 @@ type fileStore struct {
 }
 
 // NewFileStore creates a store using local file
-func NewFileStore() Store {
+func NewFileStore(persistenceFile string) (store Store, err error) {
+	path, err := filepath.Abs(persistenceFile)
+	if err != nil {
+		return nil, err
+	}
+	err = os.MkdirAll(filepath.Dir(path), os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
 	l := &fileStore{
-		persistentFile: PersistenceFile,
+		persistentFile: path,
 		memoryStore:    NewMemoryStore(),
 	}
 
@@ -66,12 +74,14 @@ func NewFileStore() Store {
 		log.Fatalf("load failed, file: %s, err: %v", l.persistentFile, err)
 	}
 
-	return l
+	return l, nil
 }
 
 // Add adds the given service to file Store
-func (l *fileStore) Add(s Service) error {
-	l.memoryStore.Add(s)
+func (l *fileStore) Add(s ServiceUnderTest) error {
+	if err := l.memoryStore.Add(s); err != nil {
+		return err
+	}
 
 	// persistent to local store
 	l.mu.Lock()
@@ -147,7 +157,7 @@ func (l *fileStore) Set(services map[string][]string) {
 	panic("TO BE IMPLEMENTED")
 }
 
-func (l *fileStore) appendToFile(s Service) error {
+func (l *fileStore) appendToFile(s ServiceUnderTest) error {
 	f, err := os.OpenFile(l.persistentFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return err
@@ -163,7 +173,7 @@ func (l *fileStore) appendToFile(s Service) error {
 	return nil
 }
 
-func format(s Service) string {
+func format(s ServiceUnderTest) string {
 	return fmt.Sprintf("%s&%s", s.Name, s.Address)
 }
 
@@ -185,7 +195,7 @@ func NewMemoryStore() Store {
 }
 
 // Add adds the given service to MemoryStore
-func (l *memoryStore) Add(s Service) error {
+func (l *memoryStore) Add(s ServiceUnderTest) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	// load to memory
@@ -193,7 +203,7 @@ func (l *memoryStore) Add(s Service) error {
 		for _, addr := range addrs {
 			if addr == s.Address {
 				log.Printf("service registered already, name: %s, address: %s", s.Name, s.Address)
-				return nil
+				return ErrServiceAlreadyRegistered
 			}
 		}
 		addrs = append(addrs, s.Address)

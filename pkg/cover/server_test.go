@@ -22,7 +22,7 @@ type MockStore struct {
 	mock.Mock
 }
 
-func (m *MockStore) Add(s Service) error {
+func (m *MockStore) Add(s ServiceUnderTest) error {
 	args := m.Called(s)
 	return args.Error(0)
 }
@@ -113,7 +113,9 @@ func TestFilterAddrs(t *testing.T) {
 }
 
 func TestRegisterService(t *testing.T) {
-	router := GocServer(os.Stdout)
+	server, err := NewFileBasedServer("_svrs_address.txt")
+	assert.NoError(t, err)
+	router := server.Route(os.Stdout)
 
 	// register with empty service struct
 	w := httptest.NewRecorder()
@@ -147,7 +149,7 @@ func TestRegisterService(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "missing port in address")
 
 	// register with store failure
-	expectedS := Service{
+	expectedS := ServiceUnderTest{
 		Name:    "foo",
 		Address: "http://:64444", // the real IP is empty in unittest, so server will get a empty one
 	}
@@ -155,7 +157,7 @@ func TestRegisterService(t *testing.T) {
 	testObj.On("Get", "foo").Return([]string{"http://127.0.0.1:66666"})
 	testObj.On("Add", expectedS).Return(fmt.Errorf("lala error"))
 
-	DefaultStore = testObj
+	server.Store = testObj
 
 	w = httptest.NewRecorder()
 	data.Set("name", expectedS.Name)
@@ -169,7 +171,9 @@ func TestRegisterService(t *testing.T) {
 }
 
 func TestProfileService(t *testing.T) {
-	router := GocServer(os.Stdout)
+	server, err := NewFileBasedServer("_svrs_address.txt")
+	assert.NoError(t, err)
+	router := server.Route(os.Stdout)
 
 	// get profile with invalid force parameter
 	w := httptest.NewRecorder()
@@ -184,9 +188,10 @@ func TestClearService(t *testing.T) {
 	testObj := new(MockStore)
 	testObj.On("GetAll").Return(map[string][]string{"foo": {"http://127.0.0.1:66666"}})
 
-	DefaultStore = testObj
-
-	router := GocServer(os.Stdout)
+	server := &server{
+		Store: testObj,
+	}
+	router := server.Route(os.Stdout)
 
 	// clear profile with non-exist port
 	w := httptest.NewRecorder()
@@ -224,9 +229,10 @@ func TestInitService(t *testing.T) {
 	testObj := new(MockStore)
 	testObj.On("Init").Return(fmt.Errorf("lala error"))
 
-	DefaultStore = testObj
-
-	router := GocServer(os.Stdout)
+	server := &server{
+		Store: testObj,
+	}
+	router := server.Route(os.Stdout)
 
 	// get profile with invalid force parameter
 	w := httptest.NewRecorder()

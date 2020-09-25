@@ -33,7 +33,7 @@ var registerCmd = &cobra.Command{
 goc register [flags] 
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		s := cover.Service{
+		s := cover.ServiceUnderTest{
 			Name:    name,
 			Address: address,
 		}
