@@ -47,7 +47,9 @@ func (m *MockStore) Init() error {
 	return args.Error(0)
 }
 
-func (m *MockStore) Set(services map[string][]string) {
+func (m *MockStore) Set(services map[string][]string) error {
+	args := m.Called()
+	return args.Error(0)
 }
 
 func TestContains(t *testing.T) {

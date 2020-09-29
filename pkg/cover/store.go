@@ -20,7 +20,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,7 +45,7 @@ type Store interface {
 	Init() error
 
 	// Set stores the services information into internal state
-	Set(services map[string][]string)
+	Set(services map[string][]string) error
 
 	// Remove the service from the store by address
 	Remove(addr string) error
@@ -111,34 +110,7 @@ func (l *fileStore) Remove(addr string) error {
 		return err
 	}
 
-	content, err := ioutil.ReadFile(l.persistentFile)
-	if err != nil {
-		return fmt.Errorf("failed to open file, path: %s, err: %v", l.persistentFile, err)
-	}
-
-	newServices := ""
-	for _, line := range strings.Split(string(content), "\n") {
-		// addr(ip:port) is unique, so no need to check name
-		if strings.Contains(line, addr) {
-			// if the service match the string in the store, skip
-		} else {
-			newServices += line + "\n"
-		}
-	}
-
-	// write back to file
-	f, err := os.OpenFile(l.persistentFile, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		return fmt.Errorf("failed to open file, path: %s, err: %v", l.persistentFile, err)
-	}
-	defer f.Close()
-
-	_, err = f.WriteString(newServices)
-	if err != nil {
-		return err
-	}
-
-	return f.Sync()
+	return l.Set(l.memoryStore.GetAll())
 }
 
 // Init cleanup all the registered service information
@@ -195,8 +167,32 @@ func (l *fileStore) load() error {
 	return nil
 }
 
-func (l *fileStore) Set(services map[string][]string) {
-	panic("TO BE IMPLEMENTED")
+func (l *fileStore) Set(services map[string][]string) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	// no error will return from memorystore.set
+	_ = l.memoryStore.Set(services)
+
+	f, err := os.OpenFile(l.persistentFile, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+
+	s := ""
+	for name, addrs := range services {
+		for _, addr := range addrs {
+			s += fmt.Sprintf("%s&%s\n", name, addr)
+		}
+	}
+
+	_, err = f.WriteString(s)
+	if err != nil {
+		return err
+	}
+
+	_ = f.Sync()
+	return nil
 }
 
 func (l *fileStore) appendToFile(s ServiceUnderTest) error {
@@ -281,11 +277,13 @@ func (l *memoryStore) Init() error {
 	return nil
 }
 
-func (l *memoryStore) Set(services map[string][]string) {
+func (l *memoryStore) Set(services map[string][]string) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
 	l.servicesMap = services
+
+	return nil
 }
 
 // Remove one service from the memory store
