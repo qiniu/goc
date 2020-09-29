@@ -64,7 +64,22 @@ func runInstall(args []string, wd string) {
 	defer gocBuild.Clean()
 	// doCover with original buildFlags, with new GOPATH( tmp:original )
 	// in the tmp directory
-	cover.Execute(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir, coverMode.String(), agentPort.String(), center)
+	ci := &cover.CoverInfo{
+		Args:                     buildFlags,
+		GoPath:                   gocBuild.NewGOPATH,
+		Target:                   gocBuild.TmpDir,
+		Mode:                     coverMode.String(),
+		AgentPort:                agentPort.String(),
+		Center:                   center,
+		IsMod:                    gocBuild.IsMod,
+		ModRootPath:              gocBuild.ModRootPath,
+		OneMainPackage:           false,
+		GlobalCoverVarImportPath: gocBuild.GlobalCoverVarImportPath,
+	}
+	err = cover.Execute(ci)
+	if err != nil {
+		log.Fatalf("Fail to install: %v", err)
+	}
 	// do install in the temporary directory
 	err = gocBuild.Install()
 	if err != nil {

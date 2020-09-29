@@ -64,7 +64,22 @@ goc run . [--buildflags] [--exec] [--arguments]
 		fmt.Printf("[goc] goc server started: %s \n", gocServer)
 
 		// execute covers for the target source with original buildFlags and new GOPATH( tmp:original )
-		cover.Execute(buildFlags, gocBuild.NewGOPATH, gocBuild.TmpDir, coverMode.String(), "", gocServer)
+		ci := &cover.CoverInfo{
+			Args:                     buildFlags,
+			GoPath:                   gocBuild.NewGOPATH,
+			Target:                   gocBuild.TmpDir,
+			Mode:                     coverMode.String(),
+			Center:                   gocServer,
+			AgentPort:                "",
+			IsMod:                    gocBuild.IsMod,
+			ModRootPath:              gocBuild.ModRootPath,
+			OneMainPackage:           true, // go run is similar with go build, build only one main package
+			GlobalCoverVarImportPath: gocBuild.GlobalCoverVarImportPath,
+		}
+		err = cover.Execute(ci)
+		if err != nil {
+			log.Fatalf("Fail to run: %v", err)
+		}
 
 		if err := gocBuild.Run(); err != nil {
 			log.Fatalf("Fail to run: %v", err)

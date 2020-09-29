@@ -28,6 +28,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -35,6 +36,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/qiniu/goc/pkg/cover/cover2tool"
 	"github.com/sirupsen/logrus"
 )
 
@@ -47,12 +49,13 @@ var (
 
 // TestCover is a collection of all counters
 type TestCover struct {
-	Mode         string
-	AgentPort    string
-	Center       string // cover profile host center
-	MainPkgCover *PackageCover
-	DepsCover    []*PackageCover
-	CacheCover   map[string]*PackageCover
+	Mode                     string
+	AgentPort                string
+	Center                   string // cover profile host center
+	MainPkgCover             *PackageCover
+	DepsCover                []*PackageCover
+	CacheCover               map[string]*PackageCover
+	GlobalCoverVarImportPath string
 }
 
 // PackageCover holds all the generate coverage variables of a package
@@ -124,8 +127,37 @@ type PackageError struct {
 	Err         string   // the error itself
 }
 
-//Execute execute go tool cover for all the .go files in the target folder
-func Execute(args, newGopath, target, mode, agentPort, center string) error {
+// CoverBuildInfo retreives some info from build
+type CoverInfo struct {
+	Target                   string
+	GoPath                   string
+	IsMod                    bool
+	ModRootPath              string
+	GlobalCoverVarImportPath string // path for the injected global cover var file
+	OneMainPackage           bool
+	Args                     string
+	Mode                     string
+	AgentPort                string
+	Center                   string
+}
+
+//Execute inject cover variables for all the .go files in the target folder
+func Execute(coverInfo *CoverInfo) error {
+	target := coverInfo.Target
+	newGopath := coverInfo.GoPath
+	// oneMainPackage := coverInfo.OneMainPackage
+	args := coverInfo.Args
+	mode := coverInfo.Mode
+	agentPort := coverInfo.AgentPort
+	center := coverInfo.Center
+	globalCoverVarImportPath := coverInfo.GlobalCoverVarImportPath
+
+	if coverInfo.IsMod {
+		globalCoverVarImportPath = filepath.Join(coverInfo.ModRootPath, globalCoverVarImportPath)
+	} else {
+		globalCoverVarImportPath = filepath.Base(globalCoverVarImportPath)
+	}
+
 	if !isDirExist(target) {
 		log.Errorf("Target directory %s not exist", target)
 		return ErrCoverPkgFailed
@@ -142,27 +174,30 @@ func Execute(args, newGopath, target, mode, agentPort, center string) error {
 	}
 
 	var seen = make(map[string]*PackageCover)
-	var seenCache = make(map[string]*PackageCover)
+	// var seenCache = make(map[string]*PackageCover)
+	allDecl := ""
 	for _, pkg := range pkgs {
 		if pkg.Name == "main" {
 			log.Printf("handle package: %v", pkg.ImportPath)
 			// inject the main package
-			mainCover, err := AddCounters(pkg, mode, newGopath)
-			if err != nil {
-				log.Errorf("failed to add counters for pkg %s, err: %v", pkg.ImportPath, err)
-				return ErrCoverPkgFailed
-			}
+			mainCover, mainDecl, _ := addCounters2(pkg, mode, globalCoverVarImportPath)
+			allDecl += mainDecl
+			// if err != nil {
+			// 	log.Errorf("failed to add counters for pkg %s, err: %v", pkg.ImportPath, err)
+			// 	return ErrCoverPkgFailed
+			// }
 
 			// new a testcover for this service
 			tc := TestCover{
-				Mode:         mode,
-				AgentPort:    agentPort,
-				Center:       center,
-				MainPkgCover: mainCover,
+				Mode:                     mode,
+				AgentPort:                agentPort,
+				Center:                   center,
+				MainPkgCover:             mainCover,
+				GlobalCoverVarImportPath: globalCoverVarImportPath,
 			}
 
 			// handle its dependency
-			var internalPkgCache = make(map[string][]*PackageCover)
+			// var internalPkgCache = make(map[string][]*PackageCover)
 			tc.CacheCover = make(map[string]*PackageCover)
 			for _, dep := range pkg.Deps {
 				if packageCover, ok := seen[dep]; ok {
@@ -172,75 +207,11 @@ func Execute(args, newGopath, target, mode, agentPort, center string) error {
 
 				//only focus package neither standard Go library nor dependency library
 				if depPkg, ok := pkgs[dep]; ok {
-					if hasInternalPath(dep) {
-						//scan exist cache cover to tc.CacheCover
-						if cache, ok := seenCache[dep]; ok {
-							log.Infof("cache cover exist: %s", cache.Package.ImportPath)
-							tc.CacheCover[cache.Package.Dir] = cache
-							continue
-						}
-
-						// add counter for internal package
-						inPkgCover, err := AddCounters(depPkg, mode, newGopath)
-						if err != nil {
-							log.Errorf("failed to add counters for internal pkg %s, err: %v", depPkg.ImportPath, err)
-							return ErrCoverPkgFailed
-						}
-						parentDir := getInternalParent(depPkg.Dir)
-						parentImportPath := getInternalParent(depPkg.ImportPath)
-
-						//if internal parent dir or import is root path, ignore the dep. the dep is Go library nor dependency library
-						if parentDir == "" {
-							continue
-						}
-						if parentImportPath == "" {
-							continue
-						}
-
-						pkg := &Package{
-							ImportPath: parentImportPath,
-							Dir:        parentDir,
-						}
-
-						// Some internal package have same parent dir or import path
-						// Cache all vars by internal parent dir for all child internal counter vars
-						cacheCover := addCacheCover(pkg, inPkgCover)
-						if v, ok := tc.CacheCover[cacheCover.Package.Dir]; ok {
-							for cVar, val := range v.Vars {
-								cacheCover.Vars[cVar] = val
-							}
-							tc.CacheCover[cacheCover.Package.Dir] = cacheCover
-						} else {
-							tc.CacheCover[cacheCover.Package.Dir] = cacheCover
-						}
-
-						// Cache all internal vars to internal parent package
-						inCover := cacheInternalCover(inPkgCover)
-						if v, ok := internalPkgCache[cacheCover.Package.Dir]; ok {
-							v = append(v, inCover)
-							internalPkgCache[cacheCover.Package.Dir] = v
-						} else {
-							var covers []*PackageCover
-							covers = append(covers, inCover)
-							internalPkgCache[cacheCover.Package.Dir] = covers
-						}
-						seenCache[dep] = cacheCover
-						continue
-					}
-
-					packageCover, err := AddCounters(depPkg, mode, newGopath)
-					if err != nil {
-						log.Errorf("failed to add counters for pkg %s, err: %v", depPkg.ImportPath, err)
-						return err
-					}
+					packageCover, depDecl, _ := addCounters2(depPkg, mode, globalCoverVarImportPath)
+					allDecl += depDecl
 					tc.DepsCover = append(tc.DepsCover, packageCover)
 					seen[dep] = packageCover
 				}
-			}
-
-			if errs := InjectCacheCounters(internalPkgCache, tc.CacheCover); len(errs) > 0 {
-				log.Errorf("failed to inject cache counters for package: %s, err: %v", pkg.ImportPath, errs)
-				return ErrCoverPkgFailed
 			}
 
 			// inject Http Cover APIs
@@ -252,7 +223,7 @@ func Execute(args, newGopath, target, mode, agentPort, center string) error {
 		}
 	}
 
-	return nil
+	return injectGlobalCoverVarFile(coverInfo, allDecl)
 }
 
 // ListPackages list all packages under specific via go list command
@@ -313,6 +284,24 @@ func AddCounters(pkg *Package, mode, newgopath string) (*PackageCover, error) {
 		Package: pkg,
 		Vars:    coverVarMap,
 	}, nil
+}
+
+// addCounters2 is different from official go tool cover
+// 1. only inject covervar++ into source file
+// 2. no declarartions for these covervars
+// 3. return the declarations as string
+func addCounters2(pkg *Package, mode string, globalCoverVarImportPath string) (*PackageCover, string, error) {
+	coverVarMap := declareCoverVars(pkg)
+
+	decl := ""
+	for file, coverVar := range coverVarMap {
+		decl += "\n" + cover2tool.Annotate(path.Join(pkg.Dir, file), mode, coverVar.Var, globalCoverVarImportPath) + "\n"
+	}
+
+	return &PackageCover{
+		Package: pkg,
+		Vars:    coverVarMap,
+	}, decl, nil
 }
 
 func isDirExist(path string) bool {

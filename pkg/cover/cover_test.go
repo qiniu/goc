@@ -323,7 +323,16 @@ func TestExecuteForSimpleModProject(t *testing.T) {
 	testDir := filepath.Join(os.TempDir(), "goc-build-test")
 	copy.Copy(workingDir, testDir)
 
-	Execute("", gopath, testDir, "count", "", "http://127.0.0.1:7777")
+	bi := &CoverInfo{
+		Args:           "",
+		GoPath:         gopath,
+		Target:         testDir,
+		Mode:           "count",
+		AgentPort:      "",
+		Center:         "http://127.0.0.1:7777",
+		OneMainPackage: false,
+	}
+	_ = Execute(bi)
 
 	_, err := os.Lstat(filepath.Join(testDir, "http_cover_apis_auto_generated.go"))
 	if !assert.Equal(t, err, nil) {
@@ -362,7 +371,16 @@ func TestCoverResultForInternalPackage(t *testing.T) {
 	testDir := filepath.Join(os.TempDir(), "goc-build-test")
 	copy.Copy(workingDir, testDir)
 
-	Execute("", gopath, testDir, "count", "", "http://127.0.0.1:7777")
+	bi := &CoverInfo{
+		Target:         testDir,
+		GoPath:         gopath,
+		Args:           "",
+		Mode:           "count",
+		Center:         "http://127.0.0.1:7777",
+		OneMainPackage: false,
+		AgentPort:      "",
+	}
+	_ = Execute(bi)
 
 	_, err := os.Lstat(filepath.Join(testDir, "http_cover_apis_auto_generated.go"))
 	if !assert.Equal(t, err, nil) {

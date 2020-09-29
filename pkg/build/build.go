@@ -41,8 +41,9 @@ type Build struct {
 	// Project Root:
 	// 1. legacy, root == GOPATH
 	// 2. mod, root == go.mod Dir
-	ModRoot string // path for go.mod
-	Target  string // the binary name that go build generate
+	ModRoot     string // path for go.mod
+	ModRootPath string // import path for the whole project
+	Target      string // the binary name that go build generate
 	// keep compatible with go commands:
 	// go run [build flags] [-exec xprog] package [arguments...]
 	// go build [-o output] [-i] [build flags] [packages]
@@ -51,6 +52,10 @@ type Build struct {
 	Packages       string // Packages that needs to build
 	GoRunExecFlag  string // for the -exec flags in go run command
 	GoRunArguments string // for the '[arguments]' parameters in go run command
+
+	OneMainPackage           bool   // whether this build is a go build or go install? true: build, false: install
+	GlobalCoverVarImportPath string // Importpath for storing cover variables
+	GlobalCoverVarFilePath   string // Importpath for storing cover variables
 }
 
 // NewBuild creates a Build struct which can build from goc temporary directory,

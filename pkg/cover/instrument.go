@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"text/template"
 )
 
@@ -56,13 +57,7 @@ import (
 	"testing"
 	"path/filepath"
 
-	{{range $i, $pkgCover := .DepsCover}}
-	_cover{{$i}} {{$pkgCover.Package.ImportPath | printf "%q"}}
-	{{end}}
-
-	{{range $k, $pkgCover := .CacheCover}}
-	{{$pkgCover.Package.ImportPath | printf "%q"}}
-	{{end}}
+	_cover {{.GlobalCoverVarImportPath | printf "%q"}}
 
 )
 
@@ -78,18 +73,12 @@ func loadValues() (map[string][]uint32, map[string][]testing.CoverBlock) {
 
 	{{range $i, $pkgCover := .DepsCover}}
 	{{range $file, $cover := $pkgCover.Vars}}
-	loadFileCover(coverCounters, coverBlocks, {{printf "%q" $cover.File}}, _cover{{$i}}.{{$cover.Var}}.Count[:], _cover{{$i}}.{{$cover.Var}}.Pos[:], _cover{{$i}}.{{$cover.Var}}.NumStmt[:])
+	loadFileCover(coverCounters, coverBlocks, {{printf "%q" $cover.File}}, _cover.{{$cover.Var}}.Count[:], _cover.{{$cover.Var}}.Pos[:], _cover.{{$cover.Var}}.NumStmt[:])
 	{{end}}
 	{{end}}
 
 	{{range $file, $cover := .MainPkgCover.Vars}}
-	loadFileCover(coverCounters, coverBlocks, {{printf "%q" $cover.File}}, {{$cover.Var}}.Count[:], {{$cover.Var}}.Pos[:], {{$cover.Var}}.NumStmt[:])
-	{{end}}
-
-	{{range $k, $pkgCover := .CacheCover}}
-	{{range $v, $cover := $pkgCover.Vars}}
-	loadFileCover(coverCounters, coverBlocks, {{printf "%q" $cover.File}}, {{$pkgCover.Package.Name}}.{{$v}}.Count[:], {{$pkgCover.Package.Name}}.{{$v}}.Pos[:], {{$pkgCover.Package.Name}}.{{$v}}.NumStmt[:])
-	{{end}}
+	loadFileCover(coverCounters, coverBlocks, {{printf "%q" $cover.File}}, _cover.{{$cover.Var}}.Count[:], _cover.{{$cover.Var}}.Pos[:], _cover.{{$cover.Var}}.NumStmt[:])
 	{{end}}
 
 	return coverCounters, coverBlocks
@@ -121,18 +110,12 @@ func clearValues() {
 
 	{{range $i, $pkgCover := .DepsCover}}
 	{{range $file, $cover := $pkgCover.Vars}}
-	clearFileCover(_cover{{$i}}.{{$cover.Var}}.Count[:])
+	clearFileCover(_cover.{{$cover.Var}}.Count[:])
 	{{end}}
 	{{end}}
 
 	{{range $file, $cover := .MainPkgCover.Vars}}
-	clearFileCover({{$cover.Var}}.Count[:])
-	{{end}}
-
-	{{range $k, $pkgCover := .CacheCover}}
-	{{range $v, $cover := $pkgCover.Vars}}
-	clearFileCover({{$pkgCover.Package.Name}}.{{$v}}.Count[:])
-	{{end}}
+	clearFileCover(_cover.{{$cover.Var}}.Count[:])
 	{{end}}
 
 }
@@ -408,4 +391,19 @@ func checkCacheDir(p string) error {
 		}
 	}
 	return nil
+}
+
+func injectGlobalCoverVarFile(ci *CoverInfo, content string) error {
+	coverFile, err := os.Create(filepath.Join(ci.Target, ci.GlobalCoverVarImportPath, "cover.go"))
+	if err != nil {
+		return err
+	}
+	defer coverFile.Close()
+
+	packageName := "package " + filepath.Base(ci.GlobalCoverVarImportPath) + "\n\n"
+
+	_, _ = coverFile.WriteString(packageName)
+	_, err = coverFile.WriteString(content)
+
+	return err
 }
