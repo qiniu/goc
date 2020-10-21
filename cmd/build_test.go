@@ -107,13 +107,4 @@ func TestBuildBinaryForInternalPackage(t *testing.T) {
 	fInfo, err := os.Lstat(obj)
 	assert.Equal(t, err, nil, "the binary should be generated.")
 	assert.Equal(t, startTime.Before(fInfo.ModTime()), true, obj+"new binary should be generated, not the old one")
-
-	// cmd := exec.Command("go", "tool", "objdump", "simple-project")
-	// cmd.Dir = workingDir
-	// out, _ := cmd.CombinedOutput()
-	// cnt := strings.Count(string(out), "GoCacheCover")
-	// assert.Equal(t, cnt > 0, true, "GoCacheCover variable for internal package should be in the binary")
-
-	// cnt = strings.Count(string(out), "internal.GoCover")
-	// assert.Equal(t, cnt > 0, true, "internal.GoCover variable should be in the binary")
 }

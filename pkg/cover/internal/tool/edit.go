@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package edit implements buffered position-based editing of byte slices.
-package cover2tool
+package tool
 
 import (
 	"fmt"

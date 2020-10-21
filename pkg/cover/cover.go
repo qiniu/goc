@@ -36,7 +36,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/qiniu/goc/pkg/cover/cover2tool"
+	"github.com/qiniu/goc/pkg/cover/internal/tool"
 	"github.com/sirupsen/logrus"
 )
 
@@ -180,13 +180,8 @@ func Execute(coverInfo *CoverInfo) error {
 		if pkg.Name == "main" {
 			log.Printf("handle package: %v", pkg.ImportPath)
 			// inject the main package
-			mainCover, mainDecl, _ := addCounters2(pkg, mode, globalCoverVarImportPath)
+			mainCover, mainDecl := AddCounters(pkg, mode, globalCoverVarImportPath)
 			allDecl += mainDecl
-			// if err != nil {
-			// 	log.Errorf("failed to add counters for pkg %s, err: %v", pkg.ImportPath, err)
-			// 	return ErrCoverPkgFailed
-			// }
-
 			// new a testcover for this service
 			tc := TestCover{
 				Mode:                     mode,
@@ -207,7 +202,7 @@ func Execute(coverInfo *CoverInfo) error {
 
 				//only focus package neither standard Go library nor dependency library
 				if depPkg, ok := pkgs[dep]; ok {
-					packageCover, depDecl, _ := addCounters2(depPkg, mode, globalCoverVarImportPath)
+					packageCover, depDecl := AddCounters(depPkg, mode, globalCoverVarImportPath)
 					allDecl += depDecl
 					tc.DepsCover = append(tc.DepsCover, packageCover)
 					seen[dep] = packageCover
@@ -268,40 +263,22 @@ func ListPackages(dir string, args string, newgopath string) (map[string]*Packag
 	return pkgs, nil
 }
 
-// AddCounters add counters for all go files under the package
-func AddCounters(pkg *Package, mode, newgopath string) (*PackageCover, error) {
-	coverVarMap := declareCoverVars(pkg)
-
-	for file, coverVar := range coverVarMap {
-		cmd := buildCoverCmd(file, coverVar, pkg, mode, newgopath)
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			return nil, fmt.Errorf("execute go tool cover -mode=%s -var %s -o %s/%s failed, err: %v, out: %s", mode, coverVar.Var, pkg.Dir, file, err, string(out))
-		}
-	}
-
-	return &PackageCover{
-		Package: pkg,
-		Vars:    coverVarMap,
-	}, nil
-}
-
-// addCounters2 is different from official go tool cover
+// AddCounters is different from official go tool cover
 // 1. only inject covervar++ into source file
 // 2. no declarartions for these covervars
 // 3. return the declarations as string
-func addCounters2(pkg *Package, mode string, globalCoverVarImportPath string) (*PackageCover, string, error) {
+func AddCounters(pkg *Package, mode string, globalCoverVarImportPath string) (*PackageCover, string) {
 	coverVarMap := declareCoverVars(pkg)
 
 	decl := ""
 	for file, coverVar := range coverVarMap {
-		decl += "\n" + cover2tool.Annotate(path.Join(pkg.Dir, file), mode, coverVar.Var, globalCoverVarImportPath) + "\n"
+		decl += "\n" + tool.Annotate(path.Join(pkg.Dir, file), mode, coverVar.Var, globalCoverVarImportPath) + "\n"
 	}
 
 	return &PackageCover{
 		Package: pkg,
 		Vars:    coverVarMap,
-	}, decl, nil
+	}, decl
 }
 
 func isDirExist(path string) bool {

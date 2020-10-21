@@ -402,7 +402,10 @@ func injectGlobalCoverVarFile(ci *CoverInfo, content string) error {
 
 	packageName := "package " + filepath.Base(ci.GlobalCoverVarImportPath) + "\n\n"
 
-	_, _ = coverFile.WriteString(packageName)
+	_, err = coverFile.WriteString(packageName)
+	if err != nil {
+		return err
+	}
 	_, err = coverFile.WriteString(content)
 
 	return err
