@@ -172,7 +172,10 @@ func (l *fileStore) Set(services map[string][]string) error {
 	defer l.mu.Unlock()
 
 	// no error will return from memorystore.set
-	_ = l.memoryStore.Set(services)
+	err := l.memoryStore.Set(services)
+	if err != nil {
+		return err
+	}
 
 	f, err := os.OpenFile(l.persistentFile, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
@@ -191,8 +194,7 @@ func (l *fileStore) Set(services map[string][]string) error {
 		return err
 	}
 
-	_ = f.Sync()
-	return nil
+	return f.Sync()
 }
 
 func (l *fileStore) appendToFile(s ServiceUnderTest) error {

@@ -139,7 +139,10 @@ func (c *client) Remove(param ProfileParam) ([]byte, error) {
 
 	// the json.Marshal function can return two types of errors: UnsupportedTypeError or UnsupportedValueError
 	// so no need to check here
-	body, _ := json.Marshal(param)
+	body, err := json.Marshal(param)
+	if err != nil {
+		return nil, err
+	}
 	_, resp, err := c.do("POST", u, "application/json", bytes.NewReader(body))
 	if err != nil && isNetworkError(err) {
 		_, resp, err = c.do("POST", u, "application/json", bytes.NewReader(body))
