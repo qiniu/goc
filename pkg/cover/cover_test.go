@@ -18,7 +18,6 @@ package cover
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -323,7 +322,16 @@ func TestExecuteForSimpleModProject(t *testing.T) {
 	testDir := filepath.Join(os.TempDir(), "goc-build-test")
 	copy.Copy(workingDir, testDir)
 
-	Execute("", gopath, testDir, "count", "", "http://127.0.0.1:7777")
+	bi := &CoverInfo{
+		Args:           "",
+		GoPath:         gopath,
+		Target:         testDir,
+		Mode:           "count",
+		AgentPort:      "",
+		Center:         "http://127.0.0.1:7777",
+		OneMainPackage: false,
+	}
+	_ = Execute(bi)
 
 	_, err := os.Lstat(filepath.Join(testDir, "http_cover_apis_auto_generated.go"))
 	if !assert.Equal(t, err, nil) {
@@ -362,20 +370,19 @@ func TestCoverResultForInternalPackage(t *testing.T) {
 	testDir := filepath.Join(os.TempDir(), "goc-build-test")
 	copy.Copy(workingDir, testDir)
 
-	Execute("", gopath, testDir, "count", "", "http://127.0.0.1:7777")
+	bi := &CoverInfo{
+		Target:         testDir,
+		GoPath:         gopath,
+		Args:           "",
+		Mode:           "count",
+		Center:         "http://127.0.0.1:7777",
+		OneMainPackage: false,
+		AgentPort:      "",
+	}
+	_ = Execute(bi)
 
 	_, err := os.Lstat(filepath.Join(testDir, "http_cover_apis_auto_generated.go"))
 	if !assert.Equal(t, err, nil) {
 		assert.FailNow(t, "should generate http_cover_apis_auto_generated.go")
 	}
-
-	out, err := ioutil.ReadFile(filepath.Join(testDir, "http_cover_apis_auto_generated.go"))
-	if err != nil {
-		assert.FailNow(t, "failed to read http_cover_apis_auto_generated.go file")
-	}
-	cnt := strings.Count(string(out), "GoCacheCover")
-	assert.Equal(t, cnt > 0, true, "GoCacheCover variable should be in http_cover_apis_auto_generated.go")
-
-	cnt = strings.Count(string(out), "example.com/simple-project/internal/foo.go")
-	assert.Equal(t, cnt > 0, true, "`example.com/simple-project/internal/foo.go` should be in http_cover_apis_auto_generated.go")
 }

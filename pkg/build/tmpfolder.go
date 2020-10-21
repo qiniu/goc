@@ -73,8 +73,9 @@ func (b *Build) mvProjectsToTmp() error {
 
 	// Delete previous tmp folder and its content
 	os.RemoveAll(b.TmpDir)
-	// Create a new tmp folder
-	err := os.MkdirAll(filepath.Join(b.TmpDir, "src"), os.ModePerm)
+	// Create a new tmp folder and a new importpath for storing cover variables
+	b.GlobalCoverVarImportPath = filepath.Join("src", tmpPackageName(b.WorkingDir))
+	err := os.MkdirAll(filepath.Join(b.TmpDir, b.GlobalCoverVarImportPath), os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("Fail to create the temporary build directory. The err is: %v", err)
 	}
@@ -131,6 +132,15 @@ func tmpFolderName(path string) string {
 	return "goc-build-" + h
 }
 
+// tmpPackageName uses the first six characters of the input path's SHA256 checksum
+// as the suffix.
+func tmpPackageName(path string) string {
+	sum := sha256.Sum256([]byte(path))
+	h := fmt.Sprintf("%x", sum[:6])
+
+	return "gocbuild" + h
+}
+
 // traversePkgsList travse the Build.Pkgs list
 // return Build.IsMod, tell if the project is a mod project
 // return Build.Root:
@@ -146,6 +156,7 @@ func (b *Build) traversePkgsList() (isMod bool, root string, err error) {
 		}
 		isMod = true
 		b.ModRoot = v.Module.Dir
+		b.ModRootPath = v.Module.Path
 		return
 	}
 	log.Error(ErrShouldNotReached)

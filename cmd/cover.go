@@ -40,7 +40,17 @@ goc cover --center=http://127.0.0.1:7777 --target=/path/to/target --mode=atomic
 	Run: func(cmd *cobra.Command, args []string) {
 		var buildFlags string
 		buildFlags = viper.GetString("buildflags")
-		cover.Execute(buildFlags, "", target, coverMode.String(), agentPort.String(), center)
+
+		ci := &cover.CoverInfo{
+			Args:           buildFlags,
+			GoPath:         "",
+			Target:         target,
+			Mode:           coverMode.String(),
+			AgentPort:      agentPort.String(),
+			Center:         center,
+			OneMainPackage: false,
+		}
+		_ = cover.Execute(ci)
 	},
 }
 

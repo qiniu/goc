@@ -87,3 +87,16 @@ setup() {
 
     wait $profile_pid
 }
+
+@test "test goc build on complex project" {
+    cd samples/complex_project
+    
+    wait_profile_backend "build5" &
+    profile_pid=$!
+
+    run gocc build --debug --debugcisyncfile ci-sync.bak;
+    info build5 output: $output
+    [ "$status" -eq 0 ]
+
+    wait $profile_pid
+}
