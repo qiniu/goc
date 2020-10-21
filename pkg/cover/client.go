@@ -34,6 +34,7 @@ import (
 type Action interface {
 	Profile(param ProfileParam) ([]byte, error)
 	Clear(param ProfileParam) ([]byte, error)
+	Remove(param ProfileParam) ([]byte, error)
 	InitSystem() ([]byte, error)
 	ListServices() ([]byte, error)
 	RegisterService(svr ServiceUnderTest) ([]byte, error)
@@ -50,6 +51,8 @@ const (
 	CoverServicesListAPI = "/v1/cover/list"
 	//CoverRegisterServiceAPI register a service into service center
 	CoverRegisterServiceAPI = "/v1/cover/register"
+	//CoverServicesRemoveAPI remove one services from the service center
+	CoverServicesRemoveAPI = "/v1/cover/remove"
 )
 
 type client struct {
@@ -121,6 +124,25 @@ func (c *client) Clear(param ProfileParam) ([]byte, error) {
 	// the json.Marshal function can return two types of errors: UnsupportedTypeError or UnsupportedValueError
 	// so no need to check here
 	body, _ := json.Marshal(param)
+	_, resp, err := c.do("POST", u, "application/json", bytes.NewReader(body))
+	if err != nil && isNetworkError(err) {
+		_, resp, err = c.do("POST", u, "application/json", bytes.NewReader(body))
+	}
+	return resp, err
+}
+
+func (c *client) Remove(param ProfileParam) ([]byte, error) {
+	u := fmt.Sprintf("%s%s", c.Host, CoverServicesRemoveAPI)
+	if len(param.Service) != 0 && len(param.Address) != 0 {
+		return nil, fmt.Errorf("use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")
+	}
+
+	// the json.Marshal function can return two types of errors: UnsupportedTypeError or UnsupportedValueError
+	// so no need to check here
+	body, err := json.Marshal(param)
+	if err != nil {
+		return nil, err
+	}
 	_, resp, err := c.do("POST", u, "application/json", bytes.NewReader(body))
 	if err != nil && isNetworkError(err) {
 		_, resp, err = c.do("POST", u, "application/json", bytes.NewReader(body))

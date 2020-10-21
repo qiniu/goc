@@ -27,6 +27,11 @@ func (m *MockStore) Add(s ServiceUnderTest) error {
 	return args.Error(0)
 }
 
+func (m *MockStore) Remove(a string) error {
+	args := m.Called(a)
+	return args.Error(0)
+}
+
 func (m *MockStore) Get(name string) []string {
 	args := m.Called(name)
 	return args.Get(0).([]string)
@@ -42,7 +47,9 @@ func (m *MockStore) Init() error {
 	return args.Error(0)
 }
 
-func (m *MockStore) Set(services map[string][]string) {
+func (m *MockStore) Set(services map[string][]string) error {
+	args := m.Called()
+	return args.Error(0)
 }
 
 func TestContains(t *testing.T) {
@@ -219,6 +226,69 @@ func TestClearService(t *testing.T) {
 	assert.NoError(t, err)
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("POST", "/v1/cover/clear", bytes.NewBuffer(encoded))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusExpectationFailed, w.Code)
+	assert.Contains(t, w.Body.String(), "use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")
+}
+
+func TestRemoveServices(t *testing.T) {
+	testObj := new(MockStore)
+	testObj.On("GetAll").Return(map[string][]string{"foo": {"test1", "test2"}})
+	testObj.On("Remove", "test1").Return(nil)
+
+	server := &server{
+		Store: testObj,
+	}
+	router := server.Route(os.Stdout)
+
+	// remove with invalid request
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/v1/cover/remove", nil)
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusExpectationFailed, w.Code)
+	assert.Contains(t, w.Body.String(), "invalid request")
+
+	// remove service
+	p := ProfileParam{
+		Address: []string{"test1"},
+	}
+	encoded, err := json.Marshal(p)
+	assert.NoError(t, err)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/v1/cover/remove", bytes.NewBuffer(encoded))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "Register service test1 removed from the center.")
+
+	// remove service with non-exist address
+	testObj.On("Remove", "test2").Return(fmt.Errorf("no service found"))
+	p = ProfileParam{
+		Address: []string{"test2"},
+	}
+	encoded, err = json.Marshal(p)
+	assert.NoError(t, err)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/v1/cover/remove", bytes.NewBuffer(encoded))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusExpectationFailed, w.Code)
+	assert.Contains(t, w.Body.String(), "no service found")
+
+	// clear profile with service and address set at at the same time
+	p = ProfileParam{
+		Service: []string{"goc"},
+		Address: []string{"http://127.0.0.1:3333"},
+	}
+	encoded, err = json.Marshal(p)
+	assert.NoError(t, err)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/v1/cover/remove", bytes.NewBuffer(encoded))
 	req.Header.Set("Content-Type", "application/json")
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusExpectationFailed, w.Code)
