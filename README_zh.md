@@ -70,6 +70,10 @@ goc 可以实时收集长时运行的 golang 服务覆盖率。收集步骤只�
     2. 测试结束后，通过 `goc profile -o b.cov` 命令再收集一次覆盖率
     3. 通过 `goc merge a.cov b.cov -o merge.cov` 命令合并两次的覆盖率
 
+## Blogs
+
+- [Go语言系统测试覆盖率收集利器 goc](https://mp.weixin.qq.com/s/DzXEXwepaouSuD2dPVloOg)
+
 ## RoadMap
 
 - [x] 支持系统测试中收集代码覆盖率
