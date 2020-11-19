@@ -73,6 +73,7 @@ goc 可以实时收集长时运行的 golang 服务覆盖率。收集步骤只�
 ## Blogs
 
 - [Go语言系统测试覆盖率收集利器 goc](https://mp.weixin.qq.com/s/DzXEXwepaouSuD2dPVloOg)
+- [聊聊Go代码覆盖率技术与最佳实践](https://mp.weixin.qq.com/s/SQHzsfV5T_B8fmt9NzGA7Q)
 
 ## RoadMap
 

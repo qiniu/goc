@@ -69,11 +69,6 @@ We provide a vscode extension - [Goc Coverage](https://marketplace.visualstudio.
     2. After service restarted and test finished, collect coverage again with `goc profile -o b.cov`
     3. Merge two coverage profiles together: `goc merge a.cov b.cov -o merge.cov`
 
-## Blogs
-
-- [Go语言系统测试覆盖率收集利器 goc](https://mp.weixin.qq.com/s/DzXEXwepaouSuD2dPVloOg)
-
-
 ## RoadMap
 - [x] Support code coverage collection for system testing.
 - [x] Support code coverage counters clear for the services under test at runtime.
