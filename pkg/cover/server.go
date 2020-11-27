@@ -25,7 +25,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"regexp"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -91,6 +93,9 @@ func (s *server) Route(w io.Writer) *gin.Engine {
 		v1.POST("/cover/init", s.initSystem)
 		v1.GET("/cover/list", s.listServices)
 		v1.POST("/cover/remove", s.removeServices)
+
+		v1.POST("/cover/gitinfo", s.gitInfo)
+		v1.GET("/cover/gitinfo", s.gitInfo)
 	}
 
 	return r
@@ -108,6 +113,11 @@ type ProfileParam struct {
 	Service           []string `form:"service" json:"service"`
 	Address           []string `form:"address" json:"address"`
 	CoverFilePatterns []string `form:"coverfile" json:"coverfile"`
+}
+
+type GitInfo struct {
+	CommitID string
+	Branch   string
 }
 
 //listServices list all the registered services
@@ -150,6 +160,58 @@ func (s *server) registerService(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
 	return
+}
+
+func RunCommandStr( cmdDir , cmdStr string) (string, error) {
+	cmds := strings.Split(strings.TrimSpace(cmdStr), " ")
+	var cmd *exec.Cmd
+	if ( cmds[0] == "sh" || cmds[0] == "bash" ) &&  cmds[1] == "-c" { // 兼容管道命令
+		cmd = exec.Command(cmds[0], cmds[1], strings.Join( cmds[2:]," ")  )
+	}else {
+		cmd = exec.Command(cmds[0], cmds[1:]...)
+	}
+	cmd.Dir = cmdDir // 指定工作目录为git仓库目录
+	//cmd.Stderr = os.Stderr
+	msg, err := cmd.CombinedOutput() // 混合输出stdout+stderr
+	_ = cmd.Run()
+	// 报错时 exit status 1
+	return string(msg), err
+}
+
+func GetCurrentGitInfo( path  string) ( *GitInfo , error ) {
+	cmdStr1 := "sh -c git rev-parse HEAD"
+	cmdStr2 := "sh -c git symbolic-ref --short -q HEAD"
+	if msg1 , err := RunCommandStr(path,cmdStr1) ; err != nil {
+		return nil ,err
+	}else  if msg2 , err := RunCommandStr(path,cmdStr2) ; err != nil {
+		return nil ,err
+	}else {
+		return &GitInfo{msg1,msg2} ,nil
+	}
+}
+
+func (s *server) gitInfo(c *gin.Context) {
+	var body ProfileParam
+	if err := c.ShouldBind(&body); err != nil {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		return
+	}
+	svrsUnderTest := s.Store.GetAll()
+	filterAddrList, err := filterAddrs(body.Service, body.Address, true, svrsUnderTest)
+	if err != nil {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		return
+	}
+	for _, addr := range filterAddrList {
+		if info , err := GetCurrentGitInfo(".") ; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(),"addr":addr})
+			return
+		}else {
+			if _, err := fmt.Fprintf(c.Writer, "%s", info); err != nil {
+				return
+			}
+		}
+	}
 }
 
 // profile API examples:

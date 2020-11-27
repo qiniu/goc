@@ -32,6 +32,7 @@ import (
 
 // Action provides methods to contact with the covered service under test
 type Action interface {
+	GitInfo(param ProfileParam) ([]byte, error)
 	Profile(param ProfileParam) ([]byte, error)
 	Clear(param ProfileParam) ([]byte, error)
 	Remove(param ProfileParam) ([]byte, error)
@@ -45,6 +46,9 @@ const (
 	CoverInitSystemAPI = "/v1/cover/init"
 	//CoverProfileAPI is provided by the covered service to get profiles
 	CoverProfileAPI = "/v1/cover/profile"
+
+	//CoverGitInfoAPI is provided by the covered service to get code git info
+	CoverGitInfoAPI = "/v1/cover/gitinfo"
 	//CoverProfileClearAPI is provided by the covered service to clear profiles
 	CoverProfileClearAPI = "/v1/cover/clear"
 	//CoverServicesListAPI list all the registered services
@@ -94,6 +98,42 @@ func (c *client) ListServices() ([]byte, error) {
 	return services, err
 }
 
+func (c *client) GitInfo(param ProfileParam) ([]byte, error) {
+	u := fmt.Sprintf("%s%s", c.Host, CoverGitInfoAPI)
+	if len(param.Service) != 0 && len(param.Address) != 0 {
+		return nil, fmt.Errorf("use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")
+	}
+
+	// the json.Marshal function can return two types of errors: UnsupportedTypeError or UnsupportedValueError
+	// so no need to check here
+	body, err := json.Marshal(param)
+	if err != nil {
+		return nil, err
+	}
+	_, resp, err := c.do("POST", u, "application/json", bytes.NewReader(body))
+	if err != nil && isNetworkError(err) {
+		_, resp, err = c.do("POST", u, "application/json", bytes.NewReader(body))
+	}
+	return resp, err
+}
+
+//func (c *client) GitInfo(param GitInfoParam) ([]byte, error) {
+//	u := fmt.Sprintf("%s%s", c.Host, CoverGitInfoAPI)
+//
+//	// the json.Marshal function can return two types of errors: UnsupportedTypeError or UnsupportedValueError
+//	// so no need to check here
+//	body, _ := json.Marshal(param)
+//
+//	res, profile, err := c.do("POST", u, "application/json", bytes.NewReader(body))
+//	if err != nil && isNetworkError(err) {
+//		res, profile, err = c.do("POST", u, "application/json", bytes.NewReader(body))
+//	}
+//
+//	if err == nil && res.StatusCode != 200 {
+//		err = fmt.Errorf(string(profile))
+//	}
+//	return profile, err
+//}
 func (c *client) Profile(param ProfileParam) ([]byte, error) {
 	u := fmt.Sprintf("%s%s", c.Host, CoverProfileAPI)
 	if len(param.Service) != 0 && len(param.Address) != 0 {
