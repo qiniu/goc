@@ -26,7 +26,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var gitinfoCmd = &cobra.Command{
+var gitInfoCmd = &cobra.Command{
 	Use:   "gitinfo",
 	Short: "Get git info from service registry center",
 	Long:  `Get git info from service registry center to distinguish coverage data by commitid & branch under test at runtime.`,
@@ -54,9 +54,9 @@ var (
 	Path          string // --service flag
 )
 func init() {
-	addBasicFlags(gitinfoCmd.Flags())
-	gitinfoCmd.Flags().StringVarP(&Path,"path","",".","work space path of server, default .")
-	gitinfoCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "service name to clear profile, see 'goc list' for all services.")
-	gitinfoCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "address to clear profile, see 'goc list' for all addresses.")
-	rootCmd.AddCommand(gitinfoCmd)
+	addBasicFlags(gitInfoCmd.Flags())
+	gitInfoCmd.Flags().StringVarP(&Path,"path","",".","work space path of server, default .")
+	gitInfoCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "service name to clear profile, see 'goc list' for all services.")
+	gitInfoCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "address to clear profile, see 'goc list' for all addresses.")
+	rootCmd.AddCommand(gitInfoCmd)
 }
