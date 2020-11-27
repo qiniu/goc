@@ -18,6 +18,7 @@ package cover
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -107,6 +108,12 @@ type ServiceUnderTest struct {
 	Address string `form:"address" json:"address" binding:"required"`
 }
 
+type GitInfoParam struct {
+	Service           []string `form:"service" json:"service"`
+	Address           []string `form:"address" json:"address"`
+	Path              string `form:"path" json:"path"`
+}
+
 // ProfileParam is param of profile API
 type ProfileParam struct {
 	Force             bool     `form:"force" json:"force"`
@@ -175,7 +182,7 @@ func RunCommandStr( cmdDir , cmdStr string) (string, error) {
 	msg, err := cmd.CombinedOutput() // 混合输出stdout+stderr
 	_ = cmd.Run()
 	// 报错时 exit status 1
-	return string(msg), err
+	return  string(msg), err
 }
 
 func GetCurrentGitInfo( path  string) ( *GitInfo , error ) {
@@ -191,7 +198,7 @@ func GetCurrentGitInfo( path  string) ( *GitInfo , error ) {
 }
 
 func (s *server) gitInfo(c *gin.Context) {
-	var body ProfileParam
+	var body GitInfoParam
 	if err := c.ShouldBind(&body); err != nil {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		return
@@ -203,11 +210,16 @@ func (s *server) gitInfo(c *gin.Context) {
 		return
 	}
 	for _, addr := range filterAddrList {
-		if info , err := GetCurrentGitInfo(".") ; err != nil {
+		if info , err := GetCurrentGitInfo(body.Path) ; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(),"addr":addr})
 			return
 		}else {
-			if _, err := fmt.Fprintf(c.Writer, "%s", info); err != nil {
+			data ,err := json.Marshal( info )
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(),"addr":addr})
+				return
+			}
+			if _, err := fmt.Fprintf(c.Writer, "%s", string(data)); err != nil {
 				return
 			}
 		}

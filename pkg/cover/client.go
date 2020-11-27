@@ -32,7 +32,7 @@ import (
 
 // Action provides methods to contact with the covered service under test
 type Action interface {
-	GitInfo(param ProfileParam) ([]byte, error)
+	GitInfo(param GitInfoParam) ([]byte, error)
 	Profile(param ProfileParam) ([]byte, error)
 	Clear(param ProfileParam) ([]byte, error)
 	Remove(param ProfileParam) ([]byte, error)
@@ -98,7 +98,7 @@ func (c *client) ListServices() ([]byte, error) {
 	return services, err
 }
 
-func (c *client) GitInfo(param ProfileParam) ([]byte, error) {
+func (c *client) GitInfo(param GitInfoParam) ([]byte, error) {
 	u := fmt.Sprintf("%s%s", c.Host, CoverGitInfoAPI)
 	if len(param.Service) != 0 && len(param.Address) != 0 {
 		return nil, fmt.Errorf("use 'service' flag and 'address' flag at the same time may cause ambiguity, please use them separately")

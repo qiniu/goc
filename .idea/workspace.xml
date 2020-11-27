@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="1cd519dc-51fc-42eb-9066-e6d261870bde" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/cmd/gitinfo.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/gitinfo.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/cover/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/cover/client.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/cover/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/cover/server.go" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go File" />
+      </list>
+    </option>
+  </component>
+  <component name="GOROOT" path="/usr/local/go" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GoLibraries">
+    <option name="indexEntireGoPath" value="false" />
+  </component>
+  <component name="ProjectId" id="1hwzE0vW10bfv9mqKXJbYSMO9gr" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="DefaultGoTemplateProperty" value="Go File" />
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="go.import.settings.migrated" value="true" />
+    <property name="go.sdk.automatically.set" value="true" />
+    <property name="go.tried.to.enable.integration.vgo.integrator" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.tslint" value="true" />
+    <property name="node.js.path.for.package.eslint" value="project" />
+    <property name="node.js.path.for.package.tslint" value="project" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.tslint" value="(autodetect)" />
+    <property name="nodejs_package_manager_path" value="npm" />
+    <property name="ts.external.directory.path" value="$APPLICATION_HOME_DIR$/plugins/JavaScriptLanguage/jsLanguageServicesImpl/external" />
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VgoProject">
+    <integration-enabled>true</integration-enabled>
+  </component>
+  <component name="WindowStateProjectService">
+    <state width="1889" height="149" key="GridCell.Tab.0.bottom" timestamp="1606464537450">
+      <screen x="0" y="23" width="1792" height="1097" />
+    </state>
+    <state width="1889" height="149" key="GridCell.Tab.0.bottom/-1600.63.1600.877/0.23.1792.1097@0.23.1792.1097" timestamp="1606464537450" />
+    <state width="1889" height="149" key="GridCell.Tab.0.center" timestamp="1606464537450">
+      <screen x="0" y="23" width="1792" height="1097" />
+    </state>
+    <state width="1889" height="149" key="GridCell.Tab.0.center/-1600.63.1600.877/0.23.1792.1097@0.23.1792.1097" timestamp="1606464537450" />
+    <state width="1889" height="149" key="GridCell.Tab.0.left" timestamp="1606464537449">
+      <screen x="0" y="23" width="1792" height="1097" />
+    </state>
+    <state width="1889" height="149" key="GridCell.Tab.0.left/-1600.63.1600.877/0.23.1792.1097@0.23.1792.1097" timestamp="1606464537449" />
+    <state width="1889" height="149" key="GridCell.Tab.0.right" timestamp="1606464537450">
+      <screen x="0" y="23" width="1792" height="1097" />
+    </state>
+    <state width="1889" height="149" key="GridCell.Tab.0.right/-1600.63.1600.877/0.23.1792.1097@0.23.1792.1097" timestamp="1606464537450" />
+    <state x="-753" y="209" width="556" height="610" key="find.popup" timestamp="1606478272412">
+      <screen x="-1600" y="63" width="1600" height="877" />
+    </state>
+    <state x="-753" y="209" width="556" height="610" key="find.popup/-1600.63.1600.877/0.23.1792.1097@-1600.63.1600.877" timestamp="1606478272412" />
+    <state x="949" y="205" width="605" height="763" key="find.popup/-1600.63.1600.877/0.23.1792.1097@0.23.1792.1097" timestamp="1606465032999" />
+    <state x="-903" y="198" width="648" height="735" key="find.popup/-1920.23.1920.1057/0.23.1792.1097@-1920.23.1920.1057" timestamp="1602295203909" />
+    <state x="678" y="83" width="1114" height="711" key="find.popup/-1920.23.1920.1057/0.23.1792.1097@0.23.1792.1097" timestamp="1601464595275" />
+    <state x="949" y="205" width="605" height="763" key="find.popup/-1920.63.1920.1057/0.23.1792.1097@0.23.1792.1097" timestamp="1603714293109" />
+    <state x="594" y="64" width="1114" height="711" key="find.popup/0.23.1792.1097@0.23.1792.1097" timestamp="1601131975094" />
+    <state x="-850" y="253" width="670" height="676" key="search.everywhere.popup" timestamp="1606477572368">
+      <screen x="-1600" y="63" width="1600" height="877" />
+    </state>
+    <state x="-850" y="253" width="670" height="676" key="search.everywhere.popup/-1600.63.1600.877/0.23.1792.1097@-1600.63.1600.877" timestamp="1606477572368" />
+    <state x="626" y="450" key="vcs.readOnlyHandler.ReadOnlyStatusDialog" timestamp="1606459179077">
+      <screen x="0" y="23" width="1792" height="1097" />
+    </state>
+    <state x="626" y="450" key="vcs.readOnlyHandler.ReadOnlyStatusDialog/-1600.63.1600.877/0.23.1792.1097@0.23.1792.1097" timestamp="1606459179077" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/cover/server.go</url>
+          <line>232</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

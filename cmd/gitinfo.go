@@ -31,12 +31,14 @@ var gitinfoCmd = &cobra.Command{
 	Short: "Get git info from service registry center",
 	Long:  `Get git info from service registry center to distinguish coverage data by commitid & branch under test at runtime.`,
 	Example: `
-		gitinfo  --path .  --address http://127.0.0.1:9090
-		
-		result:
+		./goc gitinfo --debug  --service awesomeProject  --path .
+        ./goc gitinfo --debug  --address http://127.0.0.1:9090 --path .
+
+		result: {"CommitID":"d3fb54fcee7dadcc3d499562a0ff6ebf5d1c5323\n","Branch":"test\n"}%    
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		p := cover.ProfileParam{
+		p := cover.GitInfoParam{
+			Path:  Path,
 			Service: svrList,
 			Address: addrList,
 		}
@@ -48,8 +50,12 @@ var gitinfoCmd = &cobra.Command{
 	},
 }
 
+var (
+	Path          string // --service flag
+)
 func init() {
 	addBasicFlags(gitinfoCmd.Flags())
+	gitinfoCmd.Flags().StringVarP(&Path,"path","",".","work space path of server, default .")
 	gitinfoCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "service name to clear profile, see 'goc list' for all services.")
 	gitinfoCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "address to clear profile, see 'goc list' for all addresses.")
 	rootCmd.AddCommand(gitinfoCmd)
