@@ -169,7 +169,7 @@ func (s *server) registerService(c *gin.Context) {
 	return
 }
 
-func RunCommandStr( cmdDir , cmdStr string) (string, error) {
+func RunCommandStr( cmdDir , cmdStr string) (string, error,int) {
 	cmds := strings.Split(strings.TrimSpace(cmdStr), " ")
 	var cmd *exec.Cmd
 	if ( cmds[0] == "sh" || cmds[0] == "bash" ) &&  cmds[1] == "-c" { // 兼容管道命令
@@ -182,15 +182,15 @@ func RunCommandStr( cmdDir , cmdStr string) (string, error) {
 	msg, err := cmd.CombinedOutput() // 混合输出stdout+stderr
 	_ = cmd.Run()
 	// 报错时 exit status 1
-	return  string(msg), err
+	return  string(msg), err,cmd.Process.Pid
 }
 
 func GetCurrentGitInfo( path  string) ( *GitInfo , error ) {
 	cmdStr1 := "sh -c git rev-parse HEAD"
 	cmdStr2 := "sh -c git symbolic-ref --short -q HEAD"
-	if msg1 , err := RunCommandStr(path,cmdStr1) ; err != nil {
+	if msg1 , err,_ := RunCommandStr(path,cmdStr1) ; err != nil {
 		return nil ,err
-	}else  if msg2 , err := RunCommandStr(path,cmdStr2) ; err != nil {
+	}else  if msg2 , err,_ := RunCommandStr(path,cmdStr2) ; err != nil {
 		return nil ,err
 	}else {
 		return &GitInfo{msg1,msg2} ,nil

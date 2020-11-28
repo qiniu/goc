@@ -18,9 +18,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-
 	log "github.com/sirupsen/logrus"
+	"os"
 
 	"github.com/qiniu/goc/pkg/cover"
 	"github.com/spf13/cobra"
