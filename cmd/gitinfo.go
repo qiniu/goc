@@ -30,9 +30,7 @@ var gitInfoCmd = &cobra.Command{
 	Short: "Get git info from service registry center",
 	Long:  `Get git info from service registry center to distinguish coverage data by commitid & branch under test at runtime.`,
 	Example: `
-		./goc gitinfo --debug  --service awesomeProject  --path .
-        ./goc gitinfo --debug  --address http://127.0.0.1:9090 --path .
-
+		./goc gitinfo --center='http://10.129.106.106:7777' --path .
 		result: {"CommitID":"d3fb54fcee7dadcc3d499562a0ff6ebf5d1c5323\n","Branch":"test\n"}%    
 `,
 	Run: func(cmd *cobra.Command, args []string) {
