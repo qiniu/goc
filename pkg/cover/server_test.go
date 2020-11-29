@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -428,4 +429,53 @@ func stringifyCoverProfile(profiles []*cover.Profile) string {
 	}
 
 	return fmt.Sprintf("%#v", res)
+}
+
+
+func TestRunCommandStr(t *testing.T) {
+	cmdStr := "ls -l"
+	if info, err , pid := RunCommandStr(".",cmdStr) ; err != nil {
+		log.Println(err)
+	}else {
+		assert.NotNil(t, pid)
+		assert.NotNil(t, info)
+	}
+
+	cmdStr = "sh -c ls -l"
+	if info, err , pid := RunCommandStr(".",cmdStr) ; err != nil {
+		log.Println(err)
+	}else {
+		assert.NotNil(t, pid)
+		assert.NotNil(t, info)
+	}
+}
+
+
+func TestGetCurrentGitInfo(t *testing.T) {
+	info , err := GetCurrentGitInfo(".")
+	assert.Nil(t, err)
+	assert.NotNil(t, info)
+
+}
+
+func TestGitInfo(t *testing.T) {
+
+	testObj := new(MockStore)
+	testObj.On("Init").Return(fmt.Errorf("lala error"))
+
+	server := &server{
+		Store: testObj,
+	}
+	router := server.Route(os.Stdout)
+
+	param := GitInfoParam{nil,nil,"."}
+	body, _ := json.Marshal(param)
+
+	// get profile with invalid force parameter
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/v1/cover/gitinfo", bytes.NewReader(body) )
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "CommitID")
 }
