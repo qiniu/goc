@@ -18,7 +18,6 @@ package cover
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -203,27 +202,15 @@ func (s *server) gitInfo(c *gin.Context) {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		return
 	}
-	svrsUnderTest := s.Store.GetAll()
-	filterAddrList, err := filterAddrs(body.Service, body.Address, true, svrsUnderTest)
-	if err != nil {
-		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+
+	if info , err := GetCurrentGitInfo(body.Path) ; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}else {
+		c.JSON(http.StatusOK, info)
 		return
 	}
-	for _, addr := range filterAddrList {
-		if info , err := GetCurrentGitInfo(body.Path) ; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(),"addr":addr})
-			return
-		}else {
-			data ,err := json.Marshal( info )
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(),"addr":addr})
-				return
-			}
-			if _, err := fmt.Fprintf(c.Writer, "%s", string(data)); err != nil {
-				return
-			}
-		}
-	}
+
 }
 
 // profile API examples:

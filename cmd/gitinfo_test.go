@@ -102,7 +102,7 @@ func doGitInfoLocal(cmd *cobra.Command, args []string)  {
 	}()
 
 	time.Sleep(3*time.Second)
-	cmdStr = "sh -c  ./goc gitinfo --address http://127.0.0.1:9090  "
+	cmdStr = "sh -c  ./goc gitinfo --address http://127.0.0.1:7777  "
 	if info, err ,_:= cover.RunCommandStr(mainDir, cmdStr); err != nil {
 		log.Println(err)
 		log.Println(info)
