@@ -264,9 +264,13 @@ func (l *memoryStore) Get(name string) []string {
 
 // Get returns all the registered service information
 func (l *memoryStore) GetAll() map[string][]string {
+	res := make(map[string][]string)
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	return l.servicesMap
+	for k,v := range l.servicesMap {
+		res[k] = append(make([]string,0,len(v)), v...)
+	}
+	return res
 }
 
 // Init cleanup all the registered service information
