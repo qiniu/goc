@@ -267,8 +267,8 @@ func (l *memoryStore) GetAll() map[string][]string {
 	res := make(map[string][]string)
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	for k,v := range l.servicesMap {
-		res[k] = append(make([]string,0,len(v)), v...)
+	for k, v := range l.servicesMap {
+		res[k] = append(make([]string, 0, len(v)), v...)
 	}
 	return res
 }
