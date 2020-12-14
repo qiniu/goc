@@ -95,7 +95,7 @@ func TestLegacyProjectNotInGoPATH(t *testing.T) {
 	os.Setenv("GO111MODULE", "off")
 
 	b, _ := NewBuild("", []string{"."}, workingDir, "")
-	if b.OriGOPATH != b.NewGOPATH {
+	if !strings.Contains(b.NewGOPATH,b.OriGOPATH) {
 		t.Fatalf("New GOPATH should be same with old GOPATH, for this kind of project. New: %v, old: %v", b.NewGOPATH, b.OriGOPATH)
 	}
 

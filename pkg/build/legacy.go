@@ -17,14 +17,13 @@
 package build
 
 import (
-	"os"
 	"path/filepath"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/otiai10/copy"
 	"github.com/qiniu/goc/pkg/cover"
-	"strings"
 )
 
 func (b *Build) cpLegacyProject() {
@@ -38,13 +37,11 @@ func (b *Build) cpLegacyProject() {
 			continue
 		}
 
-		if err := b.copyDir(v, b.TmpDir); err != nil {
+		if err := b.copyDir(v); err != nil {
 			log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
 		}
 
 		visited[src] = true
-
-		//b.cpDepPackages(v, visited)
 	}
 	if b.IsMod {
 		for _, v := range b.Pkgs {
@@ -68,35 +65,7 @@ func (b *Build) cpLegacyProject() {
 	}
 }
 
-// only cp dependency in root(current gopath),
-// skip deps in other GOPATHs
-// only used for version before go 1.11.4
-func (b *Build) cpDepPackages(pkg *cover.Package, visited map[string]bool) {
-	gopath := pkg.Root
-	for _, dep := range pkg.Deps {
-		src := filepath.Join(gopath, "src", dep)
-		// Check if copied
-		if _, ok := visited[src]; ok {
-			// Skip if already copied
-			continue
-		}
-		// Check if we can found in the root gopath
-		_, err := os.Stat(src)
-		if err != nil {
-			continue
-		}
-
-		dst := filepath.Join(b.TmpDir, "src", dep)
-
-		if err := copy.Copy(src, dst); err != nil {
-			log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
-		}
-
-		visited[src] = true
-	}
-}
-
-func (b *Build) copyDir(pkg *cover.Package, tmpDir string) error {
+func (b *Build) copyDir(pkg *cover.Package) error {
 	fileList := []string{}
 	dir := pkg.Dir
 	fileList = append(fileList, pkg.GoFiles...)
@@ -119,8 +88,8 @@ func (b *Build) copyDir(pkg *cover.Package, tmpDir string) error {
 		} else {
 			root = pkg.Root
 		}
-		src = strings.TrimPrefix(pkg.Dir, root) // get the relative path of the files
-		dst := filepath.Join(tmpDir, src, file) // it will adapt the case where src is ""
+		src = strings.TrimPrefix(pkg.Dir, root)   // get the relative path of the files
+		dst := filepath.Join(b.TmpDir, src, file) // it will adapt the case where src is ""
 		if err := copy.Copy(p, dst); err != nil {
 			log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
 			return err

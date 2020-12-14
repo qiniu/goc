@@ -17,7 +17,6 @@
 package build
 
 import (
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -47,36 +46,15 @@ func TestLegacyProjectCopyWithUnexistedDir(t *testing.T) {
 	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
 }
 
-// copy in cpDepPackages of invalid dst name
-func TestDepPackagesCopyWithInvalidDir(t *testing.T) {
-	gopath := filepath.Join(baseDir, "../../tests/samples/simple_gopath_project")
-	pkg := &cover.Package{
-		Module: &cover.ModulePublic{
-			Dir: "not exied, ia mas duser",
-		},
-		Root: gopath,
-		Deps: []string{"qiniu.com", "ddfee 2344234"},
-	}
-	b := &Build{
-		TmpDir: "/", // "/" is invalid dst in Linux, it should fail
-	}
-
-	output := captureOutput(func() {
-		visited := make(map[string]bool)
-
-		b.cpDepPackages(pkg, visited)
-	})
-	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
-}
-
 func TestCopyDir(t *testing.T) {
 	wd, _ := os.Getwd()
 	pkg := &cover.Package{Dir: wd, Root: wd, GoFiles: []string{"build.go", "legacy.go"}, CgoFiles: []string{"run.go"}}
 	tmpDir := "/tmp/test/"
 	b := &Build{
 		WorkingDir: "empty",
+		TmpDir:     tmpDir,
 	}
 	assert.NoError(t, os.MkdirAll(tmpDir, os.ModePerm))
 	defer os.RemoveAll(tmpDir)
-	assert.NoError(t, b.copyDir(pkg, tmpDir))
+	assert.NoError(t, b.copyDir(pkg))
 }

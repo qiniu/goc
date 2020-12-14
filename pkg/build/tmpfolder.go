@@ -57,13 +57,6 @@ func (b *Build) MvProjectsToTmp() error {
 	} else {
 		b.NewGOPATH = fmt.Sprintf("%v:%v", b.TmpDir, b.OriGOPATH)
 	}
-	// fix #14: unable to build project not in GOPATH in legacy mode
-	// this kind of project does not have a pkg.Root value
-	// go 1.11, 1.12 has no pkg.Root,
-	// so add b.IsMod == false as secondary judgement
-	if b.Root == "" && b.IsMod == false {
-		b.NewGOPATH = b.OriGOPATH
-	}
 	log.Infof("New GOPATH: %v", b.NewGOPATH)
 	return nil
 }
