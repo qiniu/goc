@@ -85,8 +85,19 @@ type Package struct {
 	DepOnly  bool          `json:"DepOnly,omitempty"`  // package is only a dependency, not explicitly listed
 
 	// Source files
-	GoFiles  []string `json:"GoFiles,omitempty"`  // .go source files (excluding CgoFiles, TestGoFiles, XTestGoFiles)
-	CgoFiles []string `json:"CgoFiles,omitempty"` // .go source files that import "C"
+	GoFiles         []string `json:",omitempty"` // .go source files (excluding CgoFiles, TestGoFiles, XTestGoFiles)
+	CgoFiles        []string `json:",omitempty"` // .go source files that import "C"
+	CompiledGoFiles []string `json:",omitempty"` // .go output from running cgo on CgoFiles
+	IgnoredGoFiles  []string `json:",omitempty"` // .go source files ignored due to build constraints
+	CFiles          []string `json:",omitempty"` // .c source files
+	CXXFiles        []string `json:",omitempty"` // .cc, .cpp and .cxx source files
+	MFiles          []string `json:",omitempty"` // .m source files
+	HFiles          []string `json:",omitempty"` // .h, .hh, .hpp and .hxx source files
+	FFiles          []string `json:",omitempty"` // .f, .F, .for and .f90 Fortran source files
+	SFiles          []string `json:",omitempty"` // .s source files
+	SwigFiles       []string `json:",omitempty"` // .swig files
+	SwigCXXFiles    []string `json:",omitempty"` // .swigcxx files
+	SysoFiles       []string `json:",omitempty"` // .syso system object files added to package
 
 	// Dependency information
 	Deps      []string          `json:"Deps,omitempty"` // all (recursively) imported dependencies

@@ -45,6 +45,7 @@ func TestModProjectCopyWithUnexistedDir(t *testing.T) {
 		Module: &cover.ModulePublic{
 			Dir: "not exied, ia mas duser", // not real one, should fail copy
 		},
+		GoFiles: []string{"empty.go"},
 	}
 	pkgs["another"] = &cover.Package{}
 	b := &Build{
@@ -52,7 +53,7 @@ func TestModProjectCopyWithUnexistedDir(t *testing.T) {
 		Pkgs:   pkgs,
 	}
 
-	output := captureOutput(b.cpGoModulesProject)
+	output := captureOutput(b.cpLegacyProject)
 	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
 }
 

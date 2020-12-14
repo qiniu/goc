@@ -24,6 +24,7 @@ import (
 
 	"github.com/otiai10/copy"
 	"github.com/qiniu/goc/pkg/cover"
+	"strings"
 )
 
 func (b *Build) cpLegacyProject() {
@@ -37,18 +38,39 @@ func (b *Build) cpLegacyProject() {
 			continue
 		}
 
-		if err := copy.Copy(src, dst); err != nil {
+		if err := b.copyDir(v, b.TmpDir); err != nil {
 			log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
 		}
 
 		visited[src] = true
 
-		b.cpDepPackages(v, visited)
+		//b.cpDepPackages(v, visited)
+	}
+	if b.IsMod {
+		for _, v := range b.Pkgs {
+			if v.Name == "main" {
+				dst := filepath.Join(b.TmpDir, "go.mod")
+				src := filepath.Join(v.Module.Dir, "go.mod")
+				if err := copy.Copy(src, dst); err != nil {
+					log.Errorf("Failed to Copy the go mod file from %v to %v, the error is: %v ", src, dst, err)
+				}
+
+				dst = filepath.Join(b.TmpDir, "go.sum")
+				src = filepath.Join(v.Module.Dir, "go.sum")
+				if err := copy.Copy(src, dst); err != nil && !strings.Contains(err.Error(), "no such file or directory") {
+					log.Errorf("Failed to Copy the go mod file from %v to %v, the error is: %v ", src, dst, err)
+				}
+				break
+			} else {
+				continue
+			}
+		}
 	}
 }
 
 // only cp dependency in root(current gopath),
 // skip deps in other GOPATHs
+// only used for version before go 1.11.4
 func (b *Build) cpDepPackages(pkg *cover.Package, visited map[string]bool) {
 	gopath := pkg.Root
 	for _, dep := range pkg.Deps {
@@ -74,18 +96,35 @@ func (b *Build) cpDepPackages(pkg *cover.Package, visited map[string]bool) {
 	}
 }
 
-func (b *Build) cpNonStandardLegacy() {
-	for _, v := range b.Pkgs {
-		if v.Name == "main" {
-			dst := b.TmpDir
-			src := v.Dir
-
-			if err := copy.Copy(src, dst); err != nil {
-				log.Printf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
-			}
-			break
+func (b *Build) copyDir(pkg *cover.Package, tmpDir string) error {
+	fileList := []string{}
+	dir := pkg.Dir
+	fileList = append(fileList, pkg.GoFiles...)
+	fileList = append(fileList, pkg.CompiledGoFiles...)
+	fileList = append(fileList, pkg.IgnoredGoFiles...)
+	fileList = append(fileList, pkg.CFiles...)
+	fileList = append(fileList, pkg.CXXFiles...)
+	fileList = append(fileList, pkg.MFiles...)
+	fileList = append(fileList, pkg.HFiles...)
+	fileList = append(fileList, pkg.FFiles...)
+	fileList = append(fileList, pkg.SFiles...)
+	fileList = append(fileList, pkg.SwigCXXFiles...)
+	fileList = append(fileList, pkg.SwigFiles...)
+	fileList = append(fileList, pkg.SysoFiles...)
+	for _, file := range fileList {
+		p := filepath.Join(dir, file)
+		var src, root string
+		if pkg.Root == "" {
+			root = b.WorkingDir // use workingDir instead when the root is empty.
 		} else {
-			continue
+			root = pkg.Root
+		}
+		src = strings.TrimPrefix(pkg.Dir, root) // get the relative path of the files
+		dst := filepath.Join(tmpDir, src, file) // it will adapt the case where src is ""
+		if err := copy.Copy(p, dst); err != nil {
+			log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
+			return err
 		}
 	}
+	return nil
 }

@@ -23,6 +23,7 @@ import (
 
 	"github.com/qiniu/goc/pkg/cover"
 	"github.com/stretchr/testify/assert"
+	"os"
 )
 
 // copy in cpLegacyProject/cpNonStandardLegacy of invalid src, dst name
@@ -32,8 +33,9 @@ func TestLegacyProjectCopyWithUnexistedDir(t *testing.T) {
 		Module: &cover.ModulePublic{
 			Dir: "not exied, ia mas duser", // not real one, should fail copy
 		},
-		Dir:  "not exit, iasdfs",
-		Name: "main",
+		Dir:     "not exit, iasdfs",
+		Name:    "main",
+		GoFiles: []string{"not_exist.go"},
 	}
 	pkgs["another"] = &cover.Package{}
 	b := &Build{
@@ -42,9 +44,6 @@ func TestLegacyProjectCopyWithUnexistedDir(t *testing.T) {
 	}
 
 	output := captureOutput(b.cpLegacyProject)
-	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
-
-	output = captureOutput(b.cpNonStandardLegacy)
 	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
 }
 
@@ -68,4 +67,16 @@ func TestDepPackagesCopyWithInvalidDir(t *testing.T) {
 		b.cpDepPackages(pkg, visited)
 	})
 	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
+}
+
+func TestCopyDir(t *testing.T) {
+	wd, _ := os.Getwd()
+	pkg := &cover.Package{Dir: wd, Root: wd, GoFiles: []string{"build.go", "legacy.go"}, CgoFiles: []string{"run.go"}}
+	tmpDir := "/tmp/test/"
+	b := &Build{
+		WorkingDir: "empty",
+	}
+	assert.NoError(t, os.MkdirAll(tmpDir, os.ModePerm))
+	defer os.RemoveAll(tmpDir)
+	assert.NoError(t, b.copyDir(pkg, tmpDir))
 }

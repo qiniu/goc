@@ -99,7 +99,7 @@ func (b *Build) mvProjectsToTmp() error {
 	if b.IsMod == false && b.Root != "" {
 		b.cpLegacyProject()
 	} else if b.IsMod == true { // go 1.11, 1.12 has no Build.Root
-		b.cpGoModulesProject()
+		b.cpLegacyProject()
 		updated, newGoModContent, err := b.updateGoModFile()
 		if err != nil {
 			return fmt.Errorf("fail to generate new go.mod: %v", err)
@@ -114,7 +114,7 @@ func (b *Build) mvProjectsToTmp() error {
 		}
 	} else if b.IsMod == false && b.Root == "" {
 		b.TmpWorkingDir = b.TmpDir
-		b.cpNonStandardLegacy()
+		b.cpLegacyProject()
 	} else {
 		return fmt.Errorf("unknown project type: %w", ErrShouldNotReached)
 	}
