@@ -108,8 +108,6 @@ func (b *Build) mvProjectsToTmp() error {
 	} else if b.IsMod == false && b.Root == "" {
 		b.TmpWorkingDir = b.TmpDir
 		b.cpLegacyProject()
-	} else {
-		return fmt.Errorf("unknown project type: %w", ErrShouldNotReached)
 	}
 
 	log.Infof("New workingdir in tmp directory in: %v", b.TmpWorkingDir)

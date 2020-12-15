@@ -133,9 +133,9 @@ func (b *Build) determineOutputDir(outputDir string) (string, error) {
 	targetName := ""
 	for _, pkg := range b.Pkgs {
 		if pkg.Name == "main" {
-			if pkg.Target != ""{
+			if pkg.Target != "" {
 				targetName = filepath.Base(pkg.Target)
-			}else {
+			} else {
 				targetName = filepath.Base(pkg.Dir)
 			}
 			break

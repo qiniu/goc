@@ -46,6 +46,28 @@ func TestLegacyProjectCopyWithUnexistedDir(t *testing.T) {
 	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
 }
 
+// copy goMod project without go.mod
+func TestGoModProjectCopyWithUnexistedModFile(t *testing.T) {
+	pkgs := make(map[string]*cover.Package)
+	pkgs["main"] = &cover.Package{
+		Module: &cover.ModulePublic{
+			Dir: "not exied, ia mas duser", // not real one, should fail copy
+		},
+		Dir:  "not exit, iasdfs",
+		Name: "main",
+	}
+	pkgs["another"] = &cover.Package{}
+	b := &Build{
+		TmpDir: "sdfsfev2234444", // not real one, should fail copy
+		Pkgs:   pkgs,
+		IsMod:  true,
+	}
+
+	output := captureOutput(b.cpLegacyProject)
+	assert.Equal(t, strings.Contains(output, "Failed to Copy the go mod file"), true)
+}
+
+// copy needed files to tmpDir
 func TestCopyDir(t *testing.T) {
 	wd, _ := os.Getwd()
 	pkg := &cover.Package{Dir: wd, Root: wd, GoFiles: []string{"build.go", "legacy.go"}, CgoFiles: []string{"run.go"}}
