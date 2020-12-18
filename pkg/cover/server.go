@@ -108,6 +108,7 @@ type ProfileParam struct {
 	Service           []string `form:"service" json:"service"`
 	Address           []string `form:"address" json:"address"`
 	CoverFilePatterns []string `form:"coverfile" json:"coverfile"`
+	SkipFilePatterns  []string `form:"skipfile" json:"skipfile"`
 }
 
 //listServices list all the registered services
@@ -209,6 +210,14 @@ func (s *server) profile(c *gin.Context) {
 		}
 	}
 
+	if len(body.SkipFilePatterns) > 0 {
+		merged, err = skipProfile(body.SkipFilePatterns, merged)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to skip profile based on the patterns: %v, error: %v", body.SkipFilePatterns, err)})
+			return
+		}
+	}
+
 	if err := cov.DumpProfile(merged, c.Writer); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -228,6 +237,31 @@ func filterProfile(coverFile []string, profiles []*cover.Profile) ([]*cover.Prof
 				out = append(out, profile)
 				break // no need to check again for the file
 			}
+		}
+	}
+
+	return out, nil
+}
+
+// skipProfile skips profiles of the packages matching the coverFile pattern
+func skipProfile(skipFile []string, profiles []*cover.Profile) ([]*cover.Profile, error) {
+	var out = make([]*cover.Profile, 0)
+	for _, profile := range profiles {
+		var shouldSkip bool
+		for _, pattern := range skipFile {
+			matched, err := regexp.MatchString(pattern, profile.FileName)
+			if err != nil {
+				return nil, fmt.Errorf("filterProfile failed with pattern %s for profile %s, err: %v", pattern, profile.FileName, err)
+			}
+
+			if matched {
+				shouldSkip = true
+				break // no need to check again for the file
+			}
+		}
+
+		if !shouldSkip {
+			out = append(out, profile)
 		}
 	}
 

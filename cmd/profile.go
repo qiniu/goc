@@ -56,6 +56,7 @@ goc profile --force
 			Service:           svrList,
 			Address:           addrList,
 			CoverFilePatterns: coverFilePatterns,
+			SkipFilePatterns:  skipFilePatterns,
 		}
 		res, err := cover.NewWorker(center).Profile(p)
 		if err != nil {
@@ -84,6 +85,7 @@ var (
 	force             bool     // --force flag
 	output            string   // --output flag
 	coverFilePatterns []string // --coverfile flag
+	skipFilePatterns  []string // --skipfile flag
 )
 
 func init() {
@@ -92,6 +94,7 @@ func init() {
 	profileCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "address to fetch profile, see 'goc list' for all addresses.")
 	profileCmd.Flags().BoolVarP(&force, "force", "f", false, "force fetching all available profiles")
 	profileCmd.Flags().StringSliceVarP(&coverFilePatterns, "coverfile", "", nil, "only output coverage data of the files matching the patterns")
+	profileCmd.Flags().StringSliceVarP(&skipFilePatterns, "skipfile", "", nil, "skip the files matching the patterns when outputing coverage data")
 	addBasicFlags(profileCmd.Flags())
 	rootCmd.AddCommand(profileCmd)
 }
