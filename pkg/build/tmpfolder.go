@@ -90,9 +90,9 @@ func (b *Build) mvProjectsToTmp() error {
 	// known cases:
 	// 1. a legacy project, but not in any GOPATH, will cause the b.Root == ""
 	if b.IsMod == false && b.Root != "" {
-		b.cpLegacyProject()
+		b.cpProject()
 	} else if b.IsMod == true { // go 1.11, 1.12 has no Build.Root
-		b.cpLegacyProject()
+		b.cpProject()
 		updated, newGoModContent, err := b.updateGoModFile()
 		if err != nil {
 			return fmt.Errorf("fail to generate new go.mod: %v", err)
@@ -107,7 +107,7 @@ func (b *Build) mvProjectsToTmp() error {
 		}
 	} else if b.IsMod == false && b.Root == "" {
 		b.TmpWorkingDir = b.TmpDir
-		b.cpLegacyProject()
+		b.cpProject()
 	}
 
 	log.Infof("New workingdir in tmp directory in: %v", b.TmpWorkingDir)

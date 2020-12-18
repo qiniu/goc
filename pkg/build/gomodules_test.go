@@ -53,7 +53,7 @@ func TestModProjectCopyWithUnexistedDir(t *testing.T) {
 		Pkgs:   pkgs,
 	}
 
-	output := captureOutput(b.cpLegacyProject)
+	output := captureOutput(b.cpProject)
 	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
 }
 

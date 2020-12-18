@@ -26,7 +26,7 @@ import (
 	"github.com/qiniu/goc/pkg/cover"
 )
 
-func (b *Build) cpLegacyProject() {
+func (b *Build) cpProject() {
 	visited := make(map[string]bool)
 	for k, v := range b.Pkgs {
 		dst := filepath.Join(b.TmpDir, "src", k)

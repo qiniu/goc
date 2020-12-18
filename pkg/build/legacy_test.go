@@ -25,7 +25,7 @@ import (
 	"os"
 )
 
-// copy in cpLegacyProject/cpNonStandardLegacy of invalid src, dst name
+// copy in cpProject of invalid src, dst name
 func TestLegacyProjectCopyWithUnexistedDir(t *testing.T) {
 	pkgs := make(map[string]*cover.Package)
 	pkgs["main"] = &cover.Package{
@@ -42,7 +42,7 @@ func TestLegacyProjectCopyWithUnexistedDir(t *testing.T) {
 		Pkgs:   pkgs,
 	}
 
-	output := captureOutput(b.cpLegacyProject)
+	output := captureOutput(b.cpProject)
 	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
 }
 
@@ -63,7 +63,7 @@ func TestGoModProjectCopyWithUnexistedModFile(t *testing.T) {
 		IsMod:  true,
 	}
 
-	output := captureOutput(b.cpLegacyProject)
+	output := captureOutput(b.cpProject)
 	assert.Equal(t, strings.Contains(output, "Failed to Copy the go mod file"), true)
 }
 
