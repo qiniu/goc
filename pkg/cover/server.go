@@ -243,7 +243,7 @@ func filterProfile(coverFile []string, profiles []*cover.Profile) ([]*cover.Prof
 	return out, nil
 }
 
-// skipProfile skips profiles of the packages matching the coverFile pattern
+// skipProfile skips profiles of the packages matching the skipFile pattern
 func skipProfile(skipFile []string, profiles []*cover.Profile) ([]*cover.Profile, error) {
 	var out = make([]*cover.Profile, 0)
 	for _, profile := range profiles {
