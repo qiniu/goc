@@ -421,6 +421,102 @@ func TestFilterProfile(t *testing.T) {
 	}
 }
 
+func TestSkipProfile(t *testing.T) {
+	var tcs = []struct {
+		name      string
+		pattern   []string
+		input     []*cover.Profile
+		output    []*cover.Profile
+		expectErr bool
+	}{
+		{
+			name:    "normal path",
+			pattern: []string{"some/fancy/gopath", "a/fancy/gopath"},
+			input: []*cover.Profile{
+				{
+					FileName: "some/fancy/gopath/a.go",
+				},
+				{
+					FileName: "some/fancy/gopath/b/a.go",
+				},
+				{
+					FileName: "a/fancy/gopath/a.go",
+				},
+				{
+					FileName: "b/fancy/gopath/a.go",
+				},
+				{
+					FileName: "b/a/fancy/gopath/a.go",
+				},
+			},
+			output: []*cover.Profile{
+				{
+					FileName: "b/fancy/gopath/a.go",
+				},
+			},
+		},
+		{
+			name:    "with regular expression",
+			pattern: []string{"fancy/gopath/a.go$", "^b/a/"},
+			input: []*cover.Profile{
+				{
+					FileName: "some/fancy/gopath/a.go",
+				},
+				{
+					FileName: "some/fancy/gopath/b/a.go",
+				},
+				{
+					FileName: "a/fancy/gopath/a.go",
+				},
+				{
+					FileName: "b/fancy/gopath/c/a.go",
+				},
+				{
+					FileName: "b/a/fancy/gopath/a.go",
+				},
+			},
+			output: []*cover.Profile{
+				{
+					FileName: "some/fancy/gopath/b/a.go",
+				},
+				{
+					FileName: "b/fancy/gopath/c/a.go",
+				},
+			},
+		},
+		{
+			name:    "with invalid regular expression",
+			pattern: []string{"(?!a)"},
+			input: []*cover.Profile{
+				{
+					FileName: "some/fancy/gopath/a.go",
+				},
+			},
+			expectErr: true,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			out, err := skipProfile(tc.pattern, tc.input)
+			if err != nil {
+				if !tc.expectErr {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				return
+			}
+
+			if tc.expectErr {
+				t.Errorf("Expected an error, but got value %s", stringifyCoverProfile(out))
+			}
+
+			if !reflect.DeepEqual(out, tc.output) {
+				t.Errorf("Mismatched results. \nExpected: %s\nActual:%s", stringifyCoverProfile(tc.output), stringifyCoverProfile(out))
+			}
+		})
+	}
+}
+
 func stringifyCoverProfile(profiles []*cover.Profile) string {
 	res := make([]cover.Profile, 0, len(profiles))
 	for _, p := range profiles {
