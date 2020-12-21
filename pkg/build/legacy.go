@@ -20,10 +20,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/otiai10/copy"
+	cc "github.com/otiai10/copy" // conflit with builtin copy
 	"github.com/qiniu/goc/pkg/cover"
+	log "github.com/sirupsen/logrus"
 )
 
 func (b *Build) cpProject() {
@@ -48,13 +47,13 @@ func (b *Build) cpProject() {
 			if v.Name == "main" {
 				dst := filepath.Join(b.TmpDir, "go.mod")
 				src := filepath.Join(v.Module.Dir, "go.mod")
-				if err := copy.Copy(src, dst); err != nil {
+				if err := cc.Copy(src, dst); err != nil {
 					log.Errorf("Failed to Copy the go mod file from %v to %v, the error is: %v ", src, dst, err)
 				}
 
 				dst = filepath.Join(b.TmpDir, "go.sum")
 				src = filepath.Join(v.Module.Dir, "go.sum")
-				if err := copy.Copy(src, dst); err != nil && !strings.Contains(err.Error(), "no such file or directory") {
+				if err := cc.Copy(src, dst); err != nil && !strings.Contains(err.Error(), "no such file or directory") {
 					log.Errorf("Failed to Copy the go mod file from %v to %v, the error is: %v ", src, dst, err)
 				}
 				break
@@ -68,18 +67,7 @@ func (b *Build) cpProject() {
 func (b *Build) copyDir(pkg *cover.Package) error {
 	fileList := []string{}
 	dir := pkg.Dir
-	fileList = append(fileList, pkg.GoFiles...)
-	fileList = append(fileList, pkg.CompiledGoFiles...)
-	fileList = append(fileList, pkg.IgnoredGoFiles...)
-	fileList = append(fileList, pkg.CFiles...)
-	fileList = append(fileList, pkg.CXXFiles...)
-	fileList = append(fileList, pkg.MFiles...)
-	fileList = append(fileList, pkg.HFiles...)
-	fileList = append(fileList, pkg.FFiles...)
-	fileList = append(fileList, pkg.SFiles...)
-	fileList = append(fileList, pkg.SwigCXXFiles...)
-	fileList = append(fileList, pkg.SwigFiles...)
-	fileList = append(fileList, pkg.SysoFiles...)
+	fileList = getFileListNeedsCopy(pkg)
 	for _, file := range fileList {
 		p := filepath.Join(dir, file)
 		var src, root string
@@ -90,10 +78,69 @@ func (b *Build) copyDir(pkg *cover.Package) error {
 		}
 		src = strings.TrimPrefix(pkg.Dir, root)   // get the relative path of the files
 		dst := filepath.Join(b.TmpDir, src, file) // it will adapt the case where src is ""
-		if err := copy.Copy(p, dst); err != nil {
+		if err := cc.Copy(p, dst); err != nil {
 			log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
 			return err
 		}
 	}
 	return nil
+}
+
+// original implementation
+// goos: darwin
+// goarch: amd64
+// pkg: github.com/qiniu/goc/pkg/build
+// BenchmarkGetFileList-4           1535029               778 ns/op            1488 B/op          5 allocs/op
+// func getFileListNeedsCopy(pkg *cover.Package) []string {
+// 	fileList := []string{}
+
+// 	fileList = append(fileList, pkg.GoFiles...)
+// 	fileList = append(fileList, pkg.CompiledGoFiles...)
+// 	fileList = append(fileList, pkg.IgnoredGoFiles...)
+// 	fileList = append(fileList, pkg.CFiles...)
+// 	fileList = append(fileList, pkg.CXXFiles...)
+// 	fileList = append(fileList, pkg.MFiles...)
+// 	fileList = append(fileList, pkg.HFiles...)
+// 	fileList = append(fileList, pkg.FFiles...)
+// 	fileList = append(fileList, pkg.SFiles...)
+// 	fileList = append(fileList, pkg.SwigCXXFiles...)
+// 	fileList = append(fileList, pkg.SwigFiles...)
+// 	fileList = append(fileList, pkg.SysoFiles...)
+
+// 	return fileList
+// }
+
+// new implementation
+// goos: darwin
+// goarch: amd64
+// pkg: github.com/qiniu/goc/pkg/build
+// BenchmarkGetFileList-4           3884557               298 ns/op             576 B/op          1 allocs/op
+func getFileListNeedsCopy(pkg *cover.Package) []string {
+	fileSlices := [][]string{
+		pkg.GoFiles,
+		pkg.CompiledGoFiles,
+		pkg.IgnoredGoFiles,
+		pkg.CFiles,
+		pkg.CXXFiles,
+		pkg.MFiles,
+		pkg.HFiles,
+		pkg.FFiles,
+		pkg.SFiles,
+		pkg.SwigCXXFiles,
+		pkg.SwigFiles,
+		pkg.SysoFiles,
+	}
+
+	var totalLen int
+	for _, s := range fileSlices {
+		totalLen += len(s)
+	}
+
+	tmp := make([]string, totalLen)
+	var i int
+	for _, s := range fileSlices {
+		i += copy(tmp[i:], s)
+	}
+
+	return tmp
 }
