@@ -20,26 +20,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/otiai10/copy"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/mod/modfile"
 )
-
-func (b *Build) cpGoModulesProject() {
-	for _, v := range b.Pkgs {
-		if v.Name == "main" {
-			dst := b.TmpDir
-			src := v.Module.Dir
-
-			if err := copy.Copy(src, dst); err != nil {
-				log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
-			}
-			break
-		} else {
-			continue
-		}
-	}
-}
 
 // updateGoModFile rewrites the go.mod file in the temporary directory,
 // if it has a 'replace' directive, and the directive has a relative local path

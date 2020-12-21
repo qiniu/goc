@@ -17,16 +17,37 @@
 package build
 
 import (
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/qiniu/goc/pkg/cover"
 	"github.com/stretchr/testify/assert"
+	"os"
 )
 
-// copy in cpLegacyProject/cpNonStandardLegacy of invalid src, dst name
+// copy in cpProject of invalid src, dst name
 func TestLegacyProjectCopyWithUnexistedDir(t *testing.T) {
+	pkgs := make(map[string]*cover.Package)
+	pkgs["main"] = &cover.Package{
+		Module: &cover.ModulePublic{
+			Dir: "not exied, ia mas duser", // not real one, should fail copy
+		},
+		Dir:     "not exit, iasdfs",
+		Name:    "main",
+		GoFiles: []string{"not_exist.go"},
+	}
+	pkgs["another"] = &cover.Package{}
+	b := &Build{
+		TmpDir: "sdfsfev2234444", // not real one, should fail copy
+		Pkgs:   pkgs,
+	}
+
+	output := captureOutput(b.cpProject)
+	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
+}
+
+// copy goMod project without go.mod
+func TestGoModProjectCopyWithUnexistedModFile(t *testing.T) {
 	pkgs := make(map[string]*cover.Package)
 	pkgs["main"] = &cover.Package{
 		Module: &cover.ModulePublic{
@@ -39,33 +60,23 @@ func TestLegacyProjectCopyWithUnexistedDir(t *testing.T) {
 	b := &Build{
 		TmpDir: "sdfsfev2234444", // not real one, should fail copy
 		Pkgs:   pkgs,
+		IsMod:  true,
 	}
 
-	output := captureOutput(b.cpLegacyProject)
-	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
-
-	output = captureOutput(b.cpNonStandardLegacy)
-	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
+	output := captureOutput(b.cpProject)
+	assert.Equal(t, strings.Contains(output, "Failed to Copy the go mod file"), true)
 }
 
-// copy in cpDepPackages of invalid dst name
-func TestDepPackagesCopyWithInvalidDir(t *testing.T) {
-	gopath := filepath.Join(baseDir, "../../tests/samples/simple_gopath_project")
-	pkg := &cover.Package{
-		Module: &cover.ModulePublic{
-			Dir: "not exied, ia mas duser",
-		},
-		Root: gopath,
-		Deps: []string{"qiniu.com", "ddfee 2344234"},
-	}
+// copy needed files to tmpDir
+func TestCopyDir(t *testing.T) {
+	wd, _ := os.Getwd()
+	pkg := &cover.Package{Dir: wd, Root: wd, GoFiles: []string{"build.go", "legacy.go"}, CgoFiles: []string{"run.go"}}
+	tmpDir := "/tmp/test/"
 	b := &Build{
-		TmpDir: "/", // "/" is invalid dst in Linux, it should fail
+		WorkingDir: "empty",
+		TmpDir:     tmpDir,
 	}
-
-	output := captureOutput(func() {
-		visited := make(map[string]bool)
-
-		b.cpDepPackages(pkg, visited)
-	})
-	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
+	assert.NoError(t, os.MkdirAll(tmpDir, os.ModePerm))
+	defer os.RemoveAll(tmpDir)
+	assert.NoError(t, b.copyDir(pkg))
 }
