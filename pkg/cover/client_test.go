@@ -127,6 +127,18 @@ func TestClientAction(t *testing.T) {
 			param:    ProfileParam{CoverFilePatterns: []string{"b.go$"}},
 			expected: "b/b.go",
 		},
+		{
+			name:     "valid test with skipfile flag provided",
+			service:  ServiceUnderTest{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
+			param:    ProfileParam{SkipFilePatterns: []string{"b.go$"}},
+			expected: "main.go",
+		},
+		{
+			name:     "valid test with both skipfile and coverfile flags provided",
+			service:  ServiceUnderTest{Name: "serviceOK", Address: profileSuccessMockSvr.URL},
+			param:    ProfileParam{SkipFilePatterns: []string{"main.go"}, CoverFilePatterns: []string{".go$"}},
+			expected: "b.go",
+		},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
