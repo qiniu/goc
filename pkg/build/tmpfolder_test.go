@@ -23,7 +23,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/qiniu/goc/pkg/cover"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -96,7 +95,7 @@ func TestLegacyProjectNotInGoPATH(t *testing.T) {
 	os.Setenv("GO111MODULE", "off")
 
 	b, _ := NewBuild("", []string{"."}, workingDir, "")
-	if !strings.Contains(b.NewGOPATH, b.OriGOPATH) {
+	if b.OriGOPATH != b.NewGOPATH {
 		t.Fatalf("New GOPATH should be same with old GOPATH, for this kind of project. New: %v, old: %v", b.NewGOPATH, b.OriGOPATH)
 	}
 
@@ -106,32 +105,13 @@ func TestLegacyProjectNotInGoPATH(t *testing.T) {
 	}
 }
 
-// test mvProjectsToTmp failed by traversePkgsList error
-func TestMvProjectsToTmpFailByTraversePkgsList(t *testing.T) {
+// test traversePkgsList error case
+func TestTraversePkgsList(t *testing.T) {
 	b := &Build{
 		Pkgs: nil,
 	}
-	err := b.mvProjectsToTmp()
-	assert.Contains(t, err.Error(), ErrShouldNotReached.Error())
-}
-
-// test mvProjectsToTmp failed by getTmpwd error
-func TestMvProjectsToTmpFailByGetTmpwd(t *testing.T) {
-	pkgs := make(map[string]*cover.Package)
-	pkgs["main"] = &cover.Package{
-		Module: &cover.ModulePublic{
-			Dir:  "just for test",
-			Path: "just for test",
-		},
-		Dir:  "not exist",
-		Name: "main",
-	}
-	b := &Build{
-		Pkgs:       pkgs,
-		WorkingDir: "not exist",
-	}
-	err := b.mvProjectsToTmp()
-	assert.Contains(t, err.Error(), ErrGocShouldExecInProject.Error())
+	_, _, err := b.traversePkgsList()
+	assert.EqualError(t, err, ErrShouldNotReached.Error())
 }
 
 // test getTmpwd error case
@@ -167,9 +147,4 @@ func TestFindWhereToInstall(t *testing.T) {
 	assert.NoError(t, err)
 	expectedPlace := filepath.Join(os.Getenv("HOME"), "go", "bin")
 	assert.Equal(t, placeToInstall, expectedPlace)
-}
-
-func TestMvProjectsToTmp(t *testing.T) {
-	b := &Build{TmpDir: "/tmp/test"}
-	fmt.Println(b.MvProjectsToTmp())
 }
