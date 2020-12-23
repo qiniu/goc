@@ -20,8 +20,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/otiai10/copy"
 	log "github.com/sirupsen/logrus"
+	"github.com/tongjingran/copy"
 	"golang.org/x/mod/modfile"
 )
 
@@ -31,7 +31,7 @@ func (b *Build) cpGoModulesProject() {
 			dst := b.TmpDir
 			src := v.Module.Dir
 
-			if err := copy.Copy(src, dst); err != nil {
+			if err := copy.Copy(src, dst, copy.Options{Skip: skipCopy}); err != nil {
 				log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
 			}
 			break

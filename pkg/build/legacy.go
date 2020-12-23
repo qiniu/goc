@@ -19,11 +19,12 @@ package build
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/otiai10/copy"
 	"github.com/qiniu/goc/pkg/cover"
+	"github.com/tongjingran/copy"
 )
 
 func (b *Build) cpLegacyProject() {
@@ -37,7 +38,7 @@ func (b *Build) cpLegacyProject() {
 			continue
 		}
 
-		if err := copy.Copy(src, dst); err != nil {
+		if err := copy.Copy(src, dst, copy.Options{Skip: skipCopy}); err != nil {
 			log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
 		}
 
@@ -66,7 +67,7 @@ func (b *Build) cpDepPackages(pkg *cover.Package, visited map[string]bool) {
 
 		dst := filepath.Join(b.TmpDir, "src", dep)
 
-		if err := copy.Copy(src, dst); err != nil {
+		if err := copy.Copy(src, dst, copy.Options{Skip: skipCopy}); err != nil {
 			log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
 		}
 
@@ -80,7 +81,7 @@ func (b *Build) cpNonStandardLegacy() {
 			dst := b.TmpDir
 			src := v.Dir
 
-			if err := copy.Copy(src, dst); err != nil {
+			if err := copy.Copy(src, dst, copy.Options{Skip: skipCopy}); err != nil {
 				log.Printf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
 			}
 			break
@@ -88,4 +89,9 @@ func (b *Build) cpNonStandardLegacy() {
 			continue
 		}
 	}
+}
+
+// skipCopy skip copy .git dir and irregular files
+func skipCopy(src string, info os.FileInfo) (bool, error) {
+	return strings.HasSuffix(src, "/.git") || !info.Mode().IsRegular(), nil
 }

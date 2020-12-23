@@ -27,8 +27,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
+	"github.com/tongjingran/copy"
 )
 
 func testCoverage() (c *Coverage) {
