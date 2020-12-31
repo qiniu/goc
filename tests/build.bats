@@ -100,3 +100,16 @@ setup() {
 
     wait $profile_pid
 }
+
+@test "test goc build on reference other package project" {
+    cd samples/reference_other_package_project/app
+
+    wait_profile_backend "build6" &
+    profile_pid=$!
+
+    run gocc build --debug --debugcisyncfile ci-sync.bak;
+    info build5 output: $output
+    [ "$status" -eq 0 ]
+
+    wait $profile_pid
+}

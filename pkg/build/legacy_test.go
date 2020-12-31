@@ -17,9 +17,11 @@
 package build
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/qiniu/goc/pkg/cover"
 	"github.com/stretchr/testify/assert"
@@ -68,4 +70,64 @@ func TestDepPackagesCopyWithInvalidDir(t *testing.T) {
 		b.cpDepPackages(pkg, visited)
 	})
 	assert.Equal(t, strings.Contains(output, "Failed to Copy"), true)
+}
+
+type MockFile struct {
+	name    string
+	size    int64
+	mode    os.FileMode
+	modTime time.Time
+	isDir   bool
+}
+
+func (m MockFile) Name() string {
+	return m.name
+}
+
+func (m MockFile) Size() int64 {
+	return m.size
+}
+
+func (m MockFile) Mode() os.FileMode {
+	return m.mode
+}
+
+func (m MockFile) ModTime() time.Time {
+	return m.modTime
+}
+
+func (m MockFile) IsDir() bool {
+	return m.isDir
+}
+
+func (m MockFile) Sys() interface{} {
+	return nil
+}
+
+// skipCopy verify
+func TestSkipCopy(t *testing.T) {
+	testCases := map[string]struct {
+		inputSrc  string
+		inputInfo MockFile
+		expected  bool
+	}{
+		"src with /.git suffix":    {inputSrc: "/test/.git", inputInfo: MockFile{mode: 0}, expected: true},
+		"src with ./git suffix":    {inputSrc: "/test.git", inputInfo: MockFile{mode: 0}, expected: false},
+		"src with /.gita suffix":   {inputSrc: "/test/.gita", inputInfo: MockFile{mode: 0}, expected: false},
+		"src with /.git in middle": {inputSrc: "/test/.git/test", inputInfo: MockFile{mode: 0}, expected: false},
+		"irregular file":           {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeIrregular}, expected: true},
+		"dir file":                 {inputSrc: "/test", inputInfo: MockFile{isDir: true, mode: os.ModeDir}, expected: false},
+		"temporary file":           {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeTemporary}, expected: false},
+		"symlink file":             {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeSymlink}, expected: false},
+		"device file":              {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeDevice}, expected: true},
+		"named pipe file":          {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeNamedPipe}, expected: true},
+		"socket file":              {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeSocket}, expected: true},
+	}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			output, err := skipCopy(tc.inputSrc, tc.inputInfo)
+			assert.NoError(t, err)
+			assert.Equal(t, output, tc.expected)
+		})
+	}
 }
