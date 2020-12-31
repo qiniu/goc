@@ -93,5 +93,5 @@ func (b *Build) cpNonStandardLegacy() {
 
 // skipCopy skip copy .git dir and irregular files
 func skipCopy(src string, info os.FileInfo) (bool, error) {
-	return strings.HasSuffix(src, "/.git") || !info.Mode().IsRegular(), nil
+	return strings.HasSuffix(src, "/.git") || (!info.IsDir() && !info.Mode().IsRegular()), nil
 }

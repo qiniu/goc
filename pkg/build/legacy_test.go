@@ -116,7 +116,7 @@ func TestSkipCopy(t *testing.T) {
 		"src with /.gita suffix":   {inputSrc: "/test/.gita", inputInfo: MockFile{mode: 0}, expected: false},
 		"src with /.git in middle": {inputSrc: "/test/.git/test", inputInfo: MockFile{mode: 0}, expected: false},
 		"irregular file":           {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeIrregular}, expected: true},
-		"dir file":                 {inputSrc: "/test", inputInfo: MockFile{isDir: true, mode: os.ModeDir}, expected: true},
+		"dir file":                 {inputSrc: "/test", inputInfo: MockFile{isDir: true, mode: os.ModeDir}, expected: false},
 		"temporary file":           {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeTemporary}, expected: false},
 		"symlink file":             {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeSymlink}, expected: true},
 		"device file":              {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeDevice}, expected: true},
