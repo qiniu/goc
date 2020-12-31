@@ -93,5 +93,14 @@ func (b *Build) cpNonStandardLegacy() {
 
 // skipCopy skip copy .git dir and irregular files
 func skipCopy(src string, info os.FileInfo) (bool, error) {
-	return strings.HasSuffix(src, "/.git") || (!info.IsDir() && !info.Mode().IsRegular()), nil
+	irregularModeType := os.ModeNamedPipe | os.ModeSocket | os.ModeDevice | os.ModeCharDevice | os.ModeIrregular
+	if strings.HasSuffix(src, "/.git") {
+		log.Infof("Skip .git dir [%s]", src)
+		return true, nil
+	}
+	if info.Mode()&irregularModeType != 0 {
+		log.Warnf("Skip file [%s], the file mode is [%s]", src, info.Mode().String())
+		return true, nil
+	}
+	return false, nil
 }

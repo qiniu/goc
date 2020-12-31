@@ -118,7 +118,7 @@ func TestSkipCopy(t *testing.T) {
 		"irregular file":           {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeIrregular}, expected: true},
 		"dir file":                 {inputSrc: "/test", inputInfo: MockFile{isDir: true, mode: os.ModeDir}, expected: false},
 		"temporary file":           {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeTemporary}, expected: false},
-		"symlink file":             {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeSymlink}, expected: true},
+		"symlink file":             {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeSymlink}, expected: false},
 		"device file":              {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeDevice}, expected: true},
 		"named pipe file":          {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeNamedPipe}, expected: true},
 		"socket file":              {inputSrc: "/test", inputInfo: MockFile{mode: os.ModeSocket}, expected: true},
