@@ -5,9 +5,11 @@ on:
   push:
     paths-ignore:
       - '**.md'
+      - '**.png'
   pull_request:
     paths-ignore:
       - '**.md'
+      - '**.png'
 jobs:
   run:
     name: go test
