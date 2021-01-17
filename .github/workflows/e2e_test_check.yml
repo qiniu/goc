@@ -5,9 +5,11 @@ on:
   push:
     paths-ignore:
       - '**.md'
+      - '**.png'
   pull_request:
     paths-ignore:
       - '**.md'
+      - '**.png'
 jobs:
   job_1:
     name: Build goc binary

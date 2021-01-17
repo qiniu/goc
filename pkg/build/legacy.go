@@ -85,8 +85,6 @@ func (b *Build) cpNonStandardLegacy() {
 				log.Printf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
 			}
 			break
-		} else {
-			continue
 		}
 	}
 }
