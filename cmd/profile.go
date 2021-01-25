@@ -66,6 +66,15 @@ goc profile --force
 		if output == "" {
 			fmt.Fprint(os.Stdout, string(res))
 		} else {
+
+			if dir != "" {
+				err = os.MkdirAll(dir, os.ModePerm)
+				if err != nil {
+					log.Fatalf("failed to create directory %s, err:%v", dir, err)
+				}
+				output = dir + "/" + output
+			}
+
 			f, err := os.Create(output)
 			if err != nil {
 				log.Fatalf("failed to create file %s, err:%v", output, err)
@@ -83,12 +92,14 @@ var (
 	svrList           []string // --service flag
 	addrList          []string // --address flag
 	force             bool     // --force flag
+	dir               string   // --dir flag
 	output            string   // --output flag
 	coverFilePatterns []string // --coverfile flag
 	skipFilePatterns  []string // --skipfile flag
 )
 
 func init() {
+	profileCmd.Flags().StringVarP(&dir, "dir", "d", "", "export specify directory")
 	profileCmd.Flags().StringVarP(&output, "output", "o", "", "download cover profile")
 	profileCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "service name to fetch profile, see 'goc list' for all services.")
 	profileCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "address to fetch profile, see 'goc list' for all addresses.")
