@@ -160,7 +160,7 @@ func registerHandlers() {
 
 	// coverprofile reports a coverage profile with the coverage percentage
 	mux.HandleFunc("/v1/cover/profile", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "mode: {{.Mode }} \n")
+		fmt.Fprint(w, "mode: {{.Mode}}\n")
 		counters, blocks := loadValues()
 		var active, total int64
 		var count uint32
