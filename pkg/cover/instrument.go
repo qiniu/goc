@@ -267,7 +267,7 @@ func deregisterSelf(address []string) ([]byte, error) {
                 resp, err = http.DefaultClient.Do(req)
         }
         if err != nil {
-                return nil, fmt.Errorf("failed to register into coverage center, err:%v", err)
+                return nil, fmt.Errorf("failed to deregister into coverage center, err:%v", err)
         }
         defer resp.Body.Close()
 
@@ -277,7 +277,7 @@ func deregisterSelf(address []string) ([]byte, error) {
         }
 
         if resp.StatusCode != 200 {
-                err = fmt.Errorf("failed to register into coverage center, response code %d", resp.StatusCode)
+                err = fmt.Errorf("failed to deregister into coverage center, response code %d", resp.StatusCode)
         }
 
         return body, err
