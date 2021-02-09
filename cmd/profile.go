@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 
 	"github.com/qiniu/goc/pkg/cover"
 	log "github.com/sirupsen/logrus"
@@ -66,6 +67,17 @@ goc profile --force
 		if output == "" {
 			fmt.Fprint(os.Stdout, string(res))
 		} else {
+			var dir, filename string = path.Split(output)
+			if dir != "" {
+				err = os.MkdirAll(dir, os.ModePerm)
+				if err != nil {
+					log.Fatalf("failed to create directory %s, err:%v", dir, err)
+				}
+			}
+			if filename == "" {
+				output += "coverage.cov"
+			}
+
 			f, err := os.Create(output)
 			if err != nil {
 				log.Fatalf("failed to create file %s, err:%v", output, err)
