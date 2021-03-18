@@ -286,8 +286,6 @@ func deregisterSelf(address []string) ([]byte, error) {
 type CallbackFunc func()
 
 func watchSignal(fn CallbackFunc) {
-        defer fn()
-
         // init signal
         c := make(chan os.Signal, 1)
         signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
@@ -296,7 +294,8 @@ func watchSignal(fn CallbackFunc) {
                 log.Printf("get a signal %s", si.String())
                 switch si {
                 case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-                        return
+                        fn()
+                        os.Exit(0) // Exit successfully.
                 case syscall.SIGHUP:
                 default:
                         return
