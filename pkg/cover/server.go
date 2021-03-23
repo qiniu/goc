@@ -136,7 +136,9 @@ func (s *server) registerService(c *gin.Context) {
 	}
 
 	realIP := c.ClientIP()
-	if host != realIP {
+	// only for IPV4
+	// refer: https://github.com/qiniu/goc/issues/177
+	if net.ParseIP(realIP).To4() != nil && host != realIP {
 		log.Printf("the registered host %s of service %s is different with the real one %s, here we choose the real one", service.Name, host, realIP)
 		service.Address = fmt.Sprintf("http://%s:%s", realIP, port)
 	}
