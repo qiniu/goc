@@ -14,7 +14,38 @@
 package cmd
 
 import (
+	"github.com/qiniu/goc/v2/pkg/config"
+	"github.com/qiniu/goc/v2/pkg/log"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-var rootCmd = &cobra.Command{}
+var rootCmd = &cobra.Command{
+	Use:   "goc",
+	Short: "goc is a comprehensive coverage testing tool for go language",
+	Long: `goc is a comprehensive coverage testing tool for go language.
+
+Find more information at:
+ https://github.com/qiniu/goc
+`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// init logger
+		log.NewLogger()
+	},
+
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		log.Sync()
+	},
+}
+
+func init() {
+	rootCmd.PersistentFlags().BoolVar(&config.GocConfig.Debug, "debug", false, "run goc in debug mode")
+
+	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+}
+
+// Execute the goc tool
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+	}
+}

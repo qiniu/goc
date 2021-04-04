@@ -11,12 +11,32 @@
  limitations under the License.
 */
 
-package main
+package websocket
 
 import (
-	"github.com/qiniu/goc/v2/cmd"
+	"context"
+	"net/http"
+	"net/url"
+	"time"
 )
 
-func main() {
-	cmd.Execute()
+// Dialer contains all options for connecting to a specified websocket server
+type Dialer struct {
+	Proxy            func(*http.Request) (*url.URL, error)
+	HandshakeTimeout time.Duration
+	Subprotocols     []string
+}
+
+// DefaultDialer is dialer with all necessary fields set to default value
+var DefaultDialer = &Dialer{
+	Proxy:            http.ProxyFromEnvironment,
+	HandshakeTimeout: 45 * time.Second,
+}
+
+func (d *Dialer) Dial() {
+
+}
+
+func (d *Dialer) DialContext(ctx context.Context) {
+
 }
