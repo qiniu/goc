@@ -8,6 +8,8 @@ type ciLogger struct {
 
 func newCiLogger() *ciLogger {
 	logger, _ := zap.NewDevelopment()
+	// fix: increases the number of caller from always reporting the wrapper code as caller
+	logger = logger.WithOptions(zap.AddCallerSkip(2))
 	zap.ReplaceGlobals(logger)
 	return &ciLogger{
 		logger: logger,

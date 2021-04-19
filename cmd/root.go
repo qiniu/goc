@@ -17,7 +17,6 @@ import (
 	"github.com/qiniu/goc/v2/pkg/config"
 	"github.com/qiniu/goc/v2/pkg/log"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var rootCmd = &cobra.Command{
@@ -40,8 +39,6 @@ Find more information at:
 
 func init() {
 	rootCmd.PersistentFlags().BoolVar(&config.GocConfig.Debug, "debug", false, "run goc in debug mode")
-
-	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
 }
 
 // Execute the goc tool
