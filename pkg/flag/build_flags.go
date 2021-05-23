@@ -16,7 +16,8 @@ However, other flags' order are same with the go official command.
 `
 
 // BuildCmdArgsParse parse both go flags and goc flags, it returns all non-flag arguments.
-// It will log fatal if error
+//
+// 吞下 [packages] 之前所有的 flags.
 func BuildCmdArgsParse(cmd *cobra.Command, args []string) []string {
 	// 首先解析 cobra 定义的 flag
 	allFlagSets := cmd.Flags()

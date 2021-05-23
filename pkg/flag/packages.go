@@ -6,17 +6,19 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/qiniu/goc/v2/pkg/config"
 )
 
 // GetPackagesDir parse [pacakges] part of args, it will fatal if error encountered
 //
-// Return 1： [packages] 所在的目录位置，供后续插桩使用。
+// 函数获取 1： [packages] 所在的目录位置，供后续插桩使用。
 //
-// Return 2： 如果参数是 *.go，第一个 .go 文件的文件名。go build 中，二进制名字既可能是目录名也可能是文件名，和参数类型有关。
+// 函数获取 2： 如果参数是 *.go，第一个 .go 文件的文件名。go build 中，二进制名字既可能是目录名也可能是文件名，和参数类型有关。
 //
 // 如果 [packages] 非法（即不符合 go 原生的定义），则返回对应错误
 // 这里只考虑 go mod 的方式
-func GetPackagesDir(patterns []string) (string, string) {
+func GetPackagesDir(patterns []string) {
 	for _, p := range patterns {
 		// patterns 只支持两种格式
 		// 1. 要么是直接指向某些 .go 文件的相对/绝对路径
@@ -32,7 +34,12 @@ func GetPackagesDir(patterns []string) (string, string) {
 				if err != nil {
 					log.Fatalf("%v", err)
 				}
-				return filepath.Dir(absp), filepath.Base(absp)
+
+				// 获取当前 [packages] 所在的目录位置，供后续插桩使用。
+				config.GocConfig.CurPkgDir = filepath.Dir(absp)
+				// 获取二进制名字
+				config.GocConfig.BinaryName = filepath.Base(absp)
+				return
 			}
 		}
 	}
@@ -43,7 +50,9 @@ func GetPackagesDir(patterns []string) (string, string) {
 		log.Fatalf("%v", err)
 	}
 
-	return coverWd, ""
+	config.GocConfig.CurPkgDir = coverWd
+	config.GocConfig.BinaryName = ""
+	return
 }
 
 // goFilesPackage 对一组 go 文件解析，判断是否合法
