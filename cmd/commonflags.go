@@ -31,6 +31,7 @@ var (
 	debugGoc          bool
 	debugInCISyncFile string
 	buildFlags        string
+	singleton         bool
 
 	goRunExecFlag  string
 	goRunArguments string
@@ -51,6 +52,7 @@ func addCommonFlags(cmdset *pflag.FlagSet) {
 	addBasicFlags(cmdset)
 	cmdset.Var(&coverMode, "mode", "coverage mode: set, count, atomic")
 	cmdset.Var(&agentPort, "agentport", "a fixed port such as :8100 for registered service communicate with goc server. if not provided, using a random one")
+	cmdset.BoolVar(&singleton, "singleton", false, "singleton mode, not register to goc center")
 	cmdset.StringVar(&buildFlags, "buildflags", "", "specify the build flags")
 	// bind to viper
 	viper.BindPFlags(cmdset)

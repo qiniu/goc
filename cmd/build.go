@@ -78,6 +78,7 @@ func runBuild(args []string, wd string) {
 		Mode:                     coverMode.String(),
 		AgentPort:                agentPort.String(),
 		Center:                   center,
+		Singleton:                singleton,
 		IsMod:                    gocBuild.IsMod,
 		ModRootPath:              gocBuild.ModRootPath,
 		OneMainPackage:           true, // it is a go build

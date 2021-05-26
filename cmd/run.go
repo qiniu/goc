@@ -70,6 +70,7 @@ goc run . [--buildflags] [--exec] [--arguments]
 			Target:                   gocBuild.TmpDir,
 			Mode:                     coverMode.String(),
 			Center:                   gocServer,
+			Singleton:                singleton,
 			AgentPort:                "",
 			IsMod:                    gocBuild.IsMod,
 			ModRootPath:              gocBuild.ModRootPath,
