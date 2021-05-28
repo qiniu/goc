@@ -131,16 +131,13 @@ func clearFileCover(counter []uint32) {
 }
 
 func registerHandlers() {
-	{{if .Singleton}}
-	ln, _, err := listen()
-	{{else}}
 	ln, host, err := listen()
-	{{end}}
 	if err != nil {
 		log.Fatalf("listen failed, err:%v", err)
 	}
-	{{if not .Singleton}}
 	profileAddr := "http://" + host
+	log.Printf("[goc] goc profile address: %s \n", profileAddr)
+	{{if not .Singleton}}
 	if resp, err := registerSelf(profileAddr); err != nil {
 		log.Fatalf("register address %v failed, err: %v, response: %v", profileAddr, err, string(resp))
 	}
