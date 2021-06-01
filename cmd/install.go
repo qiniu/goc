@@ -71,6 +71,7 @@ func runInstall(args []string, wd string) {
 		Mode:                     coverMode.String(),
 		AgentPort:                agentPort.String(),
 		Center:                   center,
+		Singleton:                singleton,
 		IsMod:                    gocBuild.IsMod,
 		ModRootPath:              gocBuild.ModRootPath,
 		OneMainPackage:           false,

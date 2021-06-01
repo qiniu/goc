@@ -52,6 +52,7 @@ type TestCover struct {
 	Mode                     string
 	AgentPort                string
 	Center                   string // cover profile host center
+	Singleton                bool
 	MainPkgCover             *PackageCover
 	DepsCover                []*PackageCover
 	CacheCover               map[string]*PackageCover
@@ -139,6 +140,7 @@ type CoverInfo struct {
 	Mode                     string
 	AgentPort                string
 	Center                   string
+	Singleton                bool
 }
 
 //Execute inject cover variables for all the .go files in the target folder
@@ -150,6 +152,7 @@ func Execute(coverInfo *CoverInfo) error {
 	mode := coverInfo.Mode
 	agentPort := coverInfo.AgentPort
 	center := coverInfo.Center
+	singleton := coverInfo.Singleton
 	globalCoverVarImportPath := coverInfo.GlobalCoverVarImportPath
 
 	if coverInfo.IsMod {
@@ -187,6 +190,7 @@ func Execute(coverInfo *CoverInfo) error {
 				Mode:                     mode,
 				AgentPort:                agentPort,
 				Center:                   center,
+				Singleton:                singleton,
 				MainPkgCover:             mainCover,
 				GlobalCoverVarImportPath: globalCoverVarImportPath,
 			}

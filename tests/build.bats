@@ -113,3 +113,16 @@ setup() {
 
     wait $profile_pid
 }
+
+@test "test basic goc build command with singleton" {
+    cd samples/run_for_several_seconds
+    
+    wait_profile_backend "build7" &
+    profile_pid=$!
+
+    run gocc build --debug --singleton --debugcisyncfile ci-sync.bak;
+    info build7 output: $output
+    [ "$status" -eq 0 ]
+
+    wait $profile_pid
+}
