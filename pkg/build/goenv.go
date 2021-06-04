@@ -1,13 +1,15 @@
 package build
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/qiniu/goc/v2/pkg/config"
-	"github.com/qiniu/goc/v2/pkg/cover"
 	"github.com/qiniu/goc/v2/pkg/log"
 )
 
@@ -17,7 +19,7 @@ func (b *Build) readProjectMetaInfo() {
 	config.GocConfig.GOPATH = b.readGOPATH()
 	config.GocConfig.GOBIN = b.readGOBIN()
 	// 获取当前目录及其依赖的 package list
-	config.GocConfig.Pkgs = cover.ListPackages(config.GocConfig.CurPkgDir)
+	config.GocConfig.Pkgs = b.listPackages(config.GocConfig.CurPkgDir)
 
 	// get mod info
 	pkgs := config.GocConfig.Pkgs
@@ -65,4 +67,41 @@ func (b *Build) readGOBIN() string {
 		log.Fatalf("fail to read GOBIN: %v", err)
 	}
 	return strings.TrimSpace(string(out))
+}
+
+// listPackages list all packages under specific via go list command.
+func (b *Build) listPackages(dir string) map[string]*config.Package {
+	cmd := exec.Command("go", "list", "-json", "./...")
+	cmd.Dir = dir
+
+	var errBuf bytes.Buffer
+	cmd.Stderr = &errBuf
+	out, err := cmd.Output()
+	if err != nil {
+		log.Fatalf("execute go list -json failed, err: %v, stdout: %v, stderr: %v", err, string(out), errBuf.String())
+	}
+	// 有些时候 go 命令会打印一些信息到 stderr，但其实命令整体是成功运行了
+	if errBuf.String() != "" {
+		log.Errorf("%v", errBuf.String())
+	}
+
+	dec := json.NewDecoder(bytes.NewBuffer(out))
+	pkgs := make(map[string]*config.Package, 0)
+
+	for {
+		var pkg config.Package
+		if err := dec.Decode(&pkg); err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatalf("reading go list output error: %v", err)
+		}
+		if pkg.Error != nil {
+			log.Fatalf("list package %s failed with output: %v", pkg.ImportPath, pkg.Error)
+		}
+
+		pkgs[pkg.ImportPath] = &pkg
+	}
+
+	return pkgs
 }
