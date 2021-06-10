@@ -13,6 +13,9 @@ type gocConfig struct {
 	GOPATH           string
 	GOBIN            string
 	IsMod            bool // deprecated
+
+	Port      int    // used both by server & client
+	StorePath string // persist store location
 }
 
 // GocConfig 全局变量，存放 goc 的各种元属性
