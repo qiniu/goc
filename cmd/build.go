@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/qiniu/goc/v2/pkg/build"
+	"github.com/qiniu/goc/v2/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -13,6 +14,7 @@ var buildCmd = &cobra.Command{
 }
 
 func init() {
+	buildCmd.Flags().StringVarP(&config.GocConfig.Mode, "mode", "", "count", "coverage mode: set, count, atomic")
 	rootCmd.AddCommand(buildCmd)
 }
 

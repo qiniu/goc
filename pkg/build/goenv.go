@@ -30,6 +30,7 @@ func (b *Build) readProjectMetaInfo() {
 		}
 		// 工程根目录
 		config.GocConfig.CurModProjectDir = pkg.Root
+		config.GocConfig.ImportPath = pkg.Module.Path
 
 		break
 	}
@@ -38,6 +39,8 @@ func (b *Build) readProjectMetaInfo() {
 	config.GocConfig.TmpModProjectDir = filepath.Join(os.TempDir(), tmpFolderName(config.GocConfig.CurModProjectDir))
 	// get cur pkg dir in the corresponding tmp dir
 	config.GocConfig.TmpPkgDir = filepath.Join(config.GocConfig.TmpModProjectDir, config.GocConfig.CurPkgDir[len(config.GocConfig.CurModProjectDir):])
+	// get GlobalCoverVarImportPath
+	config.GocConfig.GlobalCoverVarImportPath = tmpFolderName(config.GocConfig.CurModProjectDir)
 	log.Donef("project meta information parsed")
 }
 

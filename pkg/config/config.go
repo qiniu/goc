@@ -3,19 +3,21 @@ package config
 import "time"
 
 type gocConfig struct {
-	Debug            bool
-	CurPkgDir        string
-	CurModProjectDir string
-	TmpModProjectDir string
-	TmpPkgDir        string
-	BinaryName       string
-	Pkgs             map[string]*Package
-	GOPATH           string
-	GOBIN            string
-	IsMod            bool // deprecated
+	Debug                    bool
+	ImportPath               string // import path of the project
+	CurPkgDir                string
+	CurModProjectDir         string
+	TmpModProjectDir         string
+	TmpPkgDir                string
+	BinaryName               string
+	Pkgs                     map[string]*Package
+	GOPATH                   string
+	GOBIN                    string
+	IsMod                    bool // deprecated
+	GlobalCoverVarImportPath string
 
-	Port      int    // used both by server & client
-	StorePath string // persist store location
+	Host string
+	Mode string // cover mode
 }
 
 // GocConfig 全局变量，存放 goc 的各种元属性
