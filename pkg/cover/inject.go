@@ -2,6 +2,7 @@ package cover
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/qiniu/goc/v2/pkg/config"
@@ -104,15 +105,15 @@ func getPkgTmpDir(pkgDir string) string {
 // - xxx.go
 // - yyy_package
 // - main.go
-// - goc_http_cover_apis_auto_generated_11111_22222_bridge.go
-// - goc_http_cover_apis_auto_generated_11111_22222_package
+// - goc-http-cover-apis-auto-generated-11111-22222-bridge.go
+// - goc-http-cover-apis-auto-generated-11111-22222-package
 //  |
 //  -- init.go
 //
 // 11111_22222_bridge.go just import 11111_22222_package, where package contains ws handlers.
 // 使用 bridge.go 文件是为了避免插桩逻辑中的变量名污染 main 包
 func injectCoverHandler(where string, covers []*config.PackageCover) {
-	injectPkgName := "goc_http_cover_apis_auto_generated_11111_22222_package"
+	injectPkgName := "goc-http-cover-apis-auto-generated-11111-22222-package"
 	wherePkg := filepath.Join(where, injectPkgName)
 	err := os.MkdirAll(wherePkg, os.ModePerm)
 	if err != nil {
@@ -120,7 +121,7 @@ func injectCoverHandler(where string, covers []*config.PackageCover) {
 	}
 
 	// create bridge file
-	whereBridge := filepath.Join(where, "goc_http_cover_apis_auto_generated_11111_22222_bridge.go")
+	whereBridge := filepath.Join(where, "goc-http-cover-apis-auto-generated-11111-22222-bridge.go")
 	f, err := os.Create(whereBridge)
 	if err != nil {
 		log.Fatalf("fail to create cover bridge file in temporary project: %v", err)
@@ -144,6 +145,7 @@ func injectCoverHandler(where string, covers []*config.PackageCover) {
 	if err != nil {
 		log.Fatalf("fail to create cover handlers in temporary project: %v", err)
 	}
+	defer f.Close()
 
 	tmplData := struct {
 		Covers                   []*config.PackageCover
@@ -160,6 +162,25 @@ func injectCoverHandler(where string, covers []*config.PackageCover) {
 	}
 }
 
+// injectGlobalCoverVarFile 写入所有插桩变量的全局定义至单独一个文件
 func injectGlobalCoverVarFile(decl string) {
+	globalCoverVarPackage := path.Base(config.GocConfig.GlobalCoverVarImportPath)
+	globalCoverDef := filepath.Join(config.GocConfig.TmpModProjectDir, globalCoverVarPackage)
+	err := os.MkdirAll(globalCoverDef, os.ModePerm)
+	if err != nil {
+		log.Fatalf("fail to create global cover definition package dir: %v", err)
+	}
+	coverFile, err := os.Create(filepath.Join(globalCoverDef, "cover.go"))
+	if err != nil {
+		log.Fatalf("fail to create global cover definition file: %v", err)
+	}
 
+	defer coverFile.Close()
+
+	packageName := "package coverdef\n\n"
+
+	_, err = coverFile.WriteString(packageName + decl)
+	if err != nil {
+		log.Fatalf("fail to write to global cover definition file: %v", err)
+	}
 }

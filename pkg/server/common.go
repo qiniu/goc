@@ -8,9 +8,13 @@ import (
 )
 
 const (
-	PongWait = 60 * time.Second
-	PingWait = 30 * time.Second
+	PongWait = 20 * time.Second
+	PingWait = 10 * time.Second
 )
+
+type GetProfileReq string
+
+type GetProfileRes string
 
 type ReadWriteCloser struct {
 	ws *websocket.Conn

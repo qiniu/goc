@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -40,7 +41,7 @@ func (b *Build) readProjectMetaInfo() {
 	// get cur pkg dir in the corresponding tmp dir
 	config.GocConfig.TmpPkgDir = filepath.Join(config.GocConfig.TmpModProjectDir, config.GocConfig.CurPkgDir[len(config.GocConfig.CurModProjectDir):])
 	// get GlobalCoverVarImportPath
-	config.GocConfig.GlobalCoverVarImportPath = tmpFolderName(config.GocConfig.CurModProjectDir)
+	config.GocConfig.GlobalCoverVarImportPath = path.Join(config.GocConfig.ImportPath, tmpFolderName(config.GocConfig.CurModProjectDir))
 	log.Donef("project meta information parsed")
 }
 

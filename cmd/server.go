@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/qiniu/goc/v2/pkg/build"
+	"github.com/qiniu/goc/v2/pkg/server"
 	"github.com/spf13/cobra"
 )
 
@@ -22,6 +22,5 @@ func init() {
 }
 
 func serve(cmd *cobra.Command, args []string) {
-	b := build.NewBuild(cmd, args)
-	b.Build()
+	server.RunGocServerUntilExit(8080)
 }

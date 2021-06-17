@@ -1,6 +1,7 @@
 package build
 
 import (
+	"github.com/qiniu/goc/v2/pkg/cover"
 	"github.com/qiniu/goc/v2/pkg/flag"
 	"github.com/qiniu/goc/v2/pkg/log"
 	"github.com/spf13/cobra"
@@ -31,6 +32,9 @@ func NewBuild(cmd *cobra.Command, args []string) *Build {
 // 3. build the project in temp.
 func (b *Build) Build() {
 	b.copyProjectToTmp()
-	defer b.clean()
+	// defer b.clean()
 	log.Donef("project copied to temporary directory")
+
+	// inject cover vars
+	cover.Inject()
 }

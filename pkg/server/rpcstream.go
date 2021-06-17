@@ -88,9 +88,13 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 				break
 			}
 		}
+
+		// 从维护的 websocket 链接中移除
+		gs.rpcClients.Delete(clientId)
 		gs.wsclose(ws, 1)
 	}()
 
+	log.Infof("one client established, %v, cmdline: %v, pid: %v, hostname: %v", ws.RemoteAddr(), cmdline, pid, hostname)
 	// new rpc client
 	// 在这里 websocket server 作为 rpc 的客户端，
 	// 发送 rpc 请求，

@@ -47,7 +47,7 @@ func RunGocServerUntilExit(port int) {
 	r := gin.Default()
 	v2 := r.Group("/v2")
 	{
-		v2.GET("/cover/profile", nil)
+		v2.GET("/cover/profile", gs.getProfiles)
 		v2.DELETE("/cover/profile", nil)
 		v2.GET("/services", gs.listServices)
 
