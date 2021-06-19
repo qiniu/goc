@@ -162,7 +162,7 @@ func injectCoverHandler(where string, covers []*config.PackageCover) {
 	}
 }
 
-// injectGlobalCoverVarFile 写入所有插桩变量的全局定义至单独一个文件
+// injectGlobalCoverVarFile 写入所有插桩变量的全局定义至一个单独的文件
 func injectGlobalCoverVarFile(decl string) {
 	globalCoverVarPackage := path.Base(config.GocConfig.GlobalCoverVarImportPath)
 	globalCoverDef := filepath.Join(config.GocConfig.TmpModProjectDir, globalCoverVarPackage)

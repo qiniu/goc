@@ -12,9 +12,9 @@ const (
 	PingWait = 10 * time.Second
 )
 
-type GetProfileReq string
+type ProfileReq string
 
-type GetProfileRes string
+type ProfileRes string
 
 type ReadWriteCloser struct {
 	ws *websocket.Conn

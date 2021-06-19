@@ -13,19 +13,11 @@ import (
 	"github.com/qiniu/goc/v2/pkg/log"
 )
 
-// GocCommandArg defines server -> client arg
-type GocCommandArg struct {
-	Type    string
-	Content string
-}
-
-// GocCommandReply defines server -> client reply
-type GocCommandReply struct {
-	Type    string
-	Code    string
-	Content string
-}
-
+// serveRpcStream holds connection between goc server and agent.
+//
+// 1. goc server 作为 rpc 客户端
+//
+// 2. 每个链接的 goc agent 作为 rpc 服务端
 func (gs *gocServer) serveRpcStream(c *gin.Context) {
 	// 检查插桩服务上报的信息
 	remoteIP, _ := c.RemoteIP()
@@ -49,7 +41,7 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 		return
 	}
 
-	gocC := gocCoveredClient{
+	gocA := gocCoveredAgent{
 		RemoteIP: remoteIP.String(),
 		Hostname: hostname,
 		Pid:      pid,
@@ -67,9 +59,13 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 	// send close msg and close ws connection
 	defer func() {
 		deadline := 1 * time.Second
+		// 发送 close msg
 		gs.wsclose(ws, deadline)
 		time.Sleep(deadline)
+		// 从维护的 websocket 链接字典中移除
+		gs.rpcClients.Delete(clientId)
 		ws.Close()
+		log.Infof("close connection, %v", hostname)
 	}()
 
 	// set pong handler
@@ -81,17 +77,19 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 
 	// set ping goroutine to ping every PingWait time
 	go func() {
-		ticker := time.Tick(PingWait)
-		for range ticker {
+		ticker := time.NewTicker(PingWait)
+		defer ticker.Stop()
+
+		for range ticker.C {
 			if err := gs.wsping(ws, PongWait); err != nil {
-				log.Errorf("ping to %v failed: %v", ws.RemoteAddr(), err)
+				log.Errorf("ping to %v failed: %v", hostname, err)
 				break
 			}
 		}
 
-		// 从维护的 websocket 链接中移除
-		gs.rpcClients.Delete(clientId)
-		gs.wsclose(ws, 1)
+		gocA.once.Do(func() {
+			close(gocA.exitCh)
+		})
 	}()
 
 	log.Infof("one client established, %v, cmdline: %v, pid: %v, hostname: %v", ws.RemoteAddr(), cmdline, pid, hostname)
@@ -102,12 +100,12 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 	rwc := &ReadWriteCloser{ws: ws}
 	codec := jsonrpc.NewClientCodec(rwc)
 
-	gocC.rpc = rpc.NewClientWithCodec(codec)
-	gocC.Id = string(clientId)
-	gs.rpcClients.Store(clientId, gocC)
+	gocA.rpc = rpc.NewClientWithCodec(codec)
+	gocA.Id = string(clientId)
+	gs.rpcClients.Store(clientId, gocA)
 	// wait for exit
 	for {
-		<-gocC.exitCh
+		<-gocA.exitCh
 	}
 }
 
