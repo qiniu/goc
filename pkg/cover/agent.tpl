@@ -33,41 +33,43 @@ func init() {
 
 	var dialer = websocket.DefaultDialer
 
-	// 永不退出，出错后统一操作为：延时 + conitnue
-	for {
-		// 获取进程元信息用于注册
-		ps, err := getRegisterInfo()
-		if err != nil {
+	go func() {
+		// 永不退出，出错后统一操作为：延时 + conitnue
+		for {
+			// 获取进程元信息用于注册
+			ps, err := getRegisterInfo()
+			if err != nil {
+				time.Sleep(waitDelay)
+				continue
+			}
+
+			// 注册，直接将元信息放在 ws 地址中
+			v := url.Values{}
+			v.Set("hostname", ps.hostname)
+			v.Set("pid", strconv.Itoa(ps.pid))
+			v.Set("cmdline", ps.cmdline)
+			v.Encode()
+
+			rpcstreamUrl := fmt.Sprintf("ws://%v/v2/internal/ws/rpcstream?%v", host, v.Encode())
+			ws, _, err := dialer.Dial(rpcstreamUrl, nil)
+			if err != nil {
+				log.Printf("[goc][Error] fail to dial to goc server: %v", err)
+				time.Sleep(waitDelay)
+				continue
+			}
+			log.Printf("[goc][Info] connected to goc server")
+
+			rwc := &ReadWriteCloser{ws: ws}
+			s := rpc.NewServer()
+			s.Register(&GocAgent{})
+			s.ServeCodec(jsonrpc.NewServerCodec(rwc))
+
+			// exit rpc server, close ws connection
+			ws.Close()
 			time.Sleep(waitDelay)
-			continue
+			log.Printf("[goc][Error] connection to goc server broken", )
 		}
-
-		// 注册，直接将元信息放在 ws 地址中
-		v := url.Values{}
-		v.Set("hostname", ps.hostname)
-		v.Set("pid", strconv.Itoa(ps.pid))
-		v.Set("cmdline", ps.cmdline)
-		v.Encode()
-
-		rpcstreamUrl := fmt.Sprintf("ws://%v/v2/internal/ws/rpcstream?%v", host, v.Encode())
-		ws, _, err := dialer.Dial(rpcstreamUrl, nil)
-		if err != nil {
-			log.Printf("[goc][Error] fail to dial to goc server: %v", err)
-			time.Sleep(waitDelay)
-			continue
-		}
-		log.Printf("[goc][Info] connected to goc server")
-
-		rwc := &ReadWriteCloser{ws: ws}
-		s := rpc.NewServer()
-		s.Register(&GocAgent{})
-		s.ServeCodec(jsonrpc.NewServerCodec(rwc))
-
-		// exit rpc server, close ws connection
-		ws.Close()
-		time.Sleep(waitDelay)
-		log.Printf("[goc][Error] connection to goc server broken", )
-	}
+	}()
 }
 
 // rpc
