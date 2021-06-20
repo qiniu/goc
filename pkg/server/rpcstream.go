@@ -41,7 +41,7 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 		return
 	}
 
-	gocA := gocCoveredAgent{
+	gocA := &gocCoveredAgent{
 		RemoteIP: remoteIP.String(),
 		Hostname: hostname,
 		Pid:      pid,
@@ -104,9 +104,7 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 	gocA.Id = string(clientId)
 	gs.rpcClients.Store(clientId, gocA)
 	// wait for exit
-	for {
-		<-gocA.exitCh
-	}
+	<-gocA.exitCh
 }
 
 func (gs *gocServer) wsping(ws *websocket.Conn, deadline time.Duration) error {

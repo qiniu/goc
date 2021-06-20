@@ -14,10 +14,10 @@ import (
 
 // listServices return all service informations
 func (gs *gocServer) listServices(c *gin.Context) {
-	agents := make([]gocCoveredAgent, 0)
+	agents := make([]*gocCoveredAgent, 0)
 
 	gs.rpcClients.Range(func(key, value interface{}) bool {
-		agent, ok := value.(gocCoveredAgent)
+		agent, ok := value.(*gocCoveredAgent)
 		if !ok {
 			return false
 		}
@@ -40,7 +40,7 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 	mergedProfiles := make([][]*cover.Profile, 0)
 
 	gs.rpcClients.Range(func(key, value interface{}) bool {
-		agent, ok := value.(gocCoveredAgent)
+		agent, ok := value.(*gocCoveredAgent)
 		if !ok {
 			return false
 		}
@@ -80,7 +80,6 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 					})
 				}
 			}
-
 			// append profile
 			profile, err := convertProfile([]byte(res))
 			if err != nil {
