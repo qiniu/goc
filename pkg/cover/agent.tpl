@@ -21,10 +21,16 @@ import (
 
 var (
 	waitDelay time.Duration = 10 * time.Second
-	host      string        = "127.0.0.1:8080"
+	host      string        = "{{.Host}}"
 )
 
 func init() {
+	// init host
+	host_env := os.Getenv("GOC_CUSTOM_HOST")
+	if host_env != "" {
+		host = host_env
+	}
+
 	var dialer = websocket.DefaultDialer
 
 	// 永不退出，出错后统一操作为：延时 + conitnue
@@ -116,9 +122,9 @@ func (ga *GocAgent) ResetProfile(req *ProfileReq, res *ProfileRes) error {
 		return fmt.Errorf("wrong command")
 	}
 
-	*res = `mode: atomic
-qiniu.com/kodo/apiserver/server/main.go:32.49,33.13 1 30
-qiniu.com/kodo/apiserver/server/main.go:42.49,43.13 1 0`
+	resetValues()
+
+	*res = `ok`
 
 	return nil
 }
@@ -161,6 +167,22 @@ func loadFileCover(coverCounters map[string][]uint32, coverBlocks map[string][]t
 	}
 	coverBlocks[fileName] = block
 }
+
+// reset counters
+func resetValues() {
+	{{range $i, $pkgCover := .Covers}}
+	{{range $file, $cover := $pkgCover.Vars}}
+	clearFileCover(_cover.{{$cover.Var}}.Count[:])
+	{{end}}
+	{{end}}
+}
+
+func clearFileCover(counter []uint32) {
+	for i := range counter {
+		counter[i] = 0
+	}
+}
+
 
 // get process meta info for register
 type processInfo struct {

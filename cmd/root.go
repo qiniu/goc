@@ -28,6 +28,7 @@ Find more information at:
  https://github.com/qiniu/goc
 `,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		log.DisplayGoc()
 		// init logger
 		log.NewLogger()
 	},

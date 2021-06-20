@@ -37,4 +37,6 @@ func (b *Build) Build() {
 
 	// inject cover vars
 	cover.Inject()
+
+	// build in the temp project
 }
