@@ -16,6 +16,15 @@ v1 版本中，被插桩的服务会暴露一个 HTTP 接口，由 goc server �
 
 go 语言做网络编程非常适合，非阻塞地处理“粘包”也不麻烦。但设计出来不管是纯二进制的、还是类似 HTTP 的，都不会是通用协议，后续维护和扩展估计是个大坑。
 
+### websocket + net/rpc
+
+与 `websocket + jsonrpc2` 的区别就是没有流式调用，纯 rpc 调用。
+
+在这种模式下，agent 和 goc server 的角色和 rpc 中的角色并不对应。agent 是 rpc server， goc server 是 rpc client。由于 websocket 是长连接，上述角色的倒换是可行的。
+
+1. goc server 发起获取覆盖率 rpc，agent 响应 rpc，goc server 汇总覆盖率
+2. watch 模式下，agent 再开一条 websocket 连接到 goc server，这条连接中角色不再颠倒，goc server 就是 rpc server
+
 ### websocket + jsonrpc2
 
 websocket + jsonrpc2 有流式调用，消息边界。非常适合
@@ -34,16 +43,46 @@ websocket + jsonrpc2 有流式调用，消息边界。非常适合
 
 ### 结论
 
-先使用 websocket + jsonrpc2 来做吧。
+先使用 websocket + net/rpc 来做吧。
 
 ## 协议内容
 
 ### 注册
 
+注册信息放入 websocket url 中，例如：
+
+```
+/v2/internal/ws/rpcstream?cmdline=.%2Fcmd&hostname=nuc&pid=1699804
+```
+
+注册信息为：
+
+1. 完整的命令行
+2. hostname
+3. 进程 PID
+
+goc server 再加上 remote ip 对四个元信息生成一个唯一 hash id，作为该 agent 的 ID。
+
 ### 获取覆盖率
 
+```
+GocAgent.GetProfile
+
+ProfileReq: getprofile
+
+```
+
 ### 清空覆盖率
+
+```
+GocAgent.ResetProfile
+
+ProfileReq: resetprofile
+
+```
 
 ### watch
 
 ### 异常处理
+
+goc server 端遇到 err 就关闭对应 agent 的 websocket 连接。
