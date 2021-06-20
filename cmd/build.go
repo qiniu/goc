@@ -15,6 +15,7 @@ var buildCmd = &cobra.Command{
 
 func init() {
 	buildCmd.Flags().StringVarP(&config.GocConfig.Mode, "mode", "", "count", "coverage mode: set, count, atomic")
+	buildCmd.Flags().StringVarP(&config.GocConfig.Host, "host", "", "127.0.0.1:7777", "specify the host of the goc sever")
 	rootCmd.AddCommand(buildCmd)
 }
 

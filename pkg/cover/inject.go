@@ -7,6 +7,7 @@ import (
 
 	"github.com/qiniu/goc/v2/pkg/config"
 	"github.com/qiniu/goc/v2/pkg/cover/internal/tool"
+	"github.com/qiniu/goc/v2/pkg/cover/internal/websocket"
 	"github.com/qiniu/goc/v2/pkg/log"
 )
 
@@ -50,11 +51,16 @@ func Inject() {
 				}
 			}
 			// 为每个 main 包注入 websocket handler
-			injectCoverHandler(getPkgTmpDir(pkg.Dir), allMainCovers)
+			injectGocAgent(getPkgTmpDir(pkg.Dir), allMainCovers)
 		}
 	}
 	// 在工程根目录注入所有插桩变量的声明+定义
 	injectGlobalCoverVarFile(allDecl)
+	// 添加自定义 websocket 依赖
+	// 用户代码可能有 gorrila/websocket 的依赖，为避免依赖冲突，以及可能的 replace/vendor，
+	// 这里直接注入一份完整的 gorrila/websocket 实现
+	websocket.AddCustomWebsocketDep()
+	log.Donef("websocket library injected")
 
 	log.StopWait()
 	log.Donef("cover variables injected")
@@ -100,20 +106,20 @@ func getPkgTmpDir(pkgDir string) string {
 	return filepath.Join(config.GocConfig.TmpModProjectDir, relDir)
 }
 
-// injectCoverHandler inject handlers like following
+// injectGocAgent inject handlers like following
 //
 // - xxx.go
 // - yyy_package
 // - main.go
-// - goc-http-cover-apis-auto-generated-11111-22222-bridge.go
-// - goc-http-cover-apis-auto-generated-11111-22222-package
+// - goc-cover-agent-apis-auto-generated-11111-22222-bridge.go
+// - goc-cover-agent-apis-auto-generated-11111-22222-package
 //  |
 //  -- init.go
 //
-// 11111_22222_bridge.go just import 11111_22222_package, where package contains ws handlers.
+// 11111_22222_bridge.go 仅仅用于引用 11111_22222_package, where package contains ws agent main logic.
 // 使用 bridge.go 文件是为了避免插桩逻辑中的变量名污染 main 包
-func injectCoverHandler(where string, covers []*config.PackageCover) {
-	injectPkgName := "goc-http-cover-apis-auto-generated-11111-22222-package"
+func injectGocAgent(where string, covers []*config.PackageCover) {
+	injectPkgName := "goc-cover-agent-apis-auto-generated-11111-22222-package"
 	wherePkg := filepath.Join(where, injectPkgName)
 	err := os.MkdirAll(wherePkg, os.ModePerm)
 	if err != nil {
@@ -121,7 +127,7 @@ func injectCoverHandler(where string, covers []*config.PackageCover) {
 	}
 
 	// create bridge file
-	whereBridge := filepath.Join(where, "goc-http-cover-apis-auto-generated-11111-22222-bridge.go")
+	whereBridge := filepath.Join(where, "goc-cover-agent-apis-auto-generated-11111-22222-bridge.go")
 	f, err := os.Create(whereBridge)
 	if err != nil {
 		log.Fatalf("fail to create cover bridge file in temporary project: %v", err)
@@ -138,12 +144,12 @@ func injectCoverHandler(where string, covers []*config.PackageCover) {
 		log.Fatalf("fail to generate cover bridge in temporary project: %v", err)
 	}
 
-	// create ws handler files
+	// create ws agent files
 	dest := filepath.Join(wherePkg, "init.go")
 
 	f, err = os.Create(dest)
 	if err != nil {
-		log.Fatalf("fail to create cover handlers in temporary project: %v", err)
+		log.Fatalf("fail to create cover agent file in temporary project: %v", err)
 	}
 	defer f.Close()
 
@@ -151,14 +157,16 @@ func injectCoverHandler(where string, covers []*config.PackageCover) {
 		Covers                   []*config.PackageCover
 		GlobalCoverVarImportPath string
 		Package                  string
+		Host                     string
 	}{
 		Covers:                   covers,
 		GlobalCoverVarImportPath: config.GocConfig.GlobalCoverVarImportPath,
 		Package:                  injectPkgName,
+		Host:                     config.GocConfig.Host,
 	}
 
 	if err := coverMainTmpl.Execute(f, tmplData); err != nil {
-		log.Fatalf("fail to generate cover handlers in temporary project: %v", err)
+		log.Fatalf("fail to generate cover agent handlers in temporary project: %v", err)
 	}
 }
 
@@ -166,6 +174,8 @@ func injectCoverHandler(where string, covers []*config.PackageCover) {
 func injectGlobalCoverVarFile(decl string) {
 	globalCoverVarPackage := path.Base(config.GocConfig.GlobalCoverVarImportPath)
 	globalCoverDef := filepath.Join(config.GocConfig.TmpModProjectDir, globalCoverVarPackage)
+	config.GocConfig.GlobalCoverVarImportPathDir = globalCoverDef
+
 	err := os.MkdirAll(globalCoverDef, os.ModePerm)
 	if err != nil {
 		log.Fatalf("fail to create global cover definition package dir: %v", err)
