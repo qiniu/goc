@@ -38,7 +38,7 @@ func GetPackagesDir(patterns []string) {
 				// 获取当前 [packages] 所在的目录位置，供后续插桩使用。
 				config.GocConfig.CurPkgDir = filepath.Dir(absp)
 				// 获取二进制名字
-				config.GocConfig.BinaryName = filepath.Base(absp)
+				// config.GocConfig.BinaryName = filepath.Base(absp)
 				return
 			}
 		}
@@ -51,8 +51,11 @@ func GetPackagesDir(patterns []string) {
 	}
 
 	config.GocConfig.CurPkgDir = coverWd
-	config.GocConfig.BinaryName = ""
-	return
+
+	// 是否包含 ...
+	if strings.Contains(patterns[0], "...") {
+		config.GocConfig.ContainSpecialPattern = true
+	}
 }
 
 // goFilesPackage 对一组 go 文件解析，判断是否合法
@@ -97,7 +100,7 @@ func goFilesPackage(gofiles []string) error {
 	return nil
 }
 
-// getDirFromImportPaths return the import path's real directory
+// getDirFromImportPaths return the import path's real abs directory
 //
 // 该函数接收到的只有 dir 或 import path，file 在上一步已被排除
 // 只考虑 go modules 的情况
@@ -134,6 +137,7 @@ func getDirFromImportPaths(patterns []string) (string, error) {
 	case strings.Contains(pattern, "..."):
 		i := strings.Index(pattern, "...")
 		dir, _ := filepath.Split(pattern[:i])
+		dir, _ = filepath.Abs(dir)
 		if _, err := os.Stat(dir); err != nil {
 			return "", fmt.Errorf("error (%w) get directory from the import path: %v", err, pattern)
 		}

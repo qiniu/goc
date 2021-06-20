@@ -3,17 +3,19 @@ package config
 import "time"
 
 type gocConfig struct {
-	Debug            bool
-	ImportPath       string // import path of the project
-	CurPkgDir        string
-	CurModProjectDir string
-	TmpModProjectDir string
-	TmpPkgDir        string
-	BinaryName       string
-	Pkgs             map[string]*Package
-	GOPATH           string
-	GOBIN            string
-	IsMod            bool // deprecated
+	Debug                 bool
+	CurWd                 string
+	Goflags               []string
+	ImportPath            string // import path of the project
+	CurPkgDir             string
+	CurModProjectDir      string
+	TmpModProjectDir      string
+	TmpPkgDir             string
+	ContainSpecialPattern bool // 参数中包含 ...
+	Pkgs                  map[string]*Package
+	GOPATH                string
+	GOBIN                 string
+	IsMod                 bool // deprecated
 
 	GlobalCoverVarImportPath    string
 	GlobalCoverVarImportPathDir string

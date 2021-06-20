@@ -2,7 +2,10 @@ package flag
 
 import (
 	"flag"
+	"os"
+	"path/filepath"
 
+	"github.com/qiniu/goc/v2/pkg/config"
 	"github.com/qiniu/goc/v2/pkg/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -15,7 +18,8 @@ The [goc flags] can be placed in anywhere in the command line.
 However, other flags' order are same with the go official command.
 `
 
-// BuildCmdArgsParse parse both go flags and goc flags, it returns all non-flag arguments.
+// BuildCmdArgsParse parse both go flags and goc flags, it rewrite go flags if
+// necessary, and returns all non-flag arguments.
 //
 // 吞下 [packages] 之前所有的 flags.
 func BuildCmdArgsParse(cmd *cobra.Command, args []string) []string {
@@ -51,6 +55,29 @@ func BuildCmdArgsParse(cmd *cobra.Command, args []string) []string {
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
+
+	// 找出设置的 go flag
+	curWd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("fail to get current working directory: %v", err)
+	}
+	config.GocConfig.CurWd = curWd
+	flags := make([]string, 0)
+	goFlagSets.Visit(func(f *flag.Flag) {
+		// 将用户指定 -o 改成绝对目录
+		if f.Name == "o" {
+			outputDir := f.Value.String()
+			outputDir, err := filepath.Abs(outputDir)
+			if err != nil {
+				log.Fatalf("output flag is not valid: %v", err)
+			}
+			flags = append(flags, "-o", outputDir)
+		} else {
+			flags = append(flags, "-"+f.Name, f.Value.String())
+		}
+	})
+
+	config.GocConfig.Goflags = flags
 
 	return goFlagSets.Args()
 }

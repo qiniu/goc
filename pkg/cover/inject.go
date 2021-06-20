@@ -158,11 +158,13 @@ func injectGocAgent(where string, covers []*config.PackageCover) {
 		GlobalCoverVarImportPath string
 		Package                  string
 		Host                     string
+		Mode                     string
 	}{
 		Covers:                   covers,
 		GlobalCoverVarImportPath: config.GocConfig.GlobalCoverVarImportPath,
 		Package:                  injectPkgName,
 		Host:                     config.GocConfig.Host,
+		Mode:                     config.GocConfig.Mode,
 	}
 
 	if err := coverMainTmpl.Execute(f, tmplData); err != nil {

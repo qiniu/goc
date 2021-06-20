@@ -56,6 +56,7 @@ func init() {
 			time.Sleep(waitDelay)
 			continue
 		}
+		log.Printf("[goc][Info] connected to goc server")
 
 		rwc := &ReadWriteCloser{ws: ws}
 		s := rpc.NewServer()
@@ -65,6 +66,7 @@ func init() {
 		// exit rpc server, close ws connection
 		ws.Close()
 		time.Sleep(waitDelay)
+		log.Printf("[goc][Error] connection to goc server broken", )
 	}
 }
 
@@ -84,7 +86,7 @@ func (ga *GocAgent) GetProfile(req *ProfileReq, res *ProfileRes) error {
 	}
 
 	w := new(strings.Builder)
-	fmt.Fprint(w, "south north")
+	fmt.Fprint(w, "mode: {{.Mode}}\n")
 
 	counters, blocks := loadValues()
 	var active, total int64

@@ -19,11 +19,10 @@ func (b *Build) readProjectMetaInfo() {
 	// get gopath & gobin
 	config.GocConfig.GOPATH = b.readGOPATH()
 	config.GocConfig.GOBIN = b.readGOBIN()
-	// 获取当前目录及其依赖的 package list
-	config.GocConfig.Pkgs = b.listPackages(config.GocConfig.CurPkgDir)
+	// 获取 [packages] 及其依赖的 package list
+	pkgs := b.listPackages(config.GocConfig.CurPkgDir)
 
 	// get mod info
-	pkgs := config.GocConfig.Pkgs
 	for _, pkg := range pkgs {
 		// check if go modules is enabled
 		if pkg.Module == nil {
@@ -34,6 +33,13 @@ func (b *Build) readProjectMetaInfo() {
 		config.GocConfig.ImportPath = pkg.Module.Path
 
 		break
+	}
+
+	// 如果包目录不是工程根目录，那再次 go list 一次，获取整个工程的包信息
+	if config.GocConfig.CurPkgDir != config.GocConfig.CurModProjectDir {
+		config.GocConfig.Pkgs = b.listPackages(config.GocConfig.CurModProjectDir)
+	} else {
+		config.GocConfig.Pkgs = pkgs
 	}
 
 	// get tmp folder name
@@ -47,7 +53,6 @@ func (b *Build) readProjectMetaInfo() {
 
 // displayProjectMetaInfo prints basic infomation of this project to stdout
 func (b *Build) displayProjectMetaInfo() {
-	log.Infof("Project Infomation")
 	log.Infof("GOPATH: %v", config.GocConfig.GOPATH)
 	log.Infof("GOBIN: %v", config.GocConfig.GOBIN)
 	log.Infof("Project Directory: %v", config.GocConfig.CurModProjectDir)
