@@ -2,7 +2,6 @@ package server
 
 import (
 	"net/rpc"
-	"strconv"
 	"sync"
 	"time"
 
@@ -35,9 +34,8 @@ type gocCoveredAgent struct {
 	once   sync.Once `json:"-"` // 保护 close(exitCh) 只执行一次
 }
 
-func RunGocServerUntilExit(port int) {
+func RunGocServerUntilExit(host string) {
 	gs := gocServer{
-		port:      port,
 		storePath: "",
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:   4096,
@@ -60,5 +58,5 @@ func RunGocServerUntilExit(port int) {
 		v2.GET("/internal/ws/watchstream", nil)
 	}
 
-	r.Run(":" + strconv.Itoa(port))
+	r.Run(host)
 }
