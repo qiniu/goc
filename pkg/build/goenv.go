@@ -20,7 +20,7 @@ func (b *Build) readProjectMetaInfo() {
 	config.GocConfig.GOPATH = b.readGOPATH()
 	config.GocConfig.GOBIN = b.readGOBIN()
 	// 获取 [packages] 及其依赖的 package list
-	pkgs := b.listPackages(config.GocConfig.CurPkgDir)
+	pkgs := b.listPackages(config.GocConfig.CurWd)
 
 	// get mod info
 	for _, pkg := range pkgs {
@@ -35,8 +35,8 @@ func (b *Build) readProjectMetaInfo() {
 		break
 	}
 
-	// 如果包目录不是工程根目录，那再次 go list 一次，获取整个工程的包信息
-	if config.GocConfig.CurPkgDir != config.GocConfig.CurModProjectDir {
+	// 如果当前目录不是工程根目录，那再次 go list 一次，获取整个工程的包信息
+	if config.GocConfig.CurWd != config.GocConfig.CurModProjectDir {
 		config.GocConfig.Pkgs = b.listPackages(config.GocConfig.CurModProjectDir)
 	} else {
 		config.GocConfig.Pkgs = pkgs
@@ -44,8 +44,8 @@ func (b *Build) readProjectMetaInfo() {
 
 	// get tmp folder name
 	config.GocConfig.TmpModProjectDir = filepath.Join(os.TempDir(), tmpFolderName(config.GocConfig.CurModProjectDir))
-	// get cur pkg dir in the corresponding tmp dir
-	config.GocConfig.TmpPkgDir = filepath.Join(config.GocConfig.TmpModProjectDir, config.GocConfig.CurPkgDir[len(config.GocConfig.CurModProjectDir):])
+	// get working dir in the corresponding tmp dir
+	config.GocConfig.TmpWd = filepath.Join(config.GocConfig.TmpModProjectDir, config.GocConfig.CurWd[len(config.GocConfig.CurModProjectDir):])
 	// get GlobalCoverVarImportPath
 	config.GocConfig.GlobalCoverVarImportPath = path.Join(config.GocConfig.ImportPath, tmpFolderName(config.GocConfig.CurModProjectDir))
 	log.Donef("project meta information parsed")

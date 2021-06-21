@@ -2,12 +2,12 @@ package flag
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/qiniu/goc/v2/pkg/config"
+	"github.com/qiniu/goc/v2/pkg/log"
 )
 
 // GetPackagesDir parse [pacakges] part of args, it will fatal if error encountered
@@ -19,6 +19,7 @@ import (
 // 如果 [packages] 非法（即不符合 go 原生的定义），则返回对应错误
 // 这里只考虑 go mod 的方式
 func GetPackagesDir(patterns []string) {
+	packages := make([]string, 0)
 	for _, p := range patterns {
 		// patterns 只支持两种格式
 		// 1. 要么是直接指向某些 .go 文件的相对/绝对路径
@@ -29,33 +30,27 @@ func GetPackagesDir(patterns []string) {
 					log.Fatalf("%v", err)
 				}
 
-				// 获取绝对路径
-				absp, err := filepath.Abs(p)
-				if err != nil {
-					log.Fatalf("%v", err)
+				// 获取相对于 current working directory 对路径
+				for _, p := range patterns {
+					if filepath.IsAbs(p) {
+						relPath, err := filepath.Rel(config.GocConfig.CurWd, p)
+						if err != nil {
+							log.Fatalf("fail to get [packages] relative path from current working directory: %v", err)
+						}
+						packages = append(packages, relPath)
+					} else {
+						packages = append(packages, p)
+					}
 				}
+				config.GocConfig.Packages = packages
 
-				// 获取当前 [packages] 所在的目录位置，供后续插桩使用。
-				config.GocConfig.CurPkgDir = filepath.Dir(absp)
-				// 获取二进制名字
-				// config.GocConfig.BinaryName = filepath.Base(absp)
 				return
 			}
 		}
 	}
 
 	// 2. 要么是 import path
-	coverWd, err := getDirFromImportPaths(patterns)
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
-
-	config.GocConfig.CurPkgDir = coverWd
-
-	// 是否包含 ...
-	if strings.Contains(patterns[0], "...") {
-		config.GocConfig.ContainSpecialPattern = true
-	}
+	config.GocConfig.Packages = patterns
 }
 
 // goFilesPackage 对一组 go 文件解析，判断是否合法

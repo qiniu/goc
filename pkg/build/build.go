@@ -41,7 +41,8 @@ func NewBuild(cmd *cobra.Command, args []string) *Build {
 func (b *Build) Build() {
 	// 1. 拷贝至临时目录
 	b.copyProjectToTmp()
-	// defer b.clean()
+	defer b.clean()
+
 	log.Donef("project copied to temporary directory")
 	// 2. inject cover vars
 	cover.Inject()
@@ -50,6 +51,8 @@ func (b *Build) Build() {
 }
 
 func (b *Build) doBuildInTemp() {
+	log.StartWait("building the injected project")
+
 	goflags := config.GocConfig.Goflags
 	// 检查用户是否自定义了 -o
 	oSet := false
@@ -64,22 +67,19 @@ func (b *Build) doBuildInTemp() {
 		goflags = append(goflags, "-o", config.GocConfig.CurWd)
 	}
 
-	pacakges := config.GocConfig.TmpPkgDir
-	if config.GocConfig.ContainSpecialPattern {
-		pacakges = pacakges + "/..."
-	}
+	pacakges := config.GocConfig.Packages
 
-	goflags = append(goflags, pacakges)
+	goflags = append(goflags, pacakges...)
 
 	args := []string{"build"}
 	args = append(args, goflags...)
 	// go 命令行由 go build [-o output] [build flags] [packages] 组成
 	cmd := exec.Command("go", args...)
-	cmd.Dir = config.GocConfig.TmpModProjectDir
+	cmd.Dir = config.GocConfig.TmpWd
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	log.Infof("go build cmd is: %v", cmd.Args)
+	log.Infof("go build cmd is: %v, in path [%v]", cmd.Args, cmd.Dir)
 	if err := cmd.Start(); err != nil {
 		log.Fatalf("fail to execute go build: %v", err)
 	}
@@ -88,5 +88,6 @@ func (b *Build) doBuildInTemp() {
 	}
 
 	// done
+	log.StopWait()
 	log.Donef("go build done")
 }

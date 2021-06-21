@@ -3,25 +3,24 @@ package config
 import "time"
 
 type gocConfig struct {
-	Debug                 bool
-	CurWd                 string
-	Goflags               []string
-	ImportPath            string // import path of the project
-	CurPkgDir             string
-	CurModProjectDir      string
-	TmpModProjectDir      string
-	TmpPkgDir             string
-	ContainSpecialPattern bool // 参数中包含 ...
-	Pkgs                  map[string]*Package
-	GOPATH                string
-	GOBIN                 string
-	IsMod                 bool // deprecated
+	Debug bool
+	Host  string
+	Mode  string // cover mode
 
+	GOPATH           string
+	GOBIN            string
+	CurWd            string
+	TmpWd            string
+	CurModProjectDir string
+	TmpModProjectDir string
+
+	Goflags  []string // command line flags
+	Packages []string // command line [packages]
+
+	ImportPath                  string // the whole import path of the project
+	Pkgs                        map[string]*Package
 	GlobalCoverVarImportPath    string
 	GlobalCoverVarImportPathDir string
-
-	Host string
-	Mode string // cover mode
 }
 
 // GocConfig 全局变量，存放 goc 的各种元属性
