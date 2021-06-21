@@ -108,11 +108,11 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 }
 
 func (gs *gocServer) wsping(ws *websocket.Conn, deadline time.Duration) error {
-	return ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(deadline*time.Second))
+	return ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(deadline))
 }
 
 func (gs *gocServer) wsclose(ws *websocket.Conn, deadline time.Duration) error {
-	return ws.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(deadline*time.Second))
+	return ws.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(deadline))
 }
 
 // generateClientId generate id based on client's meta infomation
