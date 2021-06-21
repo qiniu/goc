@@ -18,7 +18,7 @@ var serverCmd = &cobra.Command{
 func init() {
 	// serverCmd.Flags().IntVarP(&config.GocConfig.Port, "port", "", 7777, "listen port to start a coverage host center")
 	// serverCmd.Flags().StringVarP(&config.GocConfig.StorePath, "storepath", "", "goc.store", "the file to save all goc server information")
-	serverCmd.Flags().StringVarP(&config.GocConfig.Host, "host", "", "0.0.0.0:7777", "specify the host of the goc server")
+	serverCmd.Flags().StringVarP(&config.GocConfig.Host, "host", "", "127.0.0.1:7777", "specify the host of the goc server")
 	rootCmd.AddCommand(serverCmd)
 }
 

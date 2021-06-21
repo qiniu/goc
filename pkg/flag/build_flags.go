@@ -85,11 +85,17 @@ func BuildCmdArgsParse(cmd *cobra.Command, args []string) []string {
 func findAndDelGocFlag(a []string, x string) []string {
 	new := make([]string, 0, len(a))
 	x = "--" + x
-	for _, v := range a {
-		if v == x {
+	for i := 0; i < len(a); i++ {
+		if a[i] == "--debug" {
+			// debug 是 bool，就一个元素
+			continue
+		} else if a[i] == x {
+			// 其他 goc flag 都是两个元素
+			i++
 			continue
 		} else {
-			new = append(new, v)
+			// 剩下的是 go flag
+			new = append(new, a[i])
 		}
 	}
 
