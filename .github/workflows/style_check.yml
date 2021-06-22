@@ -1,0 +1,39 @@
+name: style-check
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the master branch
+  push:
+    paths-ignore:
+      - '**.md'
+      - '**.png'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '**.png'
+jobs:
+  run:
+    name: vet and gofmt
+    strategy:
+      matrix:
+        go-version: [1.16.x]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      # This step checks out a copy of your repository.
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Go vet check
+        run: |
+          go vet ./...
+      - name: Gofmt check
+        run: |
+          diff=`find . -name "*.go" | xargs gofmt -s -d`
+          if [[ -n "${diff}" ]]; then
+               echo "Gofmt check failed :"
+               echo "${diff}"
+               echo "Please run this command to fix: [find . -name "*.go" | xargs gofmt -s -w]"
+               exit 1
+          fi
