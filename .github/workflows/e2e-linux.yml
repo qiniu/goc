@@ -1,4 +1,4 @@
-name: e2e test
+name: linux/macos e2e test
 on:
   # Trigger the workflow on push or pull request,
   # but only for the master branch
@@ -13,7 +13,10 @@ on:
 jobs:
   job_1:
     name: Build goc binary
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Install Go
         uses: actions/setup-go@v2
@@ -27,13 +30,3 @@ jobs:
       - name: Use goc to build self
         run: |
           ./goc build -o ./gocc .
-      - name: Upload goc binary
-        uses: actions/upload-artifact@v2
-        with:
-          name: goc
-          path: goc
-      - name: Upload covered self goc binary
-        uses: actions/upload-artifact@v2
-        with:
-          name: gocc
-          path: gocc
