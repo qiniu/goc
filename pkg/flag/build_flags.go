@@ -44,7 +44,7 @@ func BuildCmdArgsParse(cmd *cobra.Command, args []string) []string {
 
 	// 删除 cobra 定义的 flag
 	allFlagSets.Visit(func(f *pflag.Flag) {
-		args = findAndDelGocFlag(args, f.Name)
+		args = findAndDelGocFlag(args, f.Name, f.Value.String())
 	})
 
 	// 然后解析 go 的 flag
@@ -82,16 +82,20 @@ func BuildCmdArgsParse(cmd *cobra.Command, args []string) []string {
 	return goFlagSets.Args()
 }
 
-func findAndDelGocFlag(a []string, x string) []string {
+func findAndDelGocFlag(a []string, x string, v string) []string {
 	new := make([]string, 0, len(a))
 	x = "--" + x
+	x_v := x + "=" + v
 	for i := 0; i < len(a); i++ {
 		if a[i] == "--debug" {
 			// debug 是 bool，就一个元素
 			continue
 		} else if a[i] == x {
-			// 其他 goc flag 都是两个元素
+			// 有 goc flag 长这样 --mode watch
 			i++
+			continue
+		} else if a[i] == x_v {
+			// 有 goc flag 长这样 --mode=watch
 			continue
 		} else {
 			// 剩下的是 go flag
