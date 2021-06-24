@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/qiniu/goc/v2/pkg/build"
+	"github.com/qiniu/goc/v2/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -13,6 +14,8 @@ var installCmd = &cobra.Command{
 }
 
 func init() {
+	installCmd.Flags().StringVarP(&config.GocConfig.Mode, "mode", "", "count", "coverage mode: set, count, atomic, watch")
+	installCmd.Flags().StringVarP(&config.GocConfig.Host, "host", "", "127.0.0.1:7777", "specify the host of the goc sever")
 	rootCmd.AddCommand(installCmd)
 }
 
