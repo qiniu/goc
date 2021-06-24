@@ -53,11 +53,11 @@ func init() {
 			rpcstreamUrl := fmt.Sprintf("ws://%v/v2/internal/ws/rpcstream?%v", host, v.Encode())
 			ws, _, err := dialer.Dial(rpcstreamUrl, nil)
 			if err != nil {
-				log.Printf("[goc][Error] fail to dial to goc server: %v", err)
+				log.Printf("[goc][Error] rpc fail to dial to goc server: %v", err)
 				time.Sleep(waitDelay)
 				continue
 			}
-			log.Printf("[goc][Info] connected to goc server")
+			log.Printf("[goc][Info] rpc connected to goc server")
 
 			rwc := &ReadWriteCloser{ws: ws}
 			s := rpc.NewServer()
@@ -67,7 +67,7 @@ func init() {
 			// exit rpc server, close ws connection
 			ws.Close()
 			time.Sleep(waitDelay)
-			log.Printf("[goc][Error] connection to goc server broken", )
+			log.Printf("[goc][Error] rpc connection to goc server broken", )
 		}
 	}()
 }

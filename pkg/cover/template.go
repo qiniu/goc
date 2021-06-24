@@ -19,3 +19,8 @@ var coverMainTmpl = template.Must(template.New("coverMain").Parse(coverMain))
 
 //go:embed agent.tpl
 var coverMain string
+
+var coverWatchTmpl = template.Must(template.New("coverWatch").Parse(coverWatch))
+
+//go:embed agentwatch.tpl
+var coverWatch string

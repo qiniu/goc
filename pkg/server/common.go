@@ -16,6 +16,14 @@ type ProfileReq string
 
 type ProfileRes string
 
+func (gs *gocServer) wsping(ws *websocket.Conn, deadline time.Duration) error {
+	return ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(deadline))
+}
+
+func (gs *gocServer) wsclose(ws *websocket.Conn, deadline time.Duration) error {
+	return ws.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(deadline))
+}
+
 type ReadWriteCloser struct {
 	ws *websocket.Conn
 	r  io.Reader

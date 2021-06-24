@@ -12,11 +12,11 @@ import (
 	"k8s.io/test-infra/gopherage/pkg/cov"
 )
 
-// listServices return all service informations
-func (gs *gocServer) listServices(c *gin.Context) {
+// listAgents return all service informations
+func (gs *gocServer) listAgents(c *gin.Context) {
 	agents := make([]*gocCoveredAgent, 0)
 
-	gs.rpcClients.Range(func(key, value interface{}) bool {
+	gs.rpcAgents.Range(func(key, value interface{}) bool {
 		agent, ok := value.(*gocCoveredAgent)
 		if !ok {
 			return false
@@ -39,7 +39,7 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 
 	mergedProfiles := make([][]*cover.Profile, 0)
 
-	gs.rpcClients.Range(func(key, value interface{}) bool {
+	gs.rpcAgents.Range(func(key, value interface{}) bool {
 		agent, ok := value.(*gocCoveredAgent)
 		if !ok {
 			return false
@@ -127,7 +127,7 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 //
 // it is async, the function will return immediately
 func (gs *gocServer) resetProfiles(c *gin.Context) {
-	gs.rpcClients.Range(func(key, value interface{}) bool {
+	gs.rpcAgents.Range(func(key, value interface{}) bool {
 		agent, ok := value.(gocCoveredAgent)
 		if !ok {
 			return false
@@ -148,4 +148,53 @@ func (gs *gocServer) resetProfiles(c *gin.Context) {
 
 		return true
 	})
+}
+
+// watchProfileUpdate watch the profile change
+//
+// any profile change will be updated on this websocket connection.
+func (gs *gocServer) watchProfileUpdate(c *gin.Context) {
+	// upgrade to websocket
+	ws, err := gs.upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		log.Errorf("fail to establish websocket connection with watch client: %v", err)
+		c.JSON(http.StatusInternalServerError, nil)
+	}
+
+	log.Infof("watch client connected")
+
+	id := time.Now().String()
+	gwc := &gocWatchClient{
+		ws:     ws,
+		exitCh: make(chan int),
+	}
+	gs.watchClients.Store(id, gwc)
+	// send close msg and close ws connection
+	defer func() {
+		gs.watchClients.Delete(id)
+		ws.Close()
+		gwc.once.Do(func() { close(gwc.exitCh) })
+		log.Infof("watch client disconnected")
+	}()
+
+	// set pong handler
+	ws.SetReadDeadline(time.Now().Add(PongWait))
+	ws.SetPongHandler(func(string) error {
+		ws.SetReadDeadline(time.Now().Add(PongWait))
+		return nil
+	})
+
+	// set ping goroutine to ping every PingWait time
+	go func() {
+		ticker := time.NewTicker(PingWait)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			if err := gs.wsping(ws, PongWait); err != nil {
+				break
+			}
+		}
+	}()
+
+	<-gwc.exitCh
 }

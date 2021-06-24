@@ -72,7 +72,7 @@ type PackageCover struct {
 
 // FileVar holds the name of the generated coverage variables targeting the named file.
 type FileVar struct {
-	File string
+	File string // 这里其实不是文件名，是 importpath + filename
 	Var  string
 }
 

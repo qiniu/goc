@@ -48,7 +48,7 @@ func tmpFolderName(path string) string {
 	sum := sha256.Sum256([]byte(path))
 	h := fmt.Sprintf("%x", sum[:6])
 
-	return "goc-build-" + h
+	return "gocbuild" + h
 }
 
 // skipCopy skip copy .git dir and irregular files

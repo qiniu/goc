@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"github.com/qiniu/goc/v2/pkg/log"
 )
 
@@ -27,16 +26,16 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 
 	if hostname == "" || pid == "" || cmdline == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"msg": "missing some param",
+			"msg": "missing some params",
 		})
 		return
 	}
 	// 计算插桩服务 id
-	clientId := gs.generateClientId(remoteIP.String(), hostname, cmdline, pid)
+	agentId := gs.generateAgentId(remoteIP.String(), hostname, cmdline, pid)
 	// 检查 id 是否重复
-	if _, ok := gs.rpcClients.Load(clientId); ok {
+	if _, ok := gs.rpcAgents.Load(agentId); ok {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"msg": "client already exist",
+			"msg": "the rpc agent already exists",
 		})
 		return
 	}
@@ -52,7 +51,7 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 	// upgrade to websocket
 	ws, err := gs.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Errorf("fail to establish websocket connection with client: %v", err)
+		log.Errorf("fail to establish websocket connection with rpc agent: %v", err)
 		c.JSON(http.StatusInternalServerError, nil)
 	}
 
@@ -63,9 +62,9 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 		gs.wsclose(ws, deadline)
 		time.Sleep(deadline)
 		// 从维护的 websocket 链接字典中移除
-		gs.rpcClients.Delete(clientId)
+		gs.rpcAgents.Delete(agentId)
 		ws.Close()
-		log.Infof("close connection, %v", hostname)
+		log.Infof("close rpc connection, %v", hostname)
 	}()
 
 	// set pong handler
@@ -82,7 +81,7 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 
 		for range ticker.C {
 			if err := gs.wsping(ws, PongWait); err != nil {
-				log.Errorf("ping to %v failed: %v", hostname, err)
+				log.Errorf("rpc ping to %v failed: %v", hostname, err)
 				break
 			}
 		}
@@ -92,8 +91,8 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 		})
 	}()
 
-	log.Infof("one client established, %v, cmdline: %v, pid: %v, hostname: %v", ws.RemoteAddr(), cmdline, pid, hostname)
-	// new rpc client
+	log.Infof("one rpc agent established, %v, cmdline: %v, pid: %v, hostname: %v", ws.RemoteAddr(), cmdline, pid, hostname)
+	// new rpc agent
 	// 在这里 websocket server 作为 rpc 的客户端，
 	// 发送 rpc 请求，
 	// 由被插桩服务返回 rpc 应答
@@ -101,22 +100,14 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 	codec := jsonrpc.NewClientCodec(rwc)
 
 	gocA.rpc = rpc.NewClientWithCodec(codec)
-	gocA.Id = string(clientId)
-	gs.rpcClients.Store(clientId, gocA)
+	gocA.Id = string(agentId)
+	gs.rpcAgents.Store(agentId, gocA)
 	// wait for exit
 	<-gocA.exitCh
 }
 
-func (gs *gocServer) wsping(ws *websocket.Conn, deadline time.Duration) error {
-	return ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(deadline))
-}
-
-func (gs *gocServer) wsclose(ws *websocket.Conn, deadline time.Duration) error {
-	return ws.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(deadline))
-}
-
-// generateClientId generate id based on client's meta infomation
-func (gs *gocServer) generateClientId(args ...string) gocCliendId {
+// generateAgentId generate id based on agent's meta infomation
+func (gs *gocServer) generateAgentId(args ...string) gocCliendId {
 	var path string
 	for _, arg := range args {
 		path += arg

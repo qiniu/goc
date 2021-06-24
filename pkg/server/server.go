@@ -1,6 +1,7 @@
 package server
 
 import (
+	"net/http"
 	"net/rpc"
 	"sync"
 	"time"
@@ -15,8 +16,10 @@ type gocServer struct {
 	storePath string
 	upgrader  websocket.Upgrader
 
-	rpcClients sync.Map
-	// mu         sync.Mutex // used to protect concurrent rpc call to agent
+	rpcAgents    sync.Map
+	watchAgents  sync.Map
+	watchCh      chan []byte
+	watchClients sync.Map
 }
 
 type gocCliendId string
@@ -34,6 +37,13 @@ type gocCoveredAgent struct {
 	once   sync.Once `json:"-"` // 保护 close(exitCh) 只执行一次
 }
 
+//  api 客户端，不是 agent
+type gocWatchClient struct {
+	ws     *websocket.Conn
+	exitCh chan int
+	once   sync.Once
+}
+
 func RunGocServerUntilExit(host string) {
 	gs := gocServer{
 		storePath: "",
@@ -41,7 +51,11 @@ func RunGocServerUntilExit(host string) {
 			ReadBufferSize:   4096,
 			WriteBufferSize:  4096,
 			HandshakeTimeout: 45 * time.Second,
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
 		},
+		watchCh: make(chan []byte),
 	}
 
 	r := gin.Default()
@@ -49,14 +63,17 @@ func RunGocServerUntilExit(host string) {
 	{
 		v2.GET("/cover/profile", gs.getProfiles)
 		v2.DELETE("/cover/profile", gs.resetProfiles)
-		v2.GET("/services", gs.listServices)
+		v2.GET("/rpcagents", gs.listAgents)
+		v2.GET("/watchagents", nil)
 
-		v2.GET("/cover/ws/watch", nil)
+		v2.GET("/cover/ws/watch", gs.watchProfileUpdate)
 
 		// internal use only
 		v2.GET("/internal/ws/rpcstream", gs.serveRpcStream)
-		v2.GET("/internal/ws/watchstream", nil)
+		v2.GET("/internal/ws/watchstream", gs.serveWatchInternalStream)
 	}
+
+	go gs.watchLoop()
 
 	r.Run(host)
 }
