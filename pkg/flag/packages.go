@@ -42,6 +42,10 @@ func GetPackagesDir(patterns []string) {
 						packages = append(packages, p)
 					}
 				}
+				// fix: go build ./xx/main.go 需要转换为
+				// go build ./xx/main.go ./xx/goc-cover-agent-apis-auto-generated-11111-22222-bridge.go
+				dir := filepath.Dir(packages[0])
+				packages = append(packages, filepath.Join(dir, "goc-cover-agent-apis-auto-generated-11111-22222-bridge.go"))
 				config.GocConfig.Packages = packages
 
 				return
