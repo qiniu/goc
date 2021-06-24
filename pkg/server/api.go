@@ -194,6 +194,8 @@ func (gs *gocServer) watchProfileUpdate(c *gin.Context) {
 				break
 			}
 		}
+
+		gwc.once.Do(func() { close(gwc.exitCh) })
 	}()
 
 	<-gwc.exitCh
