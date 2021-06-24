@@ -135,10 +135,11 @@ func injectGocAgent(where string, covers []*config.PackageCover) {
 
 	// create bridge file
 	whereBridge := filepath.Join(where, injectBridgeName)
-	f, err := os.Create(whereBridge)
+	f1, err := os.Create(whereBridge)
 	if err != nil {
 		log.Fatalf("fail to create cover bridge file in temporary project: %v", err)
 	}
+	defer f1.Close()
 
 	tmplBridgeData := struct {
 		CoverImportPath string
@@ -147,18 +148,18 @@ func injectGocAgent(where string, covers []*config.PackageCover) {
 		CoverImportPath: covers[0].Package.ImportPath + "/" + injectPkgName,
 	}
 
-	if err := coverBridgeTmpl.Execute(f, tmplBridgeData); err != nil {
+	if err := coverBridgeTmpl.Execute(f1, tmplBridgeData); err != nil {
 		log.Fatalf("fail to generate cover bridge in temporary project: %v", err)
 	}
 
 	// create ws agent files
 	dest := filepath.Join(wherePkg, "init.go")
 
-	f, err = os.Create(dest)
+	f2, err := os.Create(dest)
 	if err != nil {
 		log.Fatalf("fail to create cover agent file in temporary project: %v", err)
 	}
-	defer f.Close()
+	defer f2.Close()
 
 	var _coverMode string
 	if config.GocConfig.Mode == "watch" {
@@ -180,7 +181,7 @@ func injectGocAgent(where string, covers []*config.PackageCover) {
 		Mode:                     _coverMode,
 	}
 
-	if err := coverMainTmpl.Execute(f, tmplData); err != nil {
+	if err := coverMainTmpl.Execute(f2, tmplData); err != nil {
 		log.Fatalf("fail to generate cover agent handlers in temporary project: %v", err)
 	}
 }
