@@ -69,7 +69,7 @@ func skipCopy(src string, info os.FileInfo) (bool, error) {
 func (b *Build) clean() {
 	if config.GocConfig.Debug != true {
 		if err := os.RemoveAll(config.GocConfig.TmpModProjectDir); err != nil {
-			log.Fatalf("fail to delete the temporary project: %v", config.GocConfig.TmpModProjectDir)
+			log.Fatalf("fail to delete the temporary project: %v", err)
 		}
 		log.Donef("delete the temporary project")
 	} else {

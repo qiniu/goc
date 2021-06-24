@@ -74,11 +74,7 @@ func (gs *gocServer) serveWatchInternalStream(c *gin.Context) {
 			break
 		}
 		if mt == websocket.TextMessage {
-			// 非阻塞写
-			select {
-			case gs.watchCh <- message:
-			default:
-			}
+			gs.watchCh <- message
 		}
 	}
 }

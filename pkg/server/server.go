@@ -55,7 +55,7 @@ func RunGocServerUntilExit(host string) {
 				return true
 			},
 		},
-		watchCh: make(chan []byte),
+		watchCh: make(chan []byte, 4096),
 	}
 
 	r := gin.Default()
