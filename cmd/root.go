@@ -1,12 +1,9 @@
 /*
  Copyright 2020 Qiniu Cloud (qiniu.com)
-
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
-
      http://www.apache.org/licenses/LICENSE-2.0
-
  Unless required by applicable law or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,15 +14,9 @@
 package cmd
 
 import (
-	"os"
-	"path/filepath"
-	"runtime"
-	"strconv"
-	"time"
-
-	log "github.com/sirupsen/logrus"
+	"github.com/qiniu/goc/v2/pkg/config"
+	"github.com/qiniu/goc/v2/pkg/log"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var rootCmd = &cobra.Command{
@@ -37,52 +28,22 @@ Find more information at:
  https://github.com/qiniu/goc
 `,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		log.SetReportCaller(true)
-		log.SetLevel(log.InfoLevel)
-		log.SetFormatter(&log.TextFormatter{
-			FullTimestamp: true,
-			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-				dirname, filename := filepath.Split(f.File)
-				lastelem := filepath.Base(dirname)
-				filename = filepath.Join(lastelem, filename)
-				line := strconv.Itoa(f.Line)
-				return "", "[" + filename + ":" + line + "]"
-			},
-		})
-		if debugGoc == false {
-			// we only need log in debug mode
-			log.SetLevel(log.FatalLevel)
-			log.SetFormatter(&log.TextFormatter{
-				DisableTimestamp: true,
-				CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-					return "", ""
-				},
-			})
-		}
+		log.DisplayGoc()
+		// init logger
+		log.NewLogger()
 	},
-	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		if debugInCISyncFile != "" {
-			f, err := os.Create(debugInCISyncFile)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			defer f.Close()
 
-			time.Sleep(5 * time.Second)
-		}
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		log.Sync()
 	},
 }
 
 func init() {
-	rootCmd.PersistentFlags().BoolVar(&debugGoc, "debug", false, "run goc in debug mode")
-	rootCmd.PersistentFlags().StringVar(&debugInCISyncFile, "debugcisyncfile", "", "internal use only, no explain")
-	rootCmd.PersistentFlags().MarkHidden("debugcisyncfile")
-	viper.BindPFlags(rootCmd.PersistentFlags())
+	rootCmd.PersistentFlags().BoolVar(&config.GocConfig.Debug, "debug", false, "run goc in debug mode")
 }
 
 // Execute the goc tool
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatalln(err)
 	}
 }

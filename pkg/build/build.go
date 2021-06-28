@@ -1,168 +1,93 @@
-/*
- Copyright 2020 Qiniu Cloud (qiniu.com)
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
-*/
-
 package build
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"strings"
 
-	"github.com/qiniu/goc/pkg/cover"
-	log "github.com/sirupsen/logrus"
+	"github.com/qiniu/goc/v2/pkg/config"
+	"github.com/qiniu/goc/v2/pkg/cover"
+	"github.com/qiniu/goc/v2/pkg/flag"
+	"github.com/qiniu/goc/v2/pkg/log"
+	"github.com/spf13/cobra"
 )
 
-// Build is to describe the building/installing process of a goc build/install
+// Build struct a build
+// most configurations are stored in global variables: config.GocConfig & config.GoConfig
 type Build struct {
-	Pkgs          map[string]*cover.Package // Pkg list parsed from "go list -json ./..." command
-	NewGOPATH     string                    // the new GOPATH
-	OriGOPATH     string                    // the original GOPATH
-	WorkingDir    string                    // the working directory
-	TmpDir        string                    // the temporary directory to build the project
-	TmpWorkingDir string                    // the working directory in the temporary directory, which is corresponding to the current directory in the project directory
-	IsMod         bool                      // determine whether it is a Mod project
-	Root          string
-	// go 1.11, go 1.12 has no Root
-	// Project Root:
-	// 1. legacy, root == GOPATH
-	// 2. mod, root == go.mod Dir
-	ModRoot     string // path for go.mod
-	ModRootPath string // import path for the whole project
-	Target      string // the binary name that go build generate
-	// keep compatible with go commands:
-	// go run [build flags] [-exec xprog] package [arguments...]
-	// go build [-o output] [-i] [build flags] [packages]
-	// go install [-i] [build flags] [packages]
-	BuildFlags     string // Build flags
-	Packages       string // Packages that needs to build
-	GoRunExecFlag  string // for the -exec flags in go run command
-	GoRunArguments string // for the '[arguments]' parameters in go run command
-
-	OneMainPackage           bool   // whether this build is a go build or go install? true: build, false: install
-	GlobalCoverVarImportPath string // Importpath for storing cover variables
-	GlobalCoverVarFilePath   string // Importpath for storing cover variables
 }
 
-// NewBuild creates a Build struct which can build from goc temporary directory,
-// and generate binary in current working directory
-func NewBuild(buildflags string, args []string, workingDir string, outputDir string) (*Build, error) {
-	if err := checkParameters(args, workingDir); err != nil {
-		return nil, err
-	}
-	// buildflags = buildflags + " -o " + outputDir
-	b := &Build{
-		BuildFlags: buildflags,
-		Packages:   strings.Join(args, " "),
-		WorkingDir: workingDir,
-	}
-	if false == b.validatePackageForBuild() {
-		log.Errorln(ErrWrongPackageTypeForBuild)
-		return nil, ErrWrongPackageTypeForBuild
-	}
-	if err := b.MvProjectsToTmp(); err != nil {
-		return nil, err
-	}
-	dir, err := b.determineOutputDir(outputDir)
-	b.Target = dir
-	if err != nil {
-		return nil, err
-	}
-	return b, nil
+// NewBuild creates a Build struct
+//
+// consumes args, get package dirs, read project meta info.
+func NewBuild(cmd *cobra.Command, args []string) *Build {
+	b := &Build{}
+	// 1. 解析 goc 命令行和 go 命令行
+	remainedArgs := flag.BuildCmdArgsParse(cmd, args)
+	// 2. 解析 go 包位置
+	flag.GetPackagesDir(remainedArgs)
+	// 3. 读取工程元信息：go.mod, pkgs list ...
+	b.readProjectMetaInfo()
+	// 4. 展示元信息
+	b.displayProjectMetaInfo()
+
+	return b
 }
 
-// Build calls 'go build' tool to do building
-func (b *Build) Build() error {
-	log.Infoln("Go building in temp...")
-	// new -o will overwrite  previous ones
-	b.BuildFlags = b.BuildFlags + " -o " + b.Target
-	cmd := exec.Command("/bin/bash", "-c", "go build "+b.BuildFlags+" "+b.Packages)
-	cmd.Dir = b.TmpWorkingDir
+// Build starts go build
+//
+// 1. copy project to temp,
+// 2. inject cover variables and functions into the project,
+// 3. build the project in temp.
+func (b *Build) Build() {
+	// 1. 拷贝至临时目录
+	b.copyProjectToTmp()
+	defer b.clean()
+
+	log.Donef("project copied to temporary directory")
+	// 2. inject cover vars
+	cover.Inject()
+	// 3. build in the temp project
+	b.doBuildInTemp()
+}
+
+func (b *Build) doBuildInTemp() {
+	log.StartWait("building the injected project")
+
+	goflags := config.GocConfig.Goflags
+	// 检查用户是否自定义了 -o
+	oSet := false
+	for _, flag := range goflags {
+		if flag == "-o" {
+			oSet = true
+		}
+	}
+
+	// 如果没被设置就加一个至原命令执行的目录
+	if !oSet {
+		goflags = append(goflags, "-o", config.GocConfig.CurWd)
+	}
+
+	pacakges := config.GocConfig.Packages
+
+	goflags = append(goflags, pacakges...)
+
+	args := []string{"build"}
+	args = append(args, goflags...)
+	// go 命令行由 go build [-o output] [build flags] [packages] 组成
+	cmd := exec.Command("go", args...)
+	cmd.Dir = config.GocConfig.TmpWd
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if b.NewGOPATH != "" {
-		// Change to temp GOPATH for go install command
-		cmd.Env = append(os.Environ(), fmt.Sprintf("GOPATH=%v", b.NewGOPATH))
+	log.Infof("go build cmd is: %v, in path [%v]", cmd.Args, cmd.Dir)
+	if err := cmd.Start(); err != nil {
+		log.Fatalf("fail to execute go build: %v", err)
+	}
+	if err := cmd.Wait(); err != nil {
+		log.Fatalf("fail to execute go build: %v", err)
 	}
 
-	log.Printf("go build cmd is: %v", cmd.Args)
-	err := cmd.Start()
-	if err != nil {
-		return fmt.Errorf("fail to execute: %v, err: %w", cmd.Args, err)
-	}
-	if err = cmd.Wait(); err != nil {
-		return fmt.Errorf("fail to execute: %v, err: %w", cmd.Args, err)
-	}
-	log.Infoln("Go build exit successful.")
-	return nil
-}
-
-// determineOutputDir, as we only allow . as package name,
-// the binary name is always same as the directory name of current directory
-func (b *Build) determineOutputDir(outputDir string) (string, error) {
-	if b.TmpDir == "" {
-		return "", fmt.Errorf("can only be called after Build.MvProjectsToTmp(): %w", ErrEmptyTempWorkingDir)
-	}
-
-	// fix #43
-	if outputDir != "" {
-		abs, err := filepath.Abs(outputDir)
-		if err != nil {
-			return "", fmt.Errorf("Fail to transform the path: %v to absolute path: %v", outputDir, err)
-
-		}
-		return abs, nil
-	}
-	// fix #43
-	// use target name from `go list -json ./...` of the main module
-	targetName := ""
-	for _, pkg := range b.Pkgs {
-		if pkg.Name == "main" {
-			if pkg.Target != "" {
-				targetName = filepath.Base(pkg.Target)
-			} else {
-				targetName = filepath.Base(pkg.Dir)
-			}
-			break
-		}
-	}
-
-	return filepath.Join(b.WorkingDir, targetName), nil
-}
-
-// validatePackageForBuild only allow . as package name
-func (b *Build) validatePackageForBuild() bool {
-	if b.Packages == "." || b.Packages == "" {
-		return true
-	}
-	return false
-}
-
-func checkParameters(args []string, workingDir string) error {
-	if len(args) > 1 {
-		log.Errorln(ErrTooManyArgs)
-		return ErrTooManyArgs
-	}
-
-	if workingDir == "" {
-		return ErrInvalidWorkingDir
-	}
-
-	log.Infof("Working directory: %v", workingDir)
-	return nil
+	// done
+	log.StopWait()
+	log.Donef("go build done")
 }

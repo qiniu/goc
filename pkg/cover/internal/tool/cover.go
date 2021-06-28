@@ -6,6 +6,8 @@ package tool
 
 import (
 	"bytes"
+	"path"
+
 	// "flag"
 	"fmt"
 	"go/ast"
@@ -16,7 +18,7 @@ import (
 	"os"
 	"sort"
 
-	log "github.com/sirupsen/logrus" // QINIU
+	"github.com/qiniu/goc/v2/pkg/log" // QINIU
 	// "cmd/internal/edit"
 	// "cmd/internal/objabi"
 )
@@ -155,14 +157,16 @@ type Block struct {
 // File is a wrapper for the state of a file used in the parser.
 // The basic parse tree walker is a method of this type.
 type File struct {
-	fset    *token.FileSet
-	name    string // Name of file.
-	astFile *ast.File
-	blocks  []Block
-	content []byte
-	edit    *Buffer // QINIU
-	varVar  string  // QINIU
-	mode    string  // QINIU
+	fset               *token.FileSet
+	name               string // Name of file.
+	astFile            *ast.File
+	blocks             []Block
+	content            []byte
+	edit               *Buffer // QINIU
+	varVar             string  // QINIU
+	mode               string  // QINIU
+	importpathFileName string  // QINIU, importpath + filename
+	random             string  // QINIU, random == tmp dir name
 }
 
 // findText finds text in the original source, starting at pos.
@@ -304,7 +308,7 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 // 1. add cover variables into the original file
 // 2. return the cover variables declarations as plain string
 // original dec: func annotate(name string) {
-func Annotate(name string, mode string, varVar string, globalCoverVarImportPath string) string {
+func Annotate(name string, mode string, varVar string, importpathFilename string, globalCoverVarImportPath string) string {
 	// QINIU
 	switch mode {
 	case "set":
@@ -313,6 +317,8 @@ func Annotate(name string, mode string, varVar string, globalCoverVarImportPath 
 		counterStmt = incCounterStmt
 	case "atomic":
 		counterStmt = atomicCounterStmt
+	case "watch":
+		counterStmt = watchCounterStmt
 	default:
 		counterStmt = incCounterStmt
 	}
@@ -328,20 +334,22 @@ func Annotate(name string, mode string, varVar string, globalCoverVarImportPath 
 	}
 
 	file := &File{
-		fset:    fset,
-		name:    name,
-		content: content,
-		edit:    NewBuffer(content), // QINIU
-		astFile: parsedFile,
-		varVar:  varVar,
-		mode:    mode,
+		fset:               fset,
+		name:               name,
+		content:            content,
+		edit:               NewBuffer(content), // QINIU
+		astFile:            parsedFile,
+		varVar:             varVar,                              // QINIU
+		mode:               mode,                                // QINIU
+		importpathFileName: importpathFilename,                  // QINIU
+		random:             path.Base(globalCoverVarImportPath), // QINIU
 	}
 
 	ast.Walk(file, file.astFile)
 	newContent := file.edit.Bytes()
 
 	if bytes.Equal(content, newContent) {
-		log.Info("no cover var injected for: ", name)
+		log.Debugf("no cover var injected for: ", name)
 	} else {
 		// reback to the beginning
 		file.astFile, _ = parser.ParseFile(fset, name, content, parser.ParseComments)
@@ -407,6 +415,11 @@ func incCounterStmt(f *File, counter string) string {
 // atomicCounterStmt returns the expression: atomic.AddUint32(&__count[23], 1)
 func atomicCounterStmt(f *File, counter string) string {
 	return fmt.Sprintf("%s.AddUint32(&%s, 1)", atomicPackageName, counter)
+}
+
+// watchCounterStmt returns the expression: __count[23]++;UploadCoverChangeEvent(blockname, pos[:], index)
+func watchCounterStmt(f *File, counter string) string {
+	return fmt.Sprintf("%s++; UploadCoverChangeEvent_%v(%s.BlockName, %s.Pos[:], %v)", counter, f.random, f.varVar, f.varVar, len(f.blocks))
 }
 
 // QINIU
@@ -689,7 +702,11 @@ func (f *File) addVariables(w io.Writer) {
 	fmt.Fprintf(w, "\tCount     [%d]uint32\n", len(f.blocks))
 	fmt.Fprintf(w, "\tPos       [3 * %d]uint32\n", len(f.blocks))
 	fmt.Fprintf(w, "\tNumStmt   [%d]uint16\n", len(f.blocks))
+	fmt.Fprintf(w, "\tBlockName string\n") // QINIU
 	fmt.Fprintf(w, "} {\n")
+
+	// 写入 BlockName 初始化
+	fmt.Fprintf(w, "\tBlockName: \"%v\",\n", f.importpathFileName)
 
 	// Initialize the position array field.
 	fmt.Fprintf(w, "\tPos: [3 * %d]uint32{\n", len(f.blocks))

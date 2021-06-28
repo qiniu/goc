@@ -1,88 +1,73 @@
 # goc
-[![Go Report Card](https://goreportcard.com/badge/github.com/qiniu/goc)](https://goreportcard.com/report/github.com/qiniu/goc)
-![](https://github.com/qiniu/goc/workflows/ut-check/badge.svg)
-![](https://github.com/qiniu/goc/workflows/style-check/badge.svg)
-![](https://github.com/qiniu/goc/workflows/e2e%20test/badge.svg)
-![Build Release](https://github.com/qiniu/goc/workflows/Build%20Release/badge.svg)
-[![codecov](https://codecov.io/gh/qiniu/goc/branch/master/graph/badge.svg)](https://codecov.io/gh/qiniu/goc)
-[![GoDoc](https://godoc.org/github.com/qiniu/goc?status.svg)](https://godoc.org/github.com/qiniu/goc)
 
-[中文页](README_zh.md) |
+goc v2 版本开发中
 
-goc is a comprehensive coverage testing system for The Go Programming Language, especially for some complex scenarios, like system testing code coverage collection and
-accurate testing.
+## Quick Start
 
-Enjoy, Have Fun!
-![Demo](docs/images/intro.gif)
+### 编译要求 
 
-## Installation
+`Go 1.16+`
 
-Download the latest version from [Github Releases](https://github.com/qiniu/goc/releases) page.
+### 新特性一览
 
-Goc supports both `GOPATH` project and `Go Modules` project with **Go 1.11+**. However, for developing goc, you need to install **Go 1.13+**.
+#### 1. 只支持 go module 工程
 
-## Examples
-You can use goc tool in many scenarios.
+考虑到 GOPATH 已被官方明确将淘汰，以及支持 GOPATH 工程带来的巨大工作量，v2 不再支持 GOPATH 工程。
 
-### Code Coverage Collection for Your Golang System Tests
-Goc can collect code coverages at runtime for your long-run golang applications. To do that, normally just need three steps:
+#### 2. 命令行 flag 解析优化
 
-1. use `goc server` to start a service registry center:
-    ```
-    ➜  simple-go-server git:(master) ✗ goc server
-    ```
-2. use `goc build` to build the target service, and run the generated binary. Here let's take the [simple-go-server](https://github.com/CarlJi/simple-go-server) project as example:
-    ```
-    ➜  simple-go-server git:(master) ✗ goc build .
-    ... // omit logs
-    ➜  simple-go-server git:(master) ✗ ./simple-go-server  
-    ```
-3. use `goc profile` to get the code coverage profile of the started simple server above:
-    ```
-    ➜  simple-go-server git:(master) ✗ goc profile
-    mode: atomic
-    enricofoltran/simple-go-server/main.go:30.13,48.33 13 1
-    enricofoltran/simple-go-server/main.go:48.33,50.3 1 0
-    enricofoltran/simple-go-server/main.go:52.2,65.12 5 1
-    enricofoltran/simple-go-server/main.go:65.12,74.46 7 1
-    enricofoltran/simple-go-server/main.go:74.46,76.4 1 0
-    ...   
-    ```
+在 v1 版本中，`go build -o -ldflags 'foo=bar' ./app/main.go` 与 goc 命令并不等价，首先你需要切换到 `.app/` 目录中，然后执行 `goc build --buildflags="-o -ldflags 'foo=bar' ."`。这个转换给使用者带来不小的负担，特别是 `'"` 混杂在一起时，感觉会更难受。
 
-### Show Code Coverage Change at Runtime in Vscode
+在 v2 版本中，goc 编译命令和 go 编译命令已经极为相似，例如
 
-We provide a vscode extension - [Goc Coverage](https://marketplace.visualstudio.com/items?itemName=lyyyuna.goc) which can show highlighted covered source code at runtime. 
+```bash
+go build -o -ldflags 'foo=bar' ./app/main.go
+# 等价于
+goc build -o -ldflags 'foo=bar' ./app/main.go
+#
+go build -o -ldflags 'foo=bar' ./app
+# 等价于
+goc build -o -ldflags 'foo=bar' ./app
+#
+go install ./app/...
+# 等价于
+goc install ./app/...
+#
+```
 
-![Extension](docs/images/goc-vscode.gif)
+由于 go 命令对 flags 和 args 的相对位置有着严格要求：`go build [-o output] [build flags] [packages]`，所以在指定 goc 自己的 flags （所有 goc flags 都是 `--` 开头）必须和 `build flags` 位置保持相同，即：
 
-## Tips
+```bash
+goc build --debug -o /home/app . # 合法
 
-1. To understand the execution details of goc tool, you can use the `--debug` flag. Also we appreciate if you can provide such logs when submitting a bug to us.
+goc build -o /home/app . --debug # 非法
+```
 
-2. By default, the covered service will listen a random port in order to communicate with the goc server. This may not be suitable in [docker](https://docs.docker.com/engine/reference/commandline/run/#publish-or-expose-port--p---expose) or [kubernetes](https://kubernetes.io/docs/concepts/services-networking/service/#defining-a-service) environment since the port must be exposed explicitly in order to be accessible by others in such environment. For this kind of scenario, you can use `--agentport` flag to specify a fixed port when calling `goc build` or `goc install`.
+#### 3. 日志优化
 
-3. To use a remote goc server, you can use `--center` flag to compile the target service with `goc build` or `goc install` command.
+带颜色日志，以及长时间操作时（例如 build, copy）会有转圈动画。
 
-4. The coverage data is stored on each covered service side, so if one service needs to restart during test, this service's coverage data will be lost. For this case, you can use following steps to handle:
+#### 4. 被测服务部署优化
 
-    1. Before the service restarts, collect coverage with `goc profile -o a.cov`
-    2. After service restarted and test finished, collect coverage again with `goc profile -o b.cov`
-    3. Merge two coverage profiles together: `goc merge a.cov b.cov -o merge.cov`
+在 v1 版本中，当被测服务在 docker 中，goc server 在外部时，会要求在容器启动时额外开启端口转发，并且编译还需带额外参数。这给部署带来不便。
 
-## RoadMap
-- [x] Support code coverage collection for system testing.
-- [x] Support code coverage counters clear for the services under test at runtime.
-- [x] Support develop mode towards accurate testing.
-- [x] Support code coverage diff based on Pull Request.
-- [ ] Optimize the performance costed by code coverage counters.
+在 v2 版本中，不再有这一限制，只需要 goc server 能够被被测服务访问即可。
 
-## Contributing
-We welcome all kinds of contribution, including bug reports, feature requests, documentation improvements, UI refinements, etc.
+#### 5. watch 模式
 
-Thanks to all [contributors](https://github.com/qiniu/goc/graphs/contributors)!!
+当使用 `goc build --mode watch .` 编译后，被测服务任何覆盖率变化都将实时推送到 goc server。
 
-## License
-Goc is released under the Apache 2.0 license. See [LICENSE.txt](https://github.com/qiniu/goc/blob/master/LICENSE)
+用户可以使用该 websocket 连接 `ws://[goc_server_host]/cover/ws/watch` 观察到被测服务的新触发代码块，推送信息格式如下：
 
-## Join goc WeChat Group
-![WeChat](docs/images/wechat.png)
+```bash
+qiniu.com/kodo/apiserver/server/main.go:42.49,43.13 1 0
+#
+# importpath/filename.go:Line0.Col1,Line1,Col1 1 0
+```
+
+除此之外，原来的全局整体覆盖率可正常获取，不受影响。
+
+#### 6. 跨平台支持
+
+1. 支持 `Linux/Macos/Windows`
+2. 支持 go 的交叉编译
