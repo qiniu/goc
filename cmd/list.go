@@ -17,11 +17,14 @@ goc list [flags]
 	Run: list,
 }
 
+var listWide bool
+
 func init() {
-	listCmd.Flags().StringVarP(&config.GocConfig.Host, "host", "", "127.0.0.1:7777", "specify the host of the goc server")
+	listCmd.Flags().StringVar(&config.GocConfig.Host, "host", "127.0.0.1:7777", "specify the host of the goc server")
+	listCmd.Flags().BoolVar(&listWide, "wide", false, "List all services with more information (such as pid)")
 	rootCmd.AddCommand(listCmd)
 }
 
 func list(cmd *cobra.Command, args []string) {
-	client.NewWorker("http://" + config.GocConfig.Host).ListAgents()
+	client.NewWorker("http://" + config.GocConfig.Host).ListAgents(listWide)
 }
