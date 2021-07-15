@@ -27,6 +27,7 @@ import (
 var (
 	target            string
 	center            string
+	service           string
 	agentPort         AgentPort
 	debugGoc          bool
 	debugInCISyncFile string
@@ -60,6 +61,7 @@ func addCommonFlags(cmdset *pflag.FlagSet) {
 
 func addBuildFlags(cmdset *pflag.FlagSet) {
 	addCommonFlags(cmdset)
+	cmdset.StringVar(&service, "service", "", "register service name")
 	// bind to viper
 	viper.BindPFlags(cmdset)
 }

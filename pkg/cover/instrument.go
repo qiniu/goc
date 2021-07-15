@@ -223,6 +223,10 @@ func registerHandlers() {
 
 func registerSelf(address string) ([]byte, error) {
 	selfName := filepath.Base(os.Args[0])
+    serviceName := {{.Service | printf "%q"}}
+    if serviceName != "" {
+        selfName = serviceName
+    }
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/cover/register?name=%s&address=%s", {{.Center | printf "%q"}}, selfName, address), nil)
 	if err != nil {
 		log.Fatalf("http.NewRequest failed: %v", err)

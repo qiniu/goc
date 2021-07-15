@@ -52,6 +52,7 @@ type TestCover struct {
 	Mode                     string
 	AgentPort                string
 	Center                   string // cover profile host center
+	Service                  string
 	Singleton                bool
 	MainPkgCover             *PackageCover
 	DepsCover                []*PackageCover
@@ -139,6 +140,7 @@ type CoverInfo struct {
 	Args                     string
 	Mode                     string
 	AgentPort                string
+	Service                  string
 	Center                   string
 	Singleton                bool
 }
@@ -190,6 +192,7 @@ func Execute(coverInfo *CoverInfo) error {
 				Mode:                     mode,
 				AgentPort:                agentPort,
 				Center:                   center,
+				Service:                  coverInfo.Service,
 				Singleton:                singleton,
 				MainPkgCover:             mainCover,
 				GlobalCoverVarImportPath: globalCoverVarImportPath,
