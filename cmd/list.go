@@ -21,7 +21,7 @@ var listWide bool
 
 func init() {
 	listCmd.Flags().StringVar(&config.GocConfig.Host, "host", "127.0.0.1:7777", "specify the host of the goc server")
-	listCmd.Flags().BoolVar(&listWide, "wide", false, "List all services with more information (such as pid)")
+	listCmd.Flags().BoolVar(&listWide, "wide", false, "list all services with more information (such as pid)")
 	rootCmd.AddCommand(listCmd)
 }
 

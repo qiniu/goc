@@ -82,6 +82,7 @@ func (c *client) ListAgents(wide bool) {
 	table.SetNoWhiteSpace(true)
 	table.SetReflowDuringAutoWrap(false)
 	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	table.SetAutoWrapText(false)
 	if wide {
 		table.SetHeader([]string{"ID", "REMOTEIP", "HOSTNAME", "PID", "CMD"})
 		table.SetColumnAlignment([]int{tablewriter.ALIGN_LEFT, tablewriter.ALIGN_LEFT, tablewriter.ALIGN_LEFT, tablewriter.ALIGN_LEFT, tablewriter.ALIGN_LEFT, tablewriter.ALIGN_LEFT})
