@@ -204,7 +204,7 @@ func getRegisterInfo() (*processInfo, error) {
 
 	pid := os.Getpid()
 
-	cmdline := os.Args[0]
+	cmdline := strings.Join(os.Args, " ")
 
 	return &processInfo{
 		hostname: hostname,
