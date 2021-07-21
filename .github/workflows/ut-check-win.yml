@@ -12,11 +12,11 @@ on:
       - '**.png'
 jobs:
   run:
-    name: go test on linux
+    name: go test on windows
     strategy:
       matrix:
         go-version: [1.16.x]
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Install Go
         uses: actions/setup-go@v2
@@ -29,5 +29,4 @@ jobs:
         env:
           GOVERSION: ${{ matrix.go-version }}
         run: |
-          make test
-          bash <(curl -s https://codecov.io/bash) -F unittest-$GOVERSION
+          go test -p 1 .\pkg\...
