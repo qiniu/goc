@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/qiniu/goc/v2/pkg/build"
 	"github.com/qiniu/goc/v2/pkg/config"
+	"github.com/qiniu/goc/v2/pkg/flag"
 	"github.com/spf13/cobra"
 )
 
@@ -14,12 +15,14 @@ var buildCmd = &cobra.Command{
 }
 
 func init() {
-	buildCmd.Flags().StringVarP(&config.GocConfig.Mode, "mode", "", "count", "coverage mode: set, count, atomic, watch")
-	buildCmd.Flags().StringVarP(&config.GocConfig.Host, "host", "", "127.0.0.1:7777", "specify the host of the goc sever")
+	buildCmd.Flags().StringVarP(&config.GocConfig.Mode, "gocmode", "", "count", "coverage mode: set, count, atomic, watch")
+	buildCmd.Flags().StringVarP(&config.GocConfig.Host, "gochost", "", "127.0.0.1:7777", "specify the host of the goc sever")
 	rootCmd.AddCommand(buildCmd)
 }
 
 func buildAction(cmd *cobra.Command, args []string) {
-	b := build.NewBuild(cmd, args)
+	// 1. 解析 goc 命令行和 go 命令行
+	remainedArgs := flag.BuildCmdArgsParse(cmd, args, flag.GO_BUILD)
+	b := build.NewBuild(remainedArgs)
 	b.Build()
 }

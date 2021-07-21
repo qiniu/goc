@@ -39,7 +39,7 @@ Find more information at:
 }
 
 func init() {
-	rootCmd.PersistentFlags().BoolVar(&config.GocConfig.Debug, "debug", false, "run goc in debug mode")
+	rootCmd.PersistentFlags().BoolVar(&config.GocConfig.Debug, "gocdebug", false, "run goc in debug mode")
 }
 
 // Execute the goc tool

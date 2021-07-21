@@ -14,15 +14,31 @@ import (
 var buildUsage string = `Usage:
   goc build [-o output] [build flags] [packages] [goc flags]
 
+[build flags] are same with go official command, you can copy them here directly.
+
 The [goc flags] can be placed in anywhere in the command line.
 However, other flags' order are same with the go official command.
 `
+
+var installUsage string = `Usage:
+goc install [-o output] [build flags] [packages] [goc flags]
+
+[build flags] are same with go official command, you can copy them here directly.
+
+The [goc flags] can be placed in anywhere in the command line.
+However, other flags' order are same with the go official command.
+`
+
+const (
+	GO_BUILD = iota
+	GO_INSTALL
+)
 
 // BuildCmdArgsParse parse both go flags and goc flags, it rewrite go flags if
 // necessary, and returns all non-flag arguments.
 //
 // 吞下 [packages] 之前所有的 flags.
-func BuildCmdArgsParse(cmd *cobra.Command, args []string) []string {
+func BuildCmdArgsParse(cmd *cobra.Command, args []string, cmdType int) []string {
 	// 首先解析 cobra 定义的 flag
 	allFlagSets := cmd.Flags()
 	// 因为 args 里面含有 go 的 flag，所以需要忽略解析 go flag 的错误
@@ -33,7 +49,13 @@ func BuildCmdArgsParse(cmd *cobra.Command, args []string) []string {
 	helpFlag := allFlagSets.Lookup("help")
 
 	if helpFlag.Changed {
-		printHelp(buildUsage, cmd)
+		if cmdType == GO_BUILD {
+			printHelp(buildUsage, cmd)
+		} else if cmdType == GO_INSTALL {
+			printHelp(installUsage, cmd)
+		}
+
+		os.Exit(0)
 	}
 	// 删除 help flag
 	args = findAndDelHelpFlag(args)
