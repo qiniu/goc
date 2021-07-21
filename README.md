@@ -35,12 +35,19 @@ goc install ./app/...
 #
 ```
 
-由于 go 命令对 flags 和 args 的相对位置有着严格要求：`go build [-o output] [build flags] [packages]`，所以在指定 goc 自己的 flags （所有 goc flags 都是 `--` 开头）必须和 `build flags` 位置保持相同，即：
+由于 go 命令对 flags 和 args 的相对位置有着严格要求：`go build [-o output] [build flags] [packages]`，所以 goc 命令中 `[build flags]` 的位置也类似。而 goc 自己的 flags 则相对灵活：
 
 ```bash
-goc build --debug -o /home/app . # 合法
+goc build -o -ldflags 'foo=bar' ./app --gocdebug --gochost "127.0.0.1:7779" 
 
-goc build -o /home/app . --debug # 非法
+goc build --gocdebug -o -ldflags 'foo=bar' ./app --gochost "127.0.0.1:7779" 
+```
+
+两者都对。如果不想最小化的改动 go 编译命令，那么 `--gochost` 可以不指定，在服务启动时指定坏境变量就能动态改变注册中心地址：
+
+```
+export GOC_CUSTOM_HOST="127.0.0.1:7779"
+./agent
 ```
 
 #### 3. 日志优化
@@ -55,7 +62,7 @@ goc build -o /home/app . --debug # 非法
 
 #### 5. watch 模式
 
-当使用 `goc build --mode watch .` 编译后，被测服务任何覆盖率变化都将实时推送到 goc server。
+当使用 `goc build --gocmode watch .` 编译后，被测服务任何覆盖率变化都将实时推送到 goc server。
 
 用户可以使用该 websocket 连接 `ws://[goc_server_host]/cover/ws/watch` 观察到被测服务的新触发代码块，推送信息格式如下：
 
