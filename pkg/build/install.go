@@ -7,11 +7,10 @@ import (
 	"github.com/qiniu/goc/v2/pkg/config"
 	"github.com/qiniu/goc/v2/pkg/cover"
 	"github.com/qiniu/goc/v2/pkg/log"
-	"github.com/spf13/cobra"
 )
 
-func NewInstall(cmd *cobra.Command, args []string) *Build {
-	return NewBuild(cmd, args)
+func NewInstall(args []string) *Build {
+	return NewBuild(args)
 }
 
 // Install starts go install

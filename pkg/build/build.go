@@ -8,7 +8,6 @@ import (
 	"github.com/qiniu/goc/v2/pkg/cover"
 	"github.com/qiniu/goc/v2/pkg/flag"
 	"github.com/qiniu/goc/v2/pkg/log"
-	"github.com/spf13/cobra"
 )
 
 // Build struct a build
@@ -18,13 +17,11 @@ type Build struct {
 
 // NewBuild creates a Build struct
 //
-// consumes args, get package dirs, read project meta info.
-func NewBuild(cmd *cobra.Command, args []string) *Build {
+func NewBuild(args []string) *Build {
 	b := &Build{}
-	// 1. 解析 goc 命令行和 go 命令行
-	remainedArgs := flag.BuildCmdArgsParse(cmd, args)
+
 	// 2. 解析 go 包位置
-	flag.GetPackagesDir(remainedArgs)
+	flag.GetPackagesDir(args)
 	// 3. 读取工程元信息：go.mod, pkgs list ...
 	b.readProjectMetaInfo()
 	// 4. 展示元信息
