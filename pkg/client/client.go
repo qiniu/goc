@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"golang.org/x/term"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/qiniu/goc/v2/pkg/log"
@@ -18,11 +20,14 @@ import (
 // Action provides methods to contact with the covered agent under test
 type Action interface {
 	ListAgents(bool)
+	Profile(string)
 }
 
 const (
 	// CoverAgentsListAPI list all the registered agents
 	CoverAgentsListAPI = "/v2/rpcagents"
+	//CoverProfileAPI is provided by the covered service to get profiles
+	CoverProfileAPI = "/v2/cover/profile"
 )
 
 type client struct {
@@ -42,6 +47,10 @@ type gocCoveredAgent struct {
 	Hostname string `json:"hostname"`
 	CmdLine  string `json:"cmdline"`
 	Pid      string `json:"pid"`
+}
+
+type gocProfile struct {
+	Profile string `json:"profile"`
 }
 
 // NewWorker creates a worker to contact with host
@@ -100,6 +109,48 @@ func (c *client) ListAgents(wide bool) {
 	}
 	table.Render()
 	return
+}
+
+func (c *client) Profile(output string) {
+	u := fmt.Sprintf("%s%s", c.Host, CoverProfileAPI)
+
+	res, profile, err := c.do("GET", u, "application/json", nil)
+	if err != nil && isNetworkError(err) {
+		res, profile, err = c.do("GET", u, "application/json", nil)
+	}
+
+	if err == nil && res.StatusCode != 200 {
+		log.Fatalf(string(profile))
+	}
+	var profileText gocProfile
+	err = json.Unmarshal(profile, &profileText)
+	if err != nil {
+		log.Fatalf("profile unmarshal failed: %v", err)
+	}
+	if output == "" {
+		fmt.Fprint(os.Stdout, profileText.Profile)
+	} else {
+		var dir, filename string = filepath.Split(output)
+		if dir != "" {
+			err = os.MkdirAll(dir, os.ModePerm)
+			if err != nil {
+				log.Fatalf("failed to create directory %s, err:%v", dir, err)
+			}
+		}
+		if filename == "" {
+			output += "coverage.cov"
+		}
+
+		f, err := os.Create(output)
+		if err != nil {
+			log.Fatalf("failed to create file %s, err:%v", output, err)
+		}
+		defer f.Close()
+		_, err = io.Copy(f, bytes.NewReader([]byte(profileText.Profile)))
+		if err != nil {
+			log.Fatalf("failed to write file: %v, err: %v", output, err)
+		}
+	}
 }
 
 // getSimpleCmdLine
