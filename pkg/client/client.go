@@ -72,14 +72,12 @@ func (c *client) ListAgents(wide bool) {
 		_, body, err = c.do("GET", u, "", nil)
 	}
 	if err != nil {
-		err = fmt.Errorf("goc list failed: %v", err)
-		log.Fatalf(err.Error())
+		log.Fatalf("goc list failed: %v", err)
 	}
 	agents := gocListAgents{}
 	err = json.Unmarshal(body, &agents)
 	if err != nil {
-		err = fmt.Errorf("goc list failed: json unmarshal failed: %v", err)
-		log.Fatalf(err.Error())
+		log.Fatalf("goc list failed: json unmarshal failed: %v", err)
 	}
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetCenterSeparator("")
