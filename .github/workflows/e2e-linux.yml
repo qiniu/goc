@@ -1,4 +1,4 @@
-name: linux/macos e2e test
+name: e2e test
 on:
   # Trigger the workflow on push or pull request,
   # but only for the master branch
