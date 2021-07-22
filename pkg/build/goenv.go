@@ -43,11 +43,11 @@ func (b *Build) readProjectMetaInfo() {
 	}
 
 	// get tmp folder name
-	config.GocConfig.TmpModProjectDir = filepath.Join(os.TempDir(), tmpFolderName(config.GocConfig.CurModProjectDir))
+	config.GocConfig.TmpModProjectDir = filepath.Join(os.TempDir(), TmpFolderName(config.GocConfig.CurModProjectDir))
 	// get working dir in the corresponding tmp dir
 	config.GocConfig.TmpWd = filepath.Join(config.GocConfig.TmpModProjectDir, config.GocConfig.CurWd[len(config.GocConfig.CurModProjectDir):])
 	// get GlobalCoverVarImportPath
-	config.GocConfig.GlobalCoverVarImportPath = path.Join(config.GocConfig.ImportPath, tmpFolderName(config.GocConfig.CurModProjectDir))
+	config.GocConfig.GlobalCoverVarImportPath = path.Join(config.GocConfig.ImportPath, TmpFolderName(config.GocConfig.CurModProjectDir))
 	log.Donef("project meta information parsed")
 }
 

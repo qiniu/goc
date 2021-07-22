@@ -1,0 +1,1 @@
+# How to run e2e test

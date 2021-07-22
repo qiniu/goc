@@ -1,0 +1,4 @@
+samples:
+  basic:
+    dir: basic-project
+    description: a basic project only print hello world

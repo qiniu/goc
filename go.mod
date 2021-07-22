@@ -10,6 +10,8 @@ require (
 	github.com/mattn/go-isatty v0.0.13 // indirect
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/olekukonko/tablewriter v0.0.5
+	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/gomega v1.14.0
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
@@ -19,6 +21,7 @@ require (
 	golang.org/x/sys v0.0.0-20210608053332-aa57babbf139 // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d
 	golang.org/x/tools v0.1.3
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/kubectl v0.21.2
 	k8s.io/test-infra v0.0.0-20210618100605-34aa2f2aa75b
 )

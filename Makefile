@@ -15,7 +15,11 @@ fmt:
 govet-check:
 	go vet ./...
 
+e2e:
+	ginkgo tests/e2e/...
+
 clean:
 	find ./ -type f -name 'coverage.txt' -delete
 	find ./ -type f -name 'goc' -delete
 	find ./ -type f -name 'gocc' -delete
+	rm -rf ./tests/e2e/tmp
