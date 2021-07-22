@@ -43,8 +43,8 @@ func (b *Build) copyProjectToTmp() {
 	log.StopWait()
 }
 
-// tmpFolderName generates a directory name according to the path
-func tmpFolderName(path string) string {
+// TmpFolderName generates a directory name according to the path
+func TmpFolderName(path string) string {
 	sum := sha256.Sum256([]byte(path))
 	h := fmt.Sprintf("%x", sum[:6])
 
