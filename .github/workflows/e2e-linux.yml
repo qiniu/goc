@@ -12,7 +12,7 @@ on:
       - '**.png'
 jobs:
   job_1:
-    name: Build goc binary
+    name: e2e test
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -27,6 +27,11 @@ jobs:
       - name: Go build
         run: |
           go build .
+          go install .
       - name: Use goc to build self
         run: |
           ./goc build -o ./gocc .
+      - name: run e2e test
+        run: |
+          go get github.com/onsi/ginkgo/ginkgo
+          make e2e
