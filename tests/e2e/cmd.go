@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 )
@@ -18,10 +19,15 @@ type LongRunCmd struct {
 	done      bool
 }
 
-func NewLongRunCmd(dir string, args []string) *LongRunCmd {
+// NewLongRunCmd defines a command which will be run forever
+//
+// You can specify the whole command arg list, the directory where the command
+// will be run in, and the env list.
+func NewLongRunCmd(args []string, dir string, envs []string) *LongRunCmd {
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), envs...)
 
 	var stderrBuf bytes.Buffer
 	var stdoutBuf bytes.Buffer
@@ -71,12 +77,13 @@ func (l *LongRunCmd) GetStdoutStdErr() (string, string) {
 }
 
 // RunShortRunCmd defines a cmd which run and exits immediately
-func RunShortRunCmd(dir string, args []string) (string, error) {
+func RunShortRunCmd(args []string, dir string, envs []string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), envs...)
 
 	output, err := cmd.CombinedOutput()
 	return string(output), err
