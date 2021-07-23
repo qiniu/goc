@@ -20,7 +20,7 @@ var _ = Describe("1 [基础测试]", func() {
 			Expect(err).To(BeNil(), "找不到 sample")
 
 			By("使用 goc build 命令编译")
-			_, err = RunShortRunCmd(dir, []string{"goc", "build", "."})
+			_, err = RunShortRunCmd([]string{"goc", "build", "."}, dir, nil)
 			Expect(err).To(BeNil(), "goc build 运行错误")
 		})
 	})
@@ -31,12 +31,12 @@ var _ = Describe("1 [基础测试]", func() {
 			Expect(err).To(BeNil(), "找不到 sample")
 
 			By("启动 goc server")
-			lc := NewLongRunCmd(dir, []string{"goc", "server", "."})
+			lc := NewLongRunCmd([]string{"goc", "server", "."}, dir, nil)
 			lc.Run()
 			defer lc.Stop()
 
 			By("使用 goc list 获取服务列表")
-			output, err := RunShortRunCmd(dir, []string{"goc", "list"})
+			output, err := RunShortRunCmd([]string{"goc", "list"}, dir, nil)
 			Expect(err).To(BeNil(), "goc list 运行错误")
 			Expect(output).To(ContainSubstring("REMOTEIP"), "goc list 输出应该包含 REMOTEIP")
 		})
