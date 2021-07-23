@@ -2,3 +2,6 @@ samples:
   basic:
     dir: basic-project
     description: a basic project only print hello world
+  basic2:
+    dir: basic4ever-project
+    description: a basic project which will never exist
