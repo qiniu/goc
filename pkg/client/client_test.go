@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,8 +60,49 @@ testID   1.1.1.1    testHost   0     ./testCmd -f testArgs
 		t.Run(name, func(t *testing.T) {
 			f := func() { c.ListAgents(tt.input) }
 			output := captureStdout(f)
-			fmt.Println(output)
 			assert.Equal(t, output, tt.expected)
+		})
+	}
+}
+
+func TestClientProfile(t *testing.T) {
+	mockAgents := `{"profile": "mode: count\nmockService/main.go:30.13,48.33 13 1\nb/b.go:30.13,48.33 13 1"}`
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(mockAgents))
+	}))
+	defer mockServer.Close()
+
+	c := NewWorker(mockServer.URL)
+	f := func() { c.Profile("") }
+	output := captureStdout(f)
+	assert.Regexp(t, "mockService/main.go:30.13,48.33 13 1", output)
+}
+
+func TestClientProfile_Output(t *testing.T) {
+	mockAgents := `{"profile": "mode: count\nmockService/main.go:30.13,48.33 13 1\nb/b.go:30.13,48.33 13 1"}`
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(mockAgents))
+	}))
+	defer mockServer.Close()
+
+	c := NewWorker(mockServer.URL)
+	ex, _ := os.Executable()
+	exPath := filepath.Dir(ex)
+	testCases := map[string]struct {
+		input  string
+		output string
+	}{
+		"file":           {"test.cov", "test.cov"},
+		"file with path": {filepath.Join(exPath, "test.txt"), filepath.Join(exPath, "test.txt")},
+		"just path":      {fmt.Sprintf("%s%c", exPath, os.PathSeparator), filepath.Join(exPath, "coverage.cov")},
+	}
+	for name, tt := range testCases {
+		t.Run(name, func(t *testing.T) {
+			c.Profile(tt.input)
+			defer os.RemoveAll(tt.output)
+			assert.FileExists(t, tt.output)
 		})
 	}
 }
