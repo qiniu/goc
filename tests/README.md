@@ -2,7 +2,10 @@
 
 ## 如何运行集成测试
 
+首先编译 goc，并加入 `PATH`。
+
 ```
+make install
 make e2e
 ```
 
