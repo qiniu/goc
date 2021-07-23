@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/gin-gonic/gin v1.7.2
+	github.com/gofrs/flock v0.8.1
 	github.com/gorilla/websocket v1.4.2
 	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213
 	github.com/mattn/go-colorable v0.1.8 // indirect
@@ -18,7 +19,7 @@ require (
 	github.com/tongjingran/copy v1.4.2
 	go.uber.org/zap v1.17.0
 	golang.org/x/mod v0.4.2
-	golang.org/x/sys v0.0.0-20210608053332-aa57babbf139 // indirect
+	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d
 	golang.org/x/tools v0.1.3
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
