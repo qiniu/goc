@@ -7,7 +7,7 @@
 [![codecov](https://codecov.io/gh/qiniu/goc/branch/master/graph/badge.svg)](https://codecov.io/gh/qiniu/goc)
 [![GoDoc](https://godoc.org/github.com/qiniu/goc?status.svg)](https://godoc.org/github.com/qiniu/goc)
 
-[中文页](README_zh.md) |
+**English | [简体中文](./README_zh.md)**
 
 goc is a comprehensive coverage testing system for The Go Programming Language, especially for some complex scenarios, like system testing code coverage collection and
 accurate testing.
@@ -17,7 +17,17 @@ Enjoy, Have Fun!
 
 ## Installation
 
-Download the latest version from [Github Releases](https://github.com/qiniu/goc/releases) page.
+```
+# Mac/AMD64
+curl -s -L "https://github.com/qiniu/goc/releases/latest" | sed -nE 's!.*"([^"]*-darwin-amd64.tar.gz)".*!https://github.com\1!p' | xargs -n 1 curl -L  | tar -zx && chmod +x goc && mv goc /usr/local/bin
+
+# Linux/AMD64
+curl -s -L "https://github.com/qiniu/goc/releases/latest" | sed -nE 's!.*"([^"]*-linux-amd64.tar.gz)".*!https://github.com\1!p' | xargs -n 1 curl -L  | tar -zx && chmod +x goc && mv goc /usr/local/bin
+
+# Linux/386
+curl -s -L "https://github.com/qiniu/goc/releases/latest" | sed -nE 's!.*"([^"]*-linux-386.tar.gz)".*!https://github.com\1!p' | xargs -n 1 curl -L  | tar -zx && chmod +x goc && mv goc /usr/local/bin
+
+```
 
 Goc supports both `GOPATH` project and `Go Modules` project with **Go 1.11+**. However, for developing goc, you need to install **Go 1.13+**.
 
