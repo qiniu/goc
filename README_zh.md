@@ -8,6 +8,8 @@
 [![codecov](https://codecov.io/gh/qiniu/goc/branch/master/graph/badge.svg)](https://codecov.io/gh/qiniu/goc)
 [![GoDoc](https://godoc.org/github.com/qiniu/goc?status.svg)](https://godoc.org/github.com/qiniu/goc)
 
+**[English](./README.md) | 简体中文**
+
 goc 是专为 Go 语言打造的一个综合覆盖率收集系统，尤其适合复杂的测试场景，比如系统测试时的代码覆盖率收集以及精准测试。
 
 希望你们喜欢～
@@ -16,7 +18,17 @@ goc 是专为 Go 语言打造的一个综合覆盖率收集系统，尤其适合
 
 ## 安装
 
-最新版本在该页面下载 [Github Releases](https://github.com/qiniu/goc/releases)。
+```
+# Mac/AMD64
+curl -s -L "https://github.com/qiniu/goc/releases/latest" | sed -nE 's!.*"([^"]*-darwin-amd64.tar.gz)".*!https://github.com\1!p' | xargs -n 1 curl -L  | tar -zx && chmod +x goc && mv goc /usr/local/bin
+
+# Linux/AMD64
+curl -s -L "https://github.com/qiniu/goc/releases/latest" | sed -nE 's!.*"([^"]*-linux-amd64.tar.gz)".*!https://github.com\1!p' | xargs -n 1 curl -L  | tar -zx && chmod +x goc && mv goc /usr/local/bin
+
+# Linux/386
+curl -s -L "https://github.com/qiniu/goc/releases/latest" | sed -nE 's!.*"([^"]*-linux-386.tar.gz)".*!https://github.com\1!p' | xargs -n 1 curl -L  | tar -zx && chmod +x goc && mv goc /usr/local/bin
+
+```
 
 goc 同时支持 `GOPATH` 工程和 `Go Modules` 工程，且 Go 版本要求 **Go 1.11+**。如果想参与 goc 的开发，你必须使用 **Go 1.13+**。
 
