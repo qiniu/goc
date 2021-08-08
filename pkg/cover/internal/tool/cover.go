@@ -419,7 +419,8 @@ func atomicCounterStmt(f *File, counter string) string {
 
 // watchCounterStmt returns the expression: __count[23]++;UploadCoverChangeEvent(blockname, pos[:], index)
 func watchCounterStmt(f *File, counter string) string {
-	return fmt.Sprintf("%s++; UploadCoverChangeEvent_%v(%s.BlockName, %s.Pos[:], %v)", counter, f.random, f.varVar, f.varVar, len(f.blocks))
+	index := len(f.blocks)
+	return fmt.Sprintf("%s++; UploadCoverChangeEvent_%v(%s.BlockName, %s.Pos[:], %v, %s.NumStmt[%v])", counter, f.random, f.varVar, f.varVar, index, f.varVar, index)
 }
 
 // QINIU
