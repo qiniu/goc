@@ -43,6 +43,10 @@ func BuildCmdArgsParse(cmd *cobra.Command, args []string, cmdType int) []string 
 	allFlagSets := cmd.Flags()
 	// 因为 args 里面含有 go 的 flag，所以需要忽略解析 go flag 的错误
 	allFlagSets.Init("GOC", pflag.ContinueOnError)
+	// 忽略 go flag 在 goc 中的解析错误
+	allFlagSets.ParseErrorsWhitelist = pflag.ParseErrorsWhitelist{
+		UnknownFlags: true,
+	}
 	allFlagSets.Parse(args)
 
 	// 重写 help
@@ -109,7 +113,7 @@ func findAndDelGocFlag(a []string, x string, v string) []string {
 	x = "--" + x
 	x_v := x + "=" + v
 	for i := 0; i < len(a); i++ {
-		if a[i] == "--debug" {
+		if a[i] == "--gocdebug" {
 			// debug 是 bool，就一个元素
 			continue
 		} else if a[i] == x {
