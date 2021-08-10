@@ -29,7 +29,7 @@ func (b *Build) readProjectMetaInfo() {
 			log.Fatalf("Go module is not enabled, please set GO111MODULE=auto or on")
 		}
 		// 工程根目录
-		config.GocConfig.CurModProjectDir = pkg.Root
+		config.GocConfig.CurModProjectDir = pkg.Module.Dir
 		config.GocConfig.ImportPath = pkg.Module.Path
 
 		break
