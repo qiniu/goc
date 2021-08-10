@@ -1,4 +1,4 @@
-package coverdef
+package cover
 
 import (
 	"fmt"
@@ -6,19 +6,11 @@ import (
 	"os"
 	"log"
 	"strconv"
-	"strings"
 	"net/url"
 
 	"{{.GlobalCoverVarImportPath}}/websocket"
-)
 
-var (
-	watchChannel = make(chan *blockInfo, 1024)
-
-	watchEnabled = false
-
-	waitDelay time.Duration = 10 * time.Second
-	host      string        = "{{.Host}}"
+	_cover "{{.GlobalCoverVarImportPath}}"
 )
 
 func init() {
@@ -55,7 +47,7 @@ func init() {
 			}
 
 			// 连接成功
-			watchEnabled = true
+			_cover.WatchEnabled_{{.Random}} = true
 			log.Printf("[goc][Info] watch connected to goc server")
 
 			ticker := time.NewTicker(time.Second)
@@ -74,18 +66,18 @@ func init() {
 			Loop:
 			for {
 				select {
-				case block := <-watchChannel:
-					i := block.i
+				case block := <-_cover.WatchChannel_{{.Random}}:
+					i := block.I
 
-					cov := fmt.Sprintf("%s:%d.%d,%d.%d %d %d", block.name,
-						block.pos[3*i+0], uint16(block.pos[3*i+2]),
-						block.pos[3*i+1], uint16(block.pos[3*i+2] >> 16),
-						block.stmts,
+					cov := fmt.Sprintf("%s:%d.%d,%d.%d %d %d", block.Name,
+						block.Pos[3*i+0], uint16(block.Pos[3*i+2]),
+						block.Pos[3*i+1], uint16(block.Pos[3*i+2] >> 16),
+						block.Stmts,
 						1)
 
 					err = ws.WriteMessage(websocket.TextMessage, []byte(cov))
 					if err != nil {
-						watchEnabled = false
+						_cover.WatchEnabled_{{.Random}} = false
 						log.Println("[goc][Error] push coverage failed: %v", err)
 						time.Sleep(waitDelay)
 						break Loop
@@ -98,57 +90,4 @@ func init() {
 			}
 		}
 	}()
-}
-
-// get process meta info for register
-type processInfo struct {
-	hostname string
-	pid      int
-	cmdline  string
-}
-
-func getRegisterInfo() (*processInfo, error) {
-	hostname, err := os.Hostname()
-	if err != nil {
-		log.Printf("[goc][Error] fail to get hostname: %v", hostname)
-		return nil, err
-	}
-
-	pid := os.Getpid()
-
-	cmdline := strings.Join(os.Args, " ")
-
-	return &processInfo{
-		hostname: hostname,
-		pid:      pid,
-		cmdline:  cmdline,
-	}, nil
-}
-
-//
-
-type blockInfo struct {
-	name  string
-	pos   []uint32
-	i     int
-	stmts int
-}
-
-// UploadCoverChangeEvent_{{.Random}} is non-blocking
-func UploadCoverChangeEvent_{{.Random}}(name string, pos []uint32, i int, stmts uint16) {
-
-	if watchEnabled == false {
-		return
-	}
-
-	// make sure send is non-blocking
-	select {
-	case watchChannel <- &blockInfo{
-		name:  name,
-		pos:   pos,
-		i:     i,
-		stmts: int(stmts),
-	}:
-	default:
-	}
 }
