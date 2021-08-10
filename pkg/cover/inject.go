@@ -1,6 +1,7 @@
 package cover
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -56,12 +57,7 @@ func Inject() {
 	}
 	// 在工程根目录注入所有插桩变量的声明+定义
 	injectGlobalCoverVarFile(allDecl)
-	// 在工程根目录注入 watch agent 的定义
-	if config.GocConfig.Mode == "watch" {
-		log.Infof("watch mode is enabled")
-		injectWatchAgentFile()
-		log.Donef("watch handler injected")
-	}
+
 	// 添加自定义 websocket 依赖
 	// 用户代码可能有 gorrila/websocket 的依赖，为避免依赖冲突，以及可能的 replace/vendor，
 	// 这里直接注入一份完整的 gorrila/websocket 实现
@@ -120,7 +116,8 @@ func getPkgTmpDir(pkgDir string) string {
 // - goc-cover-agent-apis-auto-generated-11111-22222-bridge.go
 // - goc-cover-agent-apis-auto-generated-11111-22222-package
 //  |
-//  -- init.go
+//  -- rpcagent.go
+//  -- watchagent.go
 //
 // 11111_22222_bridge.go 仅仅用于引用 11111_22222_package, where package contains ws agent main logic.
 // 使用 bridge.go 文件是为了避免插桩逻辑中的变量名污染 main 包
@@ -153,7 +150,7 @@ func injectGocAgent(where string, covers []*config.PackageCover) {
 	}
 
 	// create ws agent files
-	dest := filepath.Join(wherePkg, "init.go")
+	dest := filepath.Join(wherePkg, "rpcagent.go")
 
 	f2, err := os.Create(dest)
 	if err != nil {
@@ -184,6 +181,29 @@ func injectGocAgent(where string, covers []*config.PackageCover) {
 	if err := coverMainTmpl.Execute(f2, tmplData); err != nil {
 		log.Fatalf("fail to generate cover agent handlers in temporary project: %v", err)
 	}
+
+	// 写入 watch
+	if config.GocConfig.Mode != "watch" {
+		return
+	}
+	f, err := os.Create(filepath.Join(wherePkg, "watchagent.go"))
+	if err != nil {
+		log.Fatalf("fail to create watchagent file: %v", err)
+	}
+
+	tmplwatchData := struct {
+		Random                   string
+		Host                     string
+		GlobalCoverVarImportPath string
+	}{
+		Random:                   filepath.Base(config.GocConfig.TmpModProjectDir),
+		Host:                     config.GocConfig.Host,
+		GlobalCoverVarImportPath: config.GocConfig.GlobalCoverVarImportPath,
+	}
+
+	if err := coverWatchTmpl.Execute(f, tmplwatchData); err != nil {
+		log.Fatalf("fail to generate watchagent in temporary project: %v", err)
+	}
 }
 
 // injectGlobalCoverVarFile 写入所有插桩变量的全局定义至一个单独的文件
@@ -205,32 +225,42 @@ func injectGlobalCoverVarFile(decl string) {
 
 	packageName := "package coverdef\n\n"
 
-	_, err = coverFile.WriteString(packageName + decl)
-	if err != nil {
-		log.Fatalf("fail to write to global cover definition file: %v", err)
+	random := filepath.Base(config.GocConfig.TmpModProjectDir)
+	varWatchDef := fmt.Sprintf(`
+var WatchChannel_%v = make(chan *blockInfo, 1024)
+
+var WatchEnabled_%v = false
+
+type blockInfo struct {
+	Name  string
+	Pos   []uint32
+	I     int
+	Stmts int
+}
+
+// UploadCoverChangeEvent_%v is non-blocking
+func UploadCoverChangeEvent_%v(name string, pos []uint32, i int, stmts uint16) {
+
+	if WatchEnabled_%v == false {
+		return
+	}
+
+	// make sure send is non-blocking
+	select {
+	case WatchChannel_%v <- &blockInfo{
+		Name:  name,
+		Pos:   pos,
+		I:     i,
+		Stmts: int(stmts),
+	}:
+	default:
 	}
 }
 
-func injectWatchAgentFile() {
-	globalCoverVarPackage := path.Base(config.GocConfig.GlobalCoverVarImportPath)
-	globalCoverDef := filepath.Join(config.GocConfig.TmpModProjectDir, globalCoverVarPackage)
+`, random, random, random, random, random, random)
 
-	f, err := os.Create(filepath.Join(globalCoverDef, "watchagent.go"))
+	_, err = coverFile.WriteString(packageName + varWatchDef + decl)
 	if err != nil {
-		log.Fatalf("fail to create watchagent file: %v", err)
-	}
-
-	tmplData := struct {
-		Random                   string
-		Host                     string
-		GlobalCoverVarImportPath string
-	}{
-		Random:                   filepath.Base(config.GocConfig.TmpModProjectDir),
-		Host:                     config.GocConfig.Host,
-		GlobalCoverVarImportPath: config.GocConfig.GlobalCoverVarImportPath,
-	}
-
-	if err := coverWatchTmpl.Execute(f, tmplData); err != nil {
-		log.Fatalf("fail to generate watchagent in temporary project: %v", err)
+		log.Fatalf("fail to write to global cover definition file: %v", err)
 	}
 }
