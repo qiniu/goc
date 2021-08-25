@@ -70,6 +70,7 @@ func runInstall(args []string, wd string) {
 		Target:                   gocBuild.TmpDir,
 		Mode:                     coverMode.String(),
 		AgentPort:                agentPort.String(),
+		Service:                  service,
 		Center:                   center,
 		Singleton:                singleton,
 		IsMod:                    gocBuild.IsMod,

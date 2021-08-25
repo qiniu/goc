@@ -72,6 +72,7 @@ goc run . [--buildflags] [--exec] [--arguments]
 			Center:                   gocServer,
 			Singleton:                singleton,
 			AgentPort:                "",
+			Service:                  service,
 			IsMod:                    gocBuild.IsMod,
 			ModRootPath:              gocBuild.ModRootPath,
 			OneMainPackage:           true, // go run is similar with go build, build only one main package
