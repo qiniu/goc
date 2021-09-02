@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"github.com/qiniu/goc/v2/pkg/client"
-	"github.com/qiniu/goc/v2/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -19,14 +18,17 @@ goc profile --host=http://192.168.1.1:8080 --output=./coverage.cov
 	Run: profile,
 }
 
-var output string // --output flag
+var (
+	profileHost   string
+	profileoutput string // --output flag
+)
 
 func init() {
-	profileCmd.Flags().StringVar(&config.GocConfig.Host, "host", "127.0.0.1:7777", "specify the host of the goc server")
-	profileCmd.Flags().StringVarP(&output, "output", "o", "", "download cover profile")
+	profileCmd.Flags().StringVar(&profileHost, "host", "127.0.0.1:7777", "specify the host of the goc server")
+	profileCmd.Flags().StringVarP(&profileoutput, "output", "o", "", "download cover profile")
 	rootCmd.AddCommand(profileCmd)
 }
 
 func profile(cmd *cobra.Command, args []string) {
-	client.NewWorker("http://" + config.GocConfig.Host).Profile(output)
+	client.NewWorker("http://" + profileHost).Profile(profileoutput)
 }

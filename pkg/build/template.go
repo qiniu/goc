@@ -1,4 +1,4 @@
-package cover
+package build
 
 import (
 	_ "embed"

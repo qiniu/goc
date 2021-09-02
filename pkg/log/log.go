@@ -1,14 +1,13 @@
 package log
 
 import (
-	"github.com/qiniu/goc/v2/pkg/config"
 	"go.uber.org/zap/zapcore"
 )
 
 var g Logger
 
-func NewLogger() {
-	if config.GocConfig.Debug == true {
+func NewLogger(debug bool) {
+	if debug == true {
 		g = newCiLogger()
 	} else {
 		g = &terminalLogger{
