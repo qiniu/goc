@@ -1,68 +1,47 @@
-package config
+package build
 
-import "time"
+import (
+	"crypto/sha256"
+	"fmt"
+	"path"
+	"time"
+)
 
-type gocConfig struct {
-	Debug bool
-	Host  string
-	Mode  string // cover mode
+// declareCoverVars attaches the required cover variables names
+// to the files, to be used when annotating the files.
+func declareCoverVars(p *Package) map[string]*FileVar {
+	coverVars := make(map[string]*FileVar)
+	coverIndex := 0
+	// We create the cover counters as new top-level variables in the package.
+	// We need to avoid collisions with user variables (GoCover_0 is unlikely but still)
+	// and more importantly with dot imports of other covered packages,
+	// so we append 12 hex digits from the SHA-256 of the import path.
+	// The point is only to avoid accidents, not to defeat users determined to
+	// break things.
+	sum := sha256.Sum256([]byte(p.ImportPath))
+	h := fmt.Sprintf("%x", sum[:6])
+	for _, file := range p.GoFiles {
+		// These names appear in the cmd/cover HTML interface.
+		var longFile = path.Join(p.ImportPath, file)
+		coverVars[file] = &FileVar{
+			File: longFile,
+			Var:  fmt.Sprintf("GoCover_%d_%x", coverIndex, h),
+		}
+		coverIndex++
+	}
 
-	GOPATH           string
-	GOBIN            string
-	CurWd            string
-	TmpWd            string
-	CurModProjectDir string
-	TmpModProjectDir string
+	for _, file := range p.CgoFiles {
+		// These names appear in the cmd/cover HTML interface.
+		var longFile = path.Join(p.ImportPath, file)
+		coverVars[file] = &FileVar{
+			File: longFile,
+			Var:  fmt.Sprintf("GoCover_%d_%x", coverIndex, h),
+		}
+		coverIndex++
+	}
 
-	Goflags  []string // command line flags
-	Packages []string // command line [packages]
-
-	ImportPath                  string // the whole import path of the project
-	Pkgs                        map[string]*Package
-	GlobalCoverVarImportPath    string
-	GlobalCoverVarImportPathDir string
+	return coverVars
 }
-
-// GocConfig 全局变量，存放 goc 的各种元属性
-var GocConfig gocConfig
-
-type goConfig struct {
-	BuildA                 bool
-	BuildBuildmode         string // -buildmode flag
-	BuildMod               string // -mod flag
-	BuildModReason         string // reason -mod flag is set, if set by default
-	BuildI                 bool   // -i flag
-	BuildLinkshared        bool   // -linkshared flag
-	BuildMSan              bool   // -msan flag
-	BuildN                 bool   // -n flag
-	BuildO                 string // -o flag
-	BuildP                 int    // -p flag
-	BuildPkgdir            string // -pkgdir flag
-	BuildRace              bool   // -race flag
-	BuildToolexec          string // -toolexec flag
-	BuildToolchainName     string
-	BuildToolchainCompiler func() string
-	BuildToolchainLinker   func() string
-	BuildTrimpath          bool // -trimpath flag
-	BuildV                 bool // -v flag
-	BuildWork              bool // -work flag
-	BuildX                 bool // -x flag
-	// from buildcontext
-	Installsuffix string // -installSuffix
-	BuildTags     string // -tags
-	// from load
-	BuildAsmflags   string
-	BuildCompiler   string
-	BuildGcflags    string
-	BuildGccgoflags string
-	BuildLdflags    string
-
-	// mod related
-	ModCacheRW bool
-	ModFile    string
-}
-
-var GoConfig goConfig
 
 // PackageCover holds all the generate coverage variables of a package
 type PackageCover struct {

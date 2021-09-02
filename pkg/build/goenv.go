@@ -10,17 +10,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/qiniu/goc/v2/pkg/config"
 	"github.com/qiniu/goc/v2/pkg/log"
 )
 
 // readProjectMetaInfo reads all meta informations of the corresponding project
 func (b *Build) readProjectMetaInfo() {
 	// get gopath & gobin
-	config.GocConfig.GOPATH = b.readGOPATH()
-	config.GocConfig.GOBIN = b.readGOBIN()
+	b.GOPATH = b.readGOPATH()
+	b.GOBIN = b.readGOBIN()
 	// 获取 [packages] 及其依赖的 package list
-	pkgs := b.listPackages(config.GocConfig.CurWd)
+	pkgs := b.listPackages(b.CurWd)
 
 	// get mod info
 	for _, pkg := range pkgs {
@@ -29,34 +28,34 @@ func (b *Build) readProjectMetaInfo() {
 			log.Fatalf("Go module is not enabled, please set GO111MODULE=auto or on")
 		}
 		// 工程根目录
-		config.GocConfig.CurModProjectDir = pkg.Module.Dir
-		config.GocConfig.ImportPath = pkg.Module.Path
+		b.CurModProjectDir = pkg.Module.Dir
+		b.ImportPath = pkg.Module.Path
 
 		break
 	}
 
 	// 如果当前目录不是工程根目录，那再次 go list 一次，获取整个工程的包信息
-	if config.GocConfig.CurWd != config.GocConfig.CurModProjectDir {
-		config.GocConfig.Pkgs = b.listPackages(config.GocConfig.CurModProjectDir)
+	if b.CurWd != b.CurModProjectDir {
+		b.Pkgs = b.listPackages(b.CurModProjectDir)
 	} else {
-		config.GocConfig.Pkgs = pkgs
+		b.Pkgs = pkgs
 	}
 
 	// get tmp folder name
-	config.GocConfig.TmpModProjectDir = filepath.Join(os.TempDir(), TmpFolderName(config.GocConfig.CurModProjectDir))
+	b.TmpModProjectDir = filepath.Join(os.TempDir(), TmpFolderName(b.CurModProjectDir))
 	// get working dir in the corresponding tmp dir
-	config.GocConfig.TmpWd = filepath.Join(config.GocConfig.TmpModProjectDir, config.GocConfig.CurWd[len(config.GocConfig.CurModProjectDir):])
+	b.TmpWd = filepath.Join(b.TmpModProjectDir, b.CurWd[len(b.CurModProjectDir):])
 	// get GlobalCoverVarImportPath
-	config.GocConfig.GlobalCoverVarImportPath = path.Join(config.GocConfig.ImportPath, TmpFolderName(config.GocConfig.CurModProjectDir))
+	b.GlobalCoverVarImportPath = path.Join(b.ImportPath, TmpFolderName(b.CurModProjectDir))
 	log.Donef("project meta information parsed")
 }
 
 // displayProjectMetaInfo prints basic infomation of this project to stdout
 func (b *Build) displayProjectMetaInfo() {
-	log.Infof("GOPATH: %v", config.GocConfig.GOPATH)
-	log.Infof("GOBIN: %v", config.GocConfig.GOBIN)
-	log.Infof("Project Directory: %v", config.GocConfig.CurModProjectDir)
-	log.Infof("Temporary Project Directory: %v", config.GocConfig.TmpModProjectDir)
+	log.Infof("GOPATH: %v", b.GOPATH)
+	log.Infof("GOBIN: %v", b.GOBIN)
+	log.Infof("Project Directory: %v", b.CurModProjectDir)
+	log.Infof("Temporary Project Directory: %v", b.TmpModProjectDir)
 	log.Infof("")
 }
 
@@ -79,7 +78,7 @@ func (b *Build) readGOBIN() string {
 }
 
 // listPackages list all packages under specific via go list command.
-func (b *Build) listPackages(dir string) map[string]*config.Package {
+func (b *Build) listPackages(dir string) map[string]*Package {
 	cmd := exec.Command("go", "list", "-json", "./...")
 	cmd.Dir = dir
 
@@ -95,10 +94,10 @@ func (b *Build) listPackages(dir string) map[string]*config.Package {
 	}
 
 	dec := json.NewDecoder(bytes.NewBuffer(out))
-	pkgs := make(map[string]*config.Package, 0)
+	pkgs := make(map[string]*Package)
 
 	for {
-		var pkg config.Package
+		var pkg Package
 		if err := dec.Decode(&pkg); err != nil {
 			if err == io.EOF {
 				break

@@ -1,4 +1,4 @@
-package cover
+package build
 
 import (
 	"fmt"
@@ -6,30 +6,28 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/qiniu/goc/v2/pkg/config"
-	"github.com/qiniu/goc/v2/pkg/cover/internal/tool"
-	"github.com/qiniu/goc/v2/pkg/cover/internal/websocket"
+	"github.com/qiniu/goc/v2/pkg/build/internal/tool"
+	"github.com/qiniu/goc/v2/pkg/build/internal/websocket"
 	"github.com/qiniu/goc/v2/pkg/log"
 )
 
 // Inject injects cover variables for all the .go files in the target directory
-func Inject() {
+func (b *Build) Inject() {
 	log.StartWait("injecting cover variables")
 
-	var seen = make(map[string]*config.PackageCover)
+	var seen = make(map[string]*PackageCover)
 
 	// 所有插桩变量定义声明
 	allDecl := ""
 
-	pkgs := config.GocConfig.Pkgs
+	pkgs := b.Pkgs
 	for _, pkg := range pkgs {
 		if pkg.Name == "main" {
-			log.Infof("handle main package: %v", pkg.ImportPath)
 			// 该 main 二进制所关联的所有插桩变量的元信息
 			// 每个 main 之间是不相关的，需要重新定义
-			allMainCovers := make([]*config.PackageCover, 0)
+			allMainCovers := make([]*PackageCover, 0)
 			// 注入 main package
-			mainCover, mainDecl := addCounters(pkg)
+			mainCover, mainDecl := b.addCounters(pkg)
 			// 收集插桩变量的定义和元信息
 			allDecl += mainDecl
 			allMainCovers = append(allMainCovers, mainCover)
@@ -43,7 +41,7 @@ func Inject() {
 				// 依赖需要忽略 Go 标准库和 go.mod 引入的第三方
 				if depPkg, ok := pkgs[dep]; ok {
 					// 注入依赖的 package
-					packageCover, depDecl := addCounters(depPkg)
+					packageCover, depDecl := b.addCounters(depPkg)
 					// 收集插桩变量的定义和元信息
 					allDecl += depDecl
 					allMainCovers = append(allMainCovers, packageCover)
@@ -52,20 +50,25 @@ func Inject() {
 				}
 			}
 			// 为每个 main 包注入 websocket handler
-			injectGocAgent(getPkgTmpDir(pkg.Dir), allMainCovers)
+			b.injectGocAgent(b.getPkgTmpDir(pkg.Dir), allMainCovers)
+			if b.Mode == "watch" {
+				log.Donef("inject main package [%v] with rpcagent and watchagent", pkg.ImportPath)
+			} else {
+				log.Donef("inject main package [%v] with rpcagent", pkg.ImportPath)
+			}
 		}
 	}
 	// 在工程根目录注入所有插桩变量的声明+定义
-	injectGlobalCoverVarFile(allDecl)
+	b.injectGlobalCoverVarFile(allDecl)
 
 	// 添加自定义 websocket 依赖
 	// 用户代码可能有 gorrila/websocket 的依赖，为避免依赖冲突，以及可能的 replace/vendor，
 	// 这里直接注入一份完整的 gorrila/websocket 实现
-	websocket.AddCustomWebsocketDep()
+	websocket.AddCustomWebsocketDep(b.GlobalCoverVarImportPathDir)
 	log.Donef("websocket library injected")
 
 	log.StopWait()
-	log.Donef("cover variables injected")
+	log.Donef("global cover variables injected")
 }
 
 // addCounters is different from official go tool cover
@@ -75,18 +78,18 @@ func Inject() {
 // 2. no declarartions for these covervars
 //
 // 3. return the declarations as string
-func addCounters(pkg *config.Package) (*config.PackageCover, string) {
-	mode := config.GocConfig.Mode
-	gobalCoverVarImportPath := config.GocConfig.GlobalCoverVarImportPath
+func (b *Build) addCounters(pkg *Package) (*PackageCover, string) {
+	mode := b.Mode
+	gobalCoverVarImportPath := b.GlobalCoverVarImportPath
 
 	coverVarMap := declareCoverVars(pkg)
 
 	decl := ""
 	for file, coverVar := range coverVarMap {
-		decl += "\n" + tool.Annotate(filepath.Join(getPkgTmpDir(pkg.Dir), file), mode, coverVar.Var, coverVar.File, gobalCoverVarImportPath) + "\n"
+		decl += "\n" + tool.Annotate(filepath.Join(b.getPkgTmpDir(pkg.Dir), file), mode, coverVar.Var, coverVar.File, gobalCoverVarImportPath) + "\n"
 	}
 
-	return &config.PackageCover{
+	return &PackageCover{
 		Package: pkg,
 		Vars:    coverVarMap,
 	}, decl
@@ -99,13 +102,13 @@ func addCounters(pkg *config.Package) (*config.PackageCover, string) {
 //
 // 在原工程目录已经做了一次 go list -json，在临时目录没有必要再做一遍，直接转换一下就能得到
 // 临时目录中的 pkg.Dir。
-func getPkgTmpDir(pkgDir string) string {
-	relDir, err := filepath.Rel(config.GocConfig.CurModProjectDir, pkgDir)
+func (b *Build) getPkgTmpDir(pkgDir string) string {
+	relDir, err := filepath.Rel(b.CurModProjectDir, pkgDir)
 	if err != nil {
 		log.Fatalf("go json -list meta info wrong: %v", err)
 	}
 
-	return filepath.Join(config.GocConfig.TmpModProjectDir, relDir)
+	return filepath.Join(b.TmpModProjectDir, relDir)
 }
 
 // injectGocAgent inject handlers like following
@@ -121,7 +124,7 @@ func getPkgTmpDir(pkgDir string) string {
 //
 // 11111_22222_bridge.go 仅仅用于引用 11111_22222_package, where package contains ws agent main logic.
 // 使用 bridge.go 文件是为了避免插桩逻辑中的变量名污染 main 包
-func injectGocAgent(where string, covers []*config.PackageCover) {
+func (b *Build) injectGocAgent(where string, covers []*PackageCover) {
 	injectPkgName := "goc-cover-agent-apis-auto-generated-11111-22222-package"
 	injectBridgeName := "goc-cover-agent-apis-auto-generated-11111-22222-bridge.go"
 	wherePkg := filepath.Join(where, injectPkgName)
@@ -159,22 +162,22 @@ func injectGocAgent(where string, covers []*config.PackageCover) {
 	defer f2.Close()
 
 	var _coverMode string
-	if config.GocConfig.Mode == "watch" {
+	if b.Mode == "watch" {
 		_coverMode = "cover"
 	} else {
-		_coverMode = config.GocConfig.Mode
+		_coverMode = b.Mode
 	}
 	tmplData := struct {
-		Covers                   []*config.PackageCover
+		Covers                   []*PackageCover
 		GlobalCoverVarImportPath string
 		Package                  string
 		Host                     string
 		Mode                     string
 	}{
 		Covers:                   covers,
-		GlobalCoverVarImportPath: config.GocConfig.GlobalCoverVarImportPath,
+		GlobalCoverVarImportPath: b.GlobalCoverVarImportPath,
 		Package:                  injectPkgName,
-		Host:                     config.GocConfig.Host,
+		Host:                     b.Host,
 		Mode:                     _coverMode,
 	}
 
@@ -183,7 +186,7 @@ func injectGocAgent(where string, covers []*config.PackageCover) {
 	}
 
 	// 写入 watch
-	if config.GocConfig.Mode != "watch" {
+	if b.Mode != "watch" {
 		return
 	}
 	f, err := os.Create(filepath.Join(wherePkg, "watchagent.go"))
@@ -196,9 +199,9 @@ func injectGocAgent(where string, covers []*config.PackageCover) {
 		Host                     string
 		GlobalCoverVarImportPath string
 	}{
-		Random:                   filepath.Base(config.GocConfig.TmpModProjectDir),
-		Host:                     config.GocConfig.Host,
-		GlobalCoverVarImportPath: config.GocConfig.GlobalCoverVarImportPath,
+		Random:                   filepath.Base(b.TmpModProjectDir),
+		Host:                     b.Host,
+		GlobalCoverVarImportPath: b.GlobalCoverVarImportPath,
 	}
 
 	if err := coverWatchTmpl.Execute(f, tmplwatchData); err != nil {
@@ -207,10 +210,10 @@ func injectGocAgent(where string, covers []*config.PackageCover) {
 }
 
 // injectGlobalCoverVarFile 写入所有插桩变量的全局定义至一个单独的文件
-func injectGlobalCoverVarFile(decl string) {
-	globalCoverVarPackage := path.Base(config.GocConfig.GlobalCoverVarImportPath)
-	globalCoverDef := filepath.Join(config.GocConfig.TmpModProjectDir, globalCoverVarPackage)
-	config.GocConfig.GlobalCoverVarImportPathDir = globalCoverDef
+func (b *Build) injectGlobalCoverVarFile(decl string) {
+	globalCoverVarPackage := path.Base(b.GlobalCoverVarImportPath)
+	globalCoverDef := filepath.Join(b.TmpModProjectDir, globalCoverVarPackage)
+	b.GlobalCoverVarImportPathDir = globalCoverDef
 
 	err := os.MkdirAll(globalCoverDef, os.ModePerm)
 	if err != nil {
@@ -225,7 +228,7 @@ func injectGlobalCoverVarFile(decl string) {
 
 	packageName := "package coverdef\n\n"
 
-	random := filepath.Base(config.GocConfig.TmpModProjectDir)
+	random := filepath.Base(b.TmpModProjectDir)
 	varWatchDef := fmt.Sprintf(`
 var WatchChannel_%v = make(chan *blockInfo, 1024)
 

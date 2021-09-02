@@ -4,12 +4,11 @@ import (
 	"fmt"
 
 	"github.com/gorilla/websocket"
-	"github.com/qiniu/goc/v2/pkg/config"
 	"github.com/qiniu/goc/v2/pkg/log"
 )
 
-func Watch() {
-	watchUrl := fmt.Sprintf("ws://%v/v2/cover/ws/watch", config.GocConfig.Host)
+func Watch(host string) {
+	watchUrl := fmt.Sprintf("ws://%v/v2/cover/ws/watch", host)
 	c, _, err := websocket.DefaultDialer.Dial(watchUrl, nil)
 	if err != nil {
 		log.Fatalf("cannot connect to goc server: %v", err)

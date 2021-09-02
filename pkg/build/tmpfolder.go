@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/qiniu/goc/v2/pkg/config"
 	"github.com/qiniu/goc/v2/pkg/log"
 	"github.com/tongjingran/copy"
 	"golang.org/x/mod/modfile"
@@ -18,8 +17,8 @@ import (
 //
 // It will ignore .git and irregular files, only copy source(text) files
 func (b *Build) copyProjectToTmp() {
-	curProject := config.GocConfig.CurModProjectDir
-	tmpProject := config.GocConfig.TmpModProjectDir
+	curProject := b.CurModProjectDir
+	tmpProject := b.TmpModProjectDir
 
 	if _, err := os.Stat(tmpProject); !os.IsNotExist(err) {
 		log.Infof("find previous temporary directory, delete")
@@ -67,8 +66,8 @@ func skipCopy(src string, info os.FileInfo) (bool, error) {
 
 // clean clears the temporary project
 func (b *Build) clean() {
-	if config.GocConfig.Debug != true {
-		if err := os.RemoveAll(config.GocConfig.TmpModProjectDir); err != nil {
+	if !b.Debug {
+		if err := os.RemoveAll(b.TmpModProjectDir); err != nil {
 			log.Fatalf("fail to delete the temporary project: %v", err)
 		}
 		log.Donef("delete the temporary project")
@@ -90,7 +89,7 @@ func (b *Build) clean() {
 // after the project is copied to temporary directory, it should be rewritten as
 // 'replace github.com/qiniu/bar => /path/to/aa/bb/home/foo/bar'
 func (b *Build) updateGoModFile() (updateFlag bool, newModFile []byte) {
-	tempModfile := filepath.Join(config.GocConfig.TmpModProjectDir, "go.mod")
+	tempModfile := filepath.Join(b.TmpModProjectDir, "go.mod")
 	buf, err := ioutil.ReadFile(tempModfile)
 	if err != nil {
 		log.Fatalf("cannot find go.mod file in temporary directory: %v", err)
@@ -111,7 +110,7 @@ func (b *Build) updateGoModFile() (updateFlag bool, newModFile []byte) {
 		// absolute path no need to rewrite
 		if newVersion == "" && !filepath.IsAbs(newPath) {
 			var absPath string
-			fullPath := filepath.Join(config.GocConfig.CurModProjectDir, newPath)
+			fullPath := filepath.Join(b.CurModProjectDir, newPath)
 			absPath, _ = filepath.Abs(fullPath)
 			// DropReplace & AddReplace will not return error
 			// so no need to check the error
@@ -126,5 +125,13 @@ func (b *Build) updateGoModFile() (updateFlag bool, newModFile []byte) {
 	//     return Format(f.Syntax), nil
 	// }
 	newModFile, _ = oriGoModFile.Format()
+
+	if updateFlag {
+		log.Infof("go.mod needs rewrite")
+		err := os.WriteFile(tempModfile, newModFile, os.ModePerm)
+		if err != nil {
+			log.Fatalf("fail to update go.mod: %v", err)
+		}
+	}
 	return
 }

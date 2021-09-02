@@ -4,13 +4,11 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/qiniu/goc/v2/pkg/config"
-	"github.com/qiniu/goc/v2/pkg/cover"
 	"github.com/qiniu/goc/v2/pkg/log"
 )
 
-func NewInstall(args []string) *Build {
-	return NewBuild(args)
+func NewInstall(opts ...GocOption) *Build {
+	return NewBuild(opts...)
 }
 
 // Install starts go install
@@ -24,18 +22,21 @@ func (b *Build) Install() {
 	defer b.clean()
 
 	log.Donef("project copied to temporary directory")
-	// 2. inject cover vars
-	cover.Inject()
-	// 3. install in the temp project
+
+	// 2. update go.mod file if needed
+	b.updateGoModFile()
+	// 3. inject cover vars
+	b.Inject()
+	// 4. install in the temp project
 	b.doInstallInTemp()
 }
 
 func (b *Build) doInstallInTemp() {
 	log.StartWait("installing the injected project")
 
-	goflags := config.GocConfig.Goflags
+	goflags := b.Goflags
 
-	pacakges := config.GocConfig.Packages
+	pacakges := b.Packages
 
 	goflags = append(goflags, pacakges...)
 
@@ -43,7 +44,7 @@ func (b *Build) doInstallInTemp() {
 	args = append(args, goflags...)
 	// go 命令行由 go install [build flags] [packages] 组成
 	cmd := exec.Command("go", args...)
-	cmd.Dir = config.GocConfig.TmpWd
+	cmd.Dir = b.TmpWd
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

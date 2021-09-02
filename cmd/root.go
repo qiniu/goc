@@ -14,7 +14,6 @@
 package cmd
 
 import (
-	"github.com/qiniu/goc/v2/pkg/config"
 	"github.com/qiniu/goc/v2/pkg/log"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +29,7 @@ Find more information at:
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		log.DisplayGoc()
 		// init logger
-		log.NewLogger()
+		log.NewLogger(globalDebug)
 	},
 
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
@@ -38,8 +37,10 @@ Find more information at:
 	},
 }
 
+var globalDebug bool
+
 func init() {
-	rootCmd.PersistentFlags().BoolVar(&config.GocConfig.Debug, "gocdebug", false, "run goc in debug mode")
+	rootCmd.PersistentFlags().BoolVar(&globalDebug, "gocdebug", false, "run goc in debug mode")
 }
 
 // Execute the goc tool
