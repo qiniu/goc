@@ -20,7 +20,7 @@ import (
 	"github.com/qiniu/goc/v2/pkg/log"
 )
 
-func NewInstall(opts ...GocOption) *Build {
+func NewInstall(opts ...gocOption) *Build {
 	return NewBuild(opts...)
 }
 

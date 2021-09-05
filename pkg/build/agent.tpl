@@ -16,13 +16,17 @@ package cover
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 	"net/url"
+	"encoding/json"
 	"os"
-	"strconv"
 	"strings"
+	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 	"testing"
@@ -33,8 +37,15 @@ import (
 )
 
 var (
-	waitDelay time.Duration = 10 * time.Second
+	waitDelay time.Duration = 5 * time.Second
 	host      string        = "{{.Host}}"
+)
+
+var (
+	token string
+	id string
+	cond = sync.NewCond(&sync.Mutex{})
+	register_extra = os.Getenv("GOC_REGISTER_EXTRA")
 )
 
 func init() {
@@ -47,26 +58,35 @@ func init() {
 	var dialer = websocket.DefaultDialer
 
 	go func() {
+		register(host)
+
+		cond.L.Lock()
+		cond.Broadcast()
+		cond.L.Unlock()
+
 		// 永不退出，出错后统一操作为：延时 + conitnue
 		for {
-			// 获取进程元信息用于注册
-			ps, err := getRegisterInfo()
-			if err != nil {
-				time.Sleep(waitDelay)
-				continue
-			}
-
-			// 注册，直接将元信息放在 ws 地址中
+			// 直接将 token 放在 ws 地址中
 			v := url.Values{}
-			v.Set("hostname", ps.hostname)
-			v.Set("pid", strconv.Itoa(ps.pid))
-			v.Set("cmdline", ps.cmdline)
+			v.Set("token", token)
+			v.Set("id", id)
 			v.Encode()
 
 			rpcstreamUrl := fmt.Sprintf("ws://%v/v2/internal/ws/rpcstream?%v", host, v.Encode())
-			ws, _, err := dialer.Dial(rpcstreamUrl, nil)
+			ws, resp, err := dialer.Dial(rpcstreamUrl, nil)
 			if err != nil {
-				log.Printf("[goc][Error] rpc fail to dial to goc server: %v", err)
+				if resp != nil {
+					tmp, _ := ioutil.ReadAll(resp.Body)
+					resp.Body.Close()
+					log.Printf("[goc][Error] rpc fail to dial to goc server: %v, body: %v", err, string(tmp))
+					
+					if isOffline(tmp) {
+						log.Printf("[goc][Error] needs re-register")
+						register(host)
+					}
+				} else {
+					log.Printf("[goc][Error] rpc fail to dial to goc server: %v", err)
+				}
 				time.Sleep(waitDelay)
 				continue
 			}
@@ -83,6 +103,86 @@ func init() {
 			log.Printf("[goc][Error] rpc connection to goc server broken", )
 		}
 	}()
+}
+
+// register
+func register (host string) {
+	for {
+		// 获取进程元信息用于注册
+		ps, err := getRegisterInfo()
+		if err != nil {
+			time.Sleep(waitDelay)
+			continue
+		}
+
+		// 注册，直接将元信息放在 ws 地址中
+		v := url.Values{}
+		v.Set("hostname", ps.hostname)
+		v.Set("pid", strconv.Itoa(ps.pid))
+		v.Set("cmdline", ps.cmdline)
+		v.Set("extra", register_extra)
+		v.Encode()
+
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%v/v2/internal/register?%v", host, v.Encode()), nil)
+		if err != nil {
+			log.Printf("[goc][Error] register generate register http request: %v", err)
+			time.Sleep(waitDelay)
+			continue
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			log.Printf("[goc][Error] register fail to goc server: %v", err)
+			time.Sleep(waitDelay)
+			continue				
+		}
+		defer resp.Body.Close()
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("[goc][Error] fail to get register resp from the goc server: %v", err)
+			time.Sleep(waitDelay)
+			continue	
+		}
+
+		if resp.StatusCode != 200 {
+			log.Printf("[goc][Error] wrong register http statue code: %v", resp.StatusCode)
+			time.Sleep(waitDelay)
+			continue
+		}
+
+		registerResp := struct {
+			Token string `json:"token"`
+			Id string 	 `json:"id"`
+		}{}
+
+		err = json.Unmarshal(body, &registerResp)
+		if err != nil {
+			log.Printf("[goc][Error] register response json unmarshal failed: %v", err)
+			time.Sleep(waitDelay)
+			continue				
+		}
+
+		// register success
+		token = registerResp.Token
+		id = registerResp.Id
+		break
+	}
+}
+
+// check if offline failed
+func isOffline(data []byte) bool {
+	val := struct {
+		Code int `json:"code"`
+	}{}
+	err := json.Unmarshal(data, &val)
+	if err != nil {
+		return true
+	}
+	if val.Code == 1 {
+		return true
+	}
+	return false
 }
 
 // rpc

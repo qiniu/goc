@@ -17,8 +17,8 @@ import (
 	"fmt"
 	"time"
 	"os"
+	"io/ioutil"
 	"log"
-	"strconv"
 	"net/url"
 
 	"{{.GlobalCoverVarImportPath}}/websocket"
@@ -36,25 +36,27 @@ func init() {
 	var dialer = websocket.DefaultDialer
 
 	go func() {
+		cond.L.Lock()
+		cond.Wait()
+		cond.L.Unlock()
+
 		for {			
-			// 获取进程元信息用于注册
-			ps, err := getRegisterInfo()
-			if err != nil {
-				time.Sleep(waitDelay)
-				continue
-			}
-		
-			// 注册，直接将元信息放在 ws 地址中
+			// 直接将 token 放在 ws 地址中
 			v := url.Values{}
-			v.Set("hostname", ps.hostname)
-			v.Set("pid", strconv.Itoa(ps.pid))
-			v.Set("cmdline", ps.cmdline)
+			v.Set("token", token)
+			v.Set("id", id)
 			v.Encode()
 
 			watchstreamUrl := fmt.Sprintf("ws://%v/v2/internal/ws/watchstream?%v", host, v.Encode())
-			ws, _, err := dialer.Dial(watchstreamUrl, nil)
+			ws, resp, err := dialer.Dial(watchstreamUrl, nil)
 			if err != nil {
-				log.Printf("[goc][Error] watch fail to dial to goc server: %v", err)
+				if resp != nil {
+					tmp, _ := ioutil.ReadAll(resp.Body)
+					resp.Body.Close()
+					log.Printf("[goc][Error] watch fail to dial to goc server: %v, body: %v", err, string(tmp))
+				} else {
+					log.Printf("[goc][Error] watch fail to dial to goc server: %v", err)
+				}
 				time.Sleep(waitDelay)
 				continue
 			}

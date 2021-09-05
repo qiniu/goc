@@ -17,45 +17,45 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type GocOption func(*Build)
+type gocOption func(*Build)
 
-func WithHost(host string) GocOption {
+func WithHost(host string) gocOption {
 	return func(b *Build) {
 		b.Host = host
 	}
 }
 
-func WithMode(mode string) GocOption {
+func WithMode(mode string) gocOption {
 	return func(b *Build) {
 		b.Mode = mode
 	}
 }
 
-func WithArgs(args []string) GocOption {
+func WithArgs(args []string) gocOption {
 	return func(b *Build) {
 		b.Args = args
 	}
 }
 
-func WithFlagSets(sets *pflag.FlagSet) GocOption {
+func WithFlagSets(sets *pflag.FlagSet) gocOption {
 	return func(b *Build) {
 		b.FlagSets = sets
 	}
 }
 
-func WithBuild() GocOption {
+func WithBuild() gocOption {
 	return func(b *Build) {
 		b.BuildType = 0
 	}
 }
 
-func WithInstall() GocOption {
+func WithInstall() gocOption {
 	return func(b *Build) {
 		b.BuildType = 1
 	}
 }
 
-func WithDebug(enable bool) GocOption {
+func WithDebug(enable bool) gocOption {
 	return func(b *Build) {
 		b.Debug = enable
 	}

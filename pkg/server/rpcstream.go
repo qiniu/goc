@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"net/rpc"
 	"net/rpc/jsonrpc"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -32,33 +33,41 @@ import (
 // 2. 每个链接的 goc agent 作为 rpc 服务端
 func (gs *gocServer) serveRpcStream(c *gin.Context) {
 	// 检查插桩服务上报的信息
-	remoteIP, _ := c.RemoteIP()
-	hostname := c.Query("hostname")
-	pid := c.Query("pid")
-	cmdline := c.Query("cmdline")
+	rpcRemoteIP, _ := c.RemoteIP()
+	id := c.Query("id")
+	token := c.Query("token")
 
-	if hostname == "" || pid == "" || cmdline == "" {
+	rawagent, ok := gs.agents.Load(id)
+	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"msg": "missing some params",
-		})
-		return
-	}
-	// 计算插桩服务 id
-	agentId := gs.generateAgentId(remoteIP.String(), hostname, cmdline, pid)
-	// 检查 id 是否重复
-	if _, ok := gs.rpcAgents.Load(agentId); ok {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"msg": "the rpc agent already exists",
+			"msg":  "agent not registered",
+			"code": 1,
 		})
 		return
 	}
 
-	gocA := &gocCoveredAgent{
-		RemoteIP: remoteIP.String(),
-		Hostname: hostname,
-		Pid:      pid,
-		CmdLine:  cmdline,
-		exitCh:   make(chan int),
+	agent := rawagent.(*gocCoveredAgent)
+	if agent.Token != token {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg":  "register token not match",
+			"code": 1,
+		})
+		return
+	}
+
+	// 更新 agent 信息
+	agent.RpcRemoteIP = rpcRemoteIP.String()
+	agent.exitCh = make(chan int)
+	agent.Status &= ^DISCONNECT // 取消 DISCONNECT 的状态
+	agent.Status |= RPCCONNECT  // 设置为 RPC CONNECT 状态
+	// 注册销毁函数
+	var once sync.Once
+	agent.closeRpcConnOnce = func() {
+		once.Do(func() {
+			// 为什么只是关闭 channel？其它资源如何释放？
+			// close channel 后，本 goroutine 会进入到 defer
+			close(agent.exitCh)
+		})
 	}
 
 	// upgrade to websocket
@@ -74,10 +83,15 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 		// 发送 close msg
 		gs.wsclose(ws, deadline)
 		time.Sleep(deadline)
-		// 从维护的 websocket 链接字典中移除
-		gs.rpcAgents.Delete(agentId)
+
+		// 取消 RPC CONNECT 状态
+		agent.Status &= ^RPCCONNECT
+		if agent.Status == 0 {
+			agent.Status = DISCONNECT
+		}
+
 		ws.Close()
-		log.Infof("close rpc connection, %v", hostname)
+		log.Infof("close rpc connection, %v", agent.Hostname)
 	}()
 
 	// set pong handler
@@ -94,17 +108,15 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 
 		for range ticker.C {
 			if err := gs.wsping(ws, PongWait); err != nil {
-				log.Errorf("rpc ping to %v failed: %v", hostname, err)
+				log.Errorf("rpc ping to %v failed: %v", agent.Hostname, err)
 				break
 			}
 		}
 
-		gocA.once.Do(func() {
-			close(gocA.exitCh)
-		})
+		agent.closeRpcConnOnce()
 	}()
 
-	log.Infof("one rpc agent established, %v, cmdline: %v, pid: %v, hostname: %v", ws.RemoteAddr(), cmdline, pid, hostname)
+	log.Infof("one rpc agent established, %v, cmdline: %v, pid: %v, hostname: %v", ws.RemoteAddr(), agent.CmdLine, agent.Pid, agent.Hostname)
 	// new rpc agent
 	// 在这里 websocket server 作为 rpc 的客户端，
 	// 发送 rpc 请求，
@@ -112,11 +124,10 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 	rwc := &ReadWriteCloser{ws: ws}
 	codec := jsonrpc.NewClientCodec(rwc)
 
-	gocA.rpc = rpc.NewClientWithCodec(codec)
-	gocA.Id = string(agentId)
-	gs.rpcAgents.Store(agentId, gocA)
+	agent.rpc = rpc.NewClientWithCodec(codec)
+
 	// wait for exit
-	<-gocA.exitCh
+	<-agent.exitCh
 }
 
 // generateAgentId generate id based on agent's meta infomation
