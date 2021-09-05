@@ -29,7 +29,7 @@ import (
 func (gs *gocServer) listAgents(c *gin.Context) {
 	agents := make([]*gocCoveredAgent, 0)
 
-	gs.rpcAgents.Range(func(key, value interface{}) bool {
+	gs.agents.Range(func(key, value interface{}) bool {
 		agent, ok := value.(*gocCoveredAgent)
 		if !ok {
 			return false
@@ -52,7 +52,7 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 
 	mergedProfiles := make([][]*cover.Profile, 0)
 
-	gs.rpcAgents.Range(func(key, value interface{}) bool {
+	gs.agents.Range(func(key, value interface{}) bool {
 		agent, ok := value.(*gocCoveredAgent)
 		if !ok {
 			return false
@@ -81,16 +81,12 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 			case <-time.After(timeout):
 				log.Warnf("rpc call timeout: %v", agent.Hostname)
 				// 关闭链接
-				agent.once.Do(func() {
-					close(agent.exitCh)
-				})
+				agent.closeRpcConnOnce()
 			case err := <-done:
 				// 调用 rpc 发生错误
 				if err != nil {
 					// 关闭链接
-					agent.once.Do(func() {
-						close(agent.exitCh)
-					})
+					agent.closeRpcConnOnce()
 				}
 			}
 			// append profile
@@ -98,9 +94,7 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 			if err != nil {
 				log.Errorf("fail to convert the received profile from: %v, reasson: %v. let's close the connection", agent.Id, err)
 				// 关闭链接
-				agent.once.Do(func() {
-					close(agent.exitCh)
-				})
+				agent.closeRpcConnOnce()
 				return
 			}
 			mu.Lock()
@@ -140,7 +134,7 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 //
 // it is async, the function will return immediately
 func (gs *gocServer) resetProfiles(c *gin.Context) {
-	gs.rpcAgents.Range(func(key, value interface{}) bool {
+	gs.agents.Range(func(key, value interface{}) bool {
 		agent, ok := value.(gocCoveredAgent)
 		if !ok {
 			return false
@@ -153,9 +147,7 @@ func (gs *gocServer) resetProfiles(c *gin.Context) {
 			if err != nil {
 				log.Errorf("fail to reset profile from: %v, reasson: %v. let's close the connection", agent.Id, err)
 				// 关闭链接
-				agent.once.Do(func() {
-					close(agent.exitCh)
-				})
+				agent.closeRpcConnOnce()
 			}
 		}()
 
@@ -212,4 +204,47 @@ func (gs *gocServer) watchProfileUpdate(c *gin.Context) {
 	}()
 
 	<-gwc.exitCh
+}
+
+func (gs *gocServer) removeAgentById(c *gin.Context) {
+	id := c.Param("id")
+
+	rawagent, ok := gs.agents.Load(id)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"msg": "agent not found",
+		})
+		return
+	}
+
+	agent, ok := rawagent.(*gocCoveredAgent)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"msg": "agent not found",
+		})
+		return
+	}
+
+	// 关闭相应连接
+	agent.closeConnection()
+	// 从维护 agent 池里删除
+	gs.agents.Delete(id)
+	// 从持久化中删除
+	gs.removeAgentFromStore(id)
+}
+
+func (gs *gocServer) removeAgents(c *gin.Context) {
+	gs.agents.Range(func(key, value interface{}) bool {
+		agent, ok := value.(*gocCoveredAgent)
+		if !ok {
+			return false
+		}
+
+		agent.closeConnection()
+		gs.agents.Delete(key)
+
+		return true
+	})
+
+	gs.removeAllAgentsFromStore()
 }

@@ -51,7 +51,7 @@ type Build struct {
 
 // NewBuild creates a Build struct
 //
-func NewBuild(opts ...GocOption) *Build {
+func NewBuild(opts ...gocOption) *Build {
 	b := &Build{}
 
 	for _, opt := range opts {
