@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkgoc_doc=self.webpackChunkgoc_doc||[]).push([[982],{3313:function(e){e.exports=JSON.parse('{"pluginId":"goc-two","version":"current","label":"Next","banner":null,"badge":false,"className":"docs-version-current","isLast":true,"docsSidebars":{"tutorialSidebar":[{"type":"link","label":"intro","href":"/goc/v2/intro"}]}}')}}]);
