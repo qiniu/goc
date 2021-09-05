@@ -6,8 +6,8 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 (module.exports = {
   title: 'goc 官方文档站',
   tagline: 'Dinosaurs are cool',
-  url: 'https://goc.github.io',
-  baseUrl: '/',
+  url: 'https://qiniu.github.io',
+  baseUrl: '/goc/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
