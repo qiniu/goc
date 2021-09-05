@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0">
+    <channel>
+        <title>goc 官方文档站 Blog</title>
+        <link>https://goc.github.io/en/blog</link>
+        <description>goc 官方文档站 Blog</description>
+        <lastBuildDate>Sun, 05 Sep 2021 00:00:00 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <item>
+            <title><![CDATA[Welcome]]></title>
+            <link>https://goc.github.io/en/blog/welcome</link>
+            <guid>welcome</guid>
+            <pubDate>Sun, 05 Sep 2021 00:00:00 GMT</pubDate>
+            <description><![CDATA[may the force be with you]]></description>
+        </item>
+    </channel>
+</rss>
