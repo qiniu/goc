@@ -53,7 +53,7 @@ goc run . [--buildflags] [--exec] [--arguments]
 		server := cover.NewMemoryBasedServer() // only save services in memory
 
 		// start goc server
-		var l = newLocalListener()
+		var l = newLocalListener(agentPort.String())
 		go func() {
 			err = server.Route(ioutil.Discard).RunListener(l)
 			if err != nil {
@@ -62,6 +62,10 @@ goc run . [--buildflags] [--exec] [--arguments]
 		}()
 		gocServer := fmt.Sprintf("http://%s", l.Addr().String())
 		fmt.Printf("[goc] goc server started: %s \n", gocServer)
+
+		if viper.IsSet("center") {
+			gocServer = center
+		}
 
 		// execute covers for the target source with original buildFlags and new GOPATH( tmp:original )
 		ci := &cover.CoverInfo{
@@ -93,8 +97,11 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 }
 
-func newLocalListener() net.Listener {
-	l, err := net.Listen("tcp", "127.0.0.1:0")
+func newLocalListener(addr string) net.Listener {
+	if addr == "" {
+		addr = "127.0.0.1:0"
+	}
+	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		if l, err = net.Listen("tcp6", "[::1]:0"); err != nil {
 			log.Fatalf("failed to listen on a port: %v", err)
