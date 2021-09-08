@@ -19,27 +19,45 @@ import (
 )
 
 var listCmd = &cobra.Command{
-	Use:   "list",
+	Use:   "service",
 	Short: "Lists all the registered services",
 	Long:  "Lists all the registered services",
-	Example: `
-goc list [flags]
-`,
-
-	Run: list,
 }
 
 var (
 	listHost string
 	listWide bool
+	listIds  []string
 )
 
 func init() {
-	listCmd.Flags().StringVar(&listHost, "host", "127.0.0.1:7777", "specify the host of the goc server")
-	listCmd.Flags().BoolVar(&listWide, "wide", false, "list all services with more information (such as pid)")
+	listCmd.PersistentFlags().StringVar(&listHost, "host", "127.0.0.1:7777", "specify the host of the goc server")
+	listCmd.PersistentFlags().BoolVar(&listWide, "wide", false, "list all services with more information (such as pid)")
+	listCmd.PersistentFlags().StringSliceVar(&listIds, "id", nil, "specify the ids of the services")
+
+	listCmd.AddCommand(getServiceCmd)
+	listCmd.AddCommand(deleteServiceCmd)
 	rootCmd.AddCommand(listCmd)
 }
 
 func list(cmd *cobra.Command, args []string) {
-	client.NewWorker("http://" + listHost).ListAgents(listWide)
+	client.ListAgents(listHost, listIds, listWide)
+}
+
+var getServiceCmd = &cobra.Command{
+	Use: "get",
+	Run: getAgents,
+}
+
+func getAgents(cmd *cobra.Command, args []string) {
+	client.ListAgents(listHost, listIds, listWide)
+}
+
+var deleteServiceCmd = &cobra.Command{
+	Use: "delete",
+	Run: deleteAgents,
+}
+
+func deleteAgents(cmd *cobra.Command, args []string) {
+	client.DeleteAgents(listHost, listIds)
 }

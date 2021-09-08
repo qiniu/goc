@@ -16,6 +16,7 @@ package server
 import (
 	"bytes"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,11 +26,46 @@ import (
 	"k8s.io/test-infra/gopherage/pkg/cov"
 )
 
+func idMaps(idQuery string) func(key string) bool {
+	idMap := make(map[string]bool)
+	if strings.Contains(idQuery, ",") == false {
+	} else {
+		ids := strings.Split(idQuery, ",")
+		for _, id := range ids {
+			idMap[id] = true
+		}
+	}
+
+	inIdMaps := func(key string) bool {
+		// if no id in query, then all id agent will be return
+		if len(idMap) == 0 {
+			return true
+		}
+		// other
+		_, ok := idMap[key]
+		if !ok {
+			return false
+		} else {
+			return true
+		}
+	}
+
+	return inIdMaps
+}
+
 // listAgents return all service informations
 func (gs *gocServer) listAgents(c *gin.Context) {
+	idQuery := c.Query("id")
+	ifInIdMap := idMaps(idQuery)
+
 	agents := make([]*gocCoveredAgent, 0)
 
 	gs.agents.Range(func(key, value interface{}) bool {
+		// check if id is in the query ids
+		if !ifInIdMap(key.(string)) {
+			return true
+		}
+
 		agent, ok := value.(*gocCoveredAgent)
 		if !ok {
 			return false
@@ -53,6 +89,7 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 	mergedProfiles := make([][]*cover.Profile, 0)
 
 	gs.agents.Range(func(key, value interface{}) bool {
+
 		agent, ok := value.(*gocCoveredAgent)
 		if !ok {
 			return false
@@ -69,6 +106,12 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 			var req ProfileReq = "getprofile"
 			var res ProfileRes
 			go func() {
+				// lock-free
+				rpc := agent.rpc
+				if rpc == nil || agent.Status == DISCONNECT {
+					done <- nil
+					return
+				}
 				err := agent.rpc.Call("GocAgent.GetProfile", req, &res)
 				if err != nil {
 					log.Errorf("fail to get profile from: %v, reasson: %v. let's close the connection", agent.Id, err)
@@ -134,8 +177,10 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 //
 // it is async, the function will return immediately
 func (gs *gocServer) resetProfiles(c *gin.Context) {
+
 	gs.agents.Range(func(key, value interface{}) bool {
-		agent, ok := value.(gocCoveredAgent)
+
+		agent, ok := value.(*gocCoveredAgent)
 		if !ok {
 			return false
 		}
@@ -143,7 +188,12 @@ func (gs *gocServer) resetProfiles(c *gin.Context) {
 		var req ProfileReq = "resetprofile"
 		var res ProfileRes
 		go func() {
-			err := agent.rpc.Call("GocAgent.ResetProfile", req, &res)
+			// lock-free
+			rpc := agent.rpc
+			if rpc == nil || agent.Status == DISCONNECT {
+				return
+			}
+			err := rpc.Call("GocAgent.ResetProfile", req, &res)
 			if err != nil {
 				log.Errorf("fail to reset profile from: %v, reasson: %v. let's close the connection", agent.Id, err)
 				// 关闭链接
@@ -207,7 +257,7 @@ func (gs *gocServer) watchProfileUpdate(c *gin.Context) {
 }
 
 func (gs *gocServer) removeAgentById(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Query("id")
 
 	rawagent, ok := gs.agents.Load(id)
 	if !ok {
@@ -234,7 +284,16 @@ func (gs *gocServer) removeAgentById(c *gin.Context) {
 }
 
 func (gs *gocServer) removeAgents(c *gin.Context) {
+	idQuery := c.Query("id")
+	ifInIdMap := idMaps(idQuery)
+
 	gs.agents.Range(func(key, value interface{}) bool {
+
+		// check if id is in the query ids
+		if !ifInIdMap(key.(string)) {
+			return true
+		}
+
 		agent, ok := value.(*gocCoveredAgent)
 		if !ok {
 			return false
