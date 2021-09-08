@@ -65,9 +65,11 @@ var _ = Describe("1 [基础测试]", func() {
 			defer basicC.Stop()
 
 			By("使用 goc service get 获取服务列表")
-			output, err = RunShortRunCmd([]string{"goc", "service", "get"}, dir, nil)
-			Expect(err).To(BeNil(), "goc servive get 运行错误")
-			Expect(output).To(ContainSubstring("127.0.0.1   ./basic2"), "goc service get 输出应该包含 basic 服务")
+			Eventually(func() {
+				output, err = RunShortRunCmd([]string{"goc", "service", "get"}, dir, nil)
+				Expect(err).To(BeNil(), "goc servive get 运行错误")
+				Expect(output).To(ContainSubstring("127.0.0.1   ./basic2"), "goc service get 输出应该包含 basic 服务")
+			}, 3*time.Second, 1*time.Second).Should(Succeed())
 
 			By("使用 goc profile get 获取覆盖率")
 			profileStr := `mode: count
