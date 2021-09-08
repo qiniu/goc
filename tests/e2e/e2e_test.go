@@ -64,19 +64,19 @@ var _ = Describe("1 [基础测试]", func() {
 			basicC.Run()
 			defer basicC.Stop()
 
-			By("使用 goc list 获取服务列表")
-			output, err = RunShortRunCmd([]string{"goc", "list"}, dir, nil)
-			Expect(err).To(BeNil(), "goc list 运行错误")
-			Expect(output).To(ContainSubstring("127.0.0.1   ./basic2"), "goc list 输出应该包含 basic 服务")
+			By("使用 goc service get 获取服务列表")
+			output, err = RunShortRunCmd([]string{"goc", "service", "get"}, dir, nil)
+			Expect(err).To(BeNil(), "goc servive get 运行错误")
+			Expect(output).To(ContainSubstring("127.0.0.1   ./basic2"), "goc service get 输出应该包含 basic 服务")
 
-			By("使用 goc profile 获取覆盖率")
+			By("使用 goc profile get 获取覆盖率")
 			profileStr := `mode: count
 basic2/main.go:8.13,9.6 1 1
 basic2/main.go:9.6,12.3 2 2`
 			time.Sleep(time.Second)
-			output, err = RunShortRunCmd([]string{"goc", "profile"}, dir, nil)
-			Expect(err).To(BeNil(), "goc profile 运行错误")
-			Expect(output).To(ContainSubstring(profileStr), "goc profile 获取的覆盖率有误")
+			output, err = RunShortRunCmd([]string{"goc", "profile", "get"}, dir, nil)
+			Expect(err).To(BeNil(), "goc profile get运行错误")
+			Expect(output).To(ContainSubstring(profileStr), "goc profile get 获取的覆盖率有误")
 		})
 	})
 })

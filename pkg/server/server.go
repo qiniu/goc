@@ -123,7 +123,6 @@ func RunGocServerUntilExit(host string, path string) {
 		v2.GET("/cover/profile", gs.getProfiles)
 		v2.DELETE("/cover/profile", gs.resetProfiles)
 		v2.GET("/agents", gs.listAgents)
-		v2.DELETE("/agents/:id", gs.removeAgentById)
 		v2.DELETE("/agents", gs.removeAgents)
 
 		v2.GET("/cover/ws/watch", gs.watchProfileUpdate)

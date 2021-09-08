@@ -92,6 +92,8 @@ func (gs *gocServer) serveRpcStream(c *gin.Context) {
 
 		ws.Close()
 		log.Infof("close rpc connection, %v", agent.Hostname)
+		// reset rpc client
+		agent.rpc = nil
 	}()
 
 	// set pong handler

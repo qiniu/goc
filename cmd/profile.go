@@ -16,6 +16,7 @@ package cmd
 import (
 	"github.com/qiniu/goc/v2/pkg/client"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var profileCmd = &cobra.Command{
@@ -28,20 +29,54 @@ goc profile
 # Get coverage counter from specified register center, the result output to specified file.
 goc profile --host=http://192.168.1.1:8080 --output=./coverage.cov
 `,
-	Run: profile,
+	//Run: profile,
 }
 
 var (
-	profileHost   string
-	profileoutput string // --output flag
+	profileHost     string
+	profileOutput   string // --output flag
+	profileIds      []string
+	profilePackages string
+	profileExtra    string
 )
 
 func init() {
-	profileCmd.Flags().StringVar(&profileHost, "host", "127.0.0.1:7777", "specify the host of the goc server")
-	profileCmd.Flags().StringVarP(&profileoutput, "output", "o", "", "download cover profile")
+
+	add1Flags := func(f *pflag.FlagSet) {
+		f.StringVar(&profileHost, "host", "127.0.0.1:7777", "specify the host of the goc server")
+		f.StringSliceVar(&profileIds, "id", nil, "specify the ids of the services")
+		f.StringVar(&profileExtra, "extra", "", "specify the regex expression of extra, only profile with extra information will be downloaded")
+	}
+
+	add2Flags := func(f *pflag.FlagSet) {
+		f.StringVarP(&profileOutput, "output", "o", "", "download cover profile")
+		f.StringVar(&profilePackages, "packages", "", "specify the regex expression of packages, only profile of these packages will be downloaded")
+	}
+
+	add1Flags(getProfileCmd.Flags())
+	add2Flags(getProfileCmd.Flags())
+
+	add1Flags(clearProfileCmd.Flags())
+
+	profileCmd.AddCommand(getProfileCmd)
+	profileCmd.AddCommand(clearProfileCmd)
 	rootCmd.AddCommand(profileCmd)
 }
 
-func profile(cmd *cobra.Command, args []string) {
-	client.NewWorker("http://" + profileHost).Profile(profileoutput)
+var getProfileCmd = &cobra.Command{
+	Use: "get",
+	Run: getProfile,
+}
+
+func getProfile(cmd *cobra.Command, args []string) {
+	client.GetProfile(profileHost, profileIds, profilePackages, profileExtra, profileOutput)
+}
+
+var clearProfileCmd = &cobra.Command{
+	Use: "clear",
+	Run: clearProfile,
+}
+
+func clearProfile(cmd *cobra.Command, args []string) {
+	client.ClearProfile(profileHost, profileIds, profileExtra)
 }
