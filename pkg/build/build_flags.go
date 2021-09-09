@@ -43,6 +43,15 @@ The [goc flags] can be placed in anywhere in the command line.
 However, other flags' order are same with the go official command.
 `
 
+var runUsage string = `Usage:
+goc run [build flags] [goc flags] [packages] [arguments...]
+
+[build flags] are same with go official command, you can copy them here directly.
+
+The [goc flags] can be placed in anywhere in the command line.
+However, other flags' order are same with the go official command.
+`
+
 const (
 	GO_BUILD = iota
 	GO_INSTALL
@@ -129,6 +138,40 @@ func (b *Build) buildCmdArgsParse() {
 	b.CurWd = curWd
 	b.GoArgs = goFlagSets.Args()
 	return
+}
+
+func (b *Build) runCmdArgsParse() {
+	args := b.Args
+	allFlagSets := b.FlagSets
+
+	// 重写 help
+	helpFlag := allFlagSets.Lookup("help")
+
+	if helpFlag.Changed {
+		printGoHelp(runUsage)
+		os.Exit(0)
+	}
+
+	// 删除 help flag
+	args = findAndDelHelpFlag(args)
+
+	// 必须手动调用
+	// 由于关闭了 cobra 的 flag parse，root PersistentPreRun 调用时，log.NewLogger 并没有拿到 debug 值
+	log.NewLogger(b.Debug)
+
+	curWd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("fail to get current working directory: %v", err)
+	}
+	b.CurWd = curWd
+
+	// 获取除 goc flags 之外的 args
+	// 删除 cobra 定义的 flag
+	allFlagSets.Visit(func(f *pflag.Flag) {
+		args = findAndDelGocFlag(args, f.Name, f.Value.String())
+	})
+
+	b.GoArgs = args
 }
 
 func findAndDelGocFlag(a []string, x string, v string) []string {

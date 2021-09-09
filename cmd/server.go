@@ -14,7 +14,9 @@
 package cmd
 
 import (
+	"github.com/qiniu/goc/v2/pkg/log"
 	"github.com/qiniu/goc/v2/pkg/server"
+	"github.com/qiniu/goc/v2/pkg/server/store"
 	"github.com/spf13/cobra"
 )
 
@@ -40,5 +42,9 @@ func init() {
 }
 
 func serve(cmd *cobra.Command, args []string) {
-	server.RunGocServerUntilExit(serverHost, serverStore)
+	s, err := store.NewFileStore(serverStore)
+	if err != nil {
+		log.Fatalf("cannot create store for goc server: %v", err)
+	}
+	server.RunGocServerUntilExit(serverHost, s)
 }

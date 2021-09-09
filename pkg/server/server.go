@@ -96,12 +96,7 @@ type gocWatchClient struct {
 	once   sync.Once
 }
 
-func RunGocServerUntilExit(host string, path string) {
-	s, err := store.NewFileStore(path)
-	if err != nil {
-		log.Fatalf("cannot create store for goc server: %v", err)
-	}
-
+func RunGocServerUntilExit(host string, s store.Store) error {
 	gs := gocServer{
 		store: s,
 		upgrader: websocket.Upgrader{
@@ -136,7 +131,7 @@ func RunGocServerUntilExit(host string, path string) {
 
 	go gs.watchLoop()
 
-	r.Run(host)
+	return r.Run(host)
 }
 
 func (gs *gocServer) register(c *gin.Context) {
