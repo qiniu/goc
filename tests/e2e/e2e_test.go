@@ -152,13 +152,13 @@ basic2/main.go:8.13,9.6 1 1`
 			By("测试获取 service 信息")
 			output, err = RunShortRunCmd([]string{"goc", "service", "get"}, dir, nil)
 			Expect(err).To(BeNil(), "goc servive get 运行错误")
-			Expect(output).To(ContainSubstring("2    CONNECT   127.0.0.1   ./basic2 -f"), "goc service get 应该显示第二个服务")
+			Expect(output).To(ContainSubstring("2    CONNECT   127.0.0.1   ./basic2"), "goc service get 应该显示第二个服务")
 
 			By("测试获取指定 id 的 service 信息")
 			output, err = RunShortRunCmd([]string{"goc", "service", "get", "--id", "1"}, dir, nil)
 			Expect(err).To(BeNil(), "goc servive get 运行错误")
 			Expect(output).To(ContainSubstring("1    CONNECT   127.0.0.1   ./basic2"), "id=1 的服务能返回")
-			Expect(output).NotTo(ContainSubstring("2    CONNECT   127.0.0.1   ./basic2 -f"), "id=2 的服务没有返回")
+			Expect(output).NotTo(ContainSubstring("2    CONNECT   127.0.0.1   ./basic2"), "id=2 的服务没有返回")
 
 			By("测试能否获取 extra")
 			output, err = RunShortRunCmd([]string{"goc", "service", "get", "--wide"}, dir, nil)
@@ -172,7 +172,7 @@ basic2/main.go:8.13,9.6 1 1`
 			Eventually(func() {
 				output, err = RunShortRunCmd([]string{"goc", "service", "get"}, dir, nil)
 				Expect(err).To(BeNil(), "goc servive get 运行错误")
-				Expect(output).To(ContainSubstring("2    DISCONNECT   127.0.0.1   ./basic2 -f"), "应该在 10s 内感知到 agent 断连")
+				Expect(output).To(ContainSubstring("2    DISCONNECT   127.0.0.1   ./basic2"), "应该在 10s 内感知到 agent 断连")
 			}, 10*time.Second, 1*time.Second).Should(Succeed())
 
 			By("测试删除 id=2(已经退出) 的服务列表")
@@ -181,7 +181,7 @@ basic2/main.go:8.13,9.6 1 1`
 
 			output, err = RunShortRunCmd([]string{"goc", "service", "get"}, dir, nil)
 			Expect(err).To(BeNil(), "goc servive get 运行错误")
-			Expect(output).NotTo(ContainSubstring("./basic2 -f"), "DISCONNECT 的服务未被删除")
+			Expect(output).NotTo(ContainSubstring("2    DISCONNECT   127.0.0.1   ./basic2"), "DISCONNECT 的服务未被删除")
 
 			By("测试删除 id=1(还在运行) 的服务列表")
 			output, err = RunShortRunCmd([]string{"goc", "service", "delete", "--id", "1"}, dir, nil)
