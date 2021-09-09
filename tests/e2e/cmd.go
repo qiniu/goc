@@ -21,6 +21,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -32,6 +33,8 @@ type LongRunCmd struct {
 	stdoutBuf bytes.Buffer
 	err       error
 	done      bool
+
+	once sync.Once
 }
 
 // NewLongRunCmd defines a command which will be run forever
@@ -85,7 +88,9 @@ func (l *LongRunCmd) Run() {
 }
 
 func (l *LongRunCmd) Stop() {
-	l.cancel()
+	l.once.Do(func() {
+		l.cancel()
+	})
 }
 
 func (l *LongRunCmd) CheckExitStatus() error {

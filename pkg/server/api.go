@@ -15,7 +15,9 @@ package server
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -25,33 +27,6 @@ import (
 	"golang.org/x/tools/cover"
 	"k8s.io/test-infra/gopherage/pkg/cov"
 )
-
-func idMaps(idQuery string) func(key string) bool {
-	idMap := make(map[string]bool)
-	if strings.Contains(idQuery, ",") == false {
-	} else {
-		ids := strings.Split(idQuery, ",")
-		for _, id := range ids {
-			idMap[id] = true
-		}
-	}
-
-	inIdMaps := func(key string) bool {
-		// if no id in query, then all id agent will be return
-		if len(idMap) == 0 {
-			return true
-		}
-		// other
-		_, ok := idMap[key]
-		if !ok {
-			return false
-		} else {
-			return true
-		}
-	}
-
-	return inIdMaps
-}
 
 // listAgents return all service informations
 func (gs *gocServer) listAgents(c *gin.Context) {
@@ -79,20 +54,63 @@ func (gs *gocServer) listAgents(c *gin.Context) {
 	})
 }
 
+func (gs *gocServer) removeAgents(c *gin.Context) {
+	idQuery := c.Query("id")
+	ifInIdMap := idMaps(idQuery)
+
+	gs.agents.Range(func(key, value interface{}) bool {
+
+		// check if id is in the query ids
+		if !ifInIdMap(key.(string)) {
+			return true
+		}
+
+		agent, ok := value.(*gocCoveredAgent)
+		if !ok {
+			return false
+		}
+
+		agent.closeConnection()
+		gs.agents.Delete(key)
+
+		return true
+	})
+
+	gs.removeAllAgentsFromStore()
+}
+
 // getProfiles get and merge all agents' informations
 //
 // it is synchronous
 func (gs *gocServer) getProfiles(c *gin.Context) {
+	idQuery := c.Query("id")
+	ifInIdMap := idMaps(idQuery)
+
+	pattern := c.Query("pattern")
+	extra := c.Query("extra")
+	isExtra := filterExtra(extra)
+
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
 	mergedProfiles := make([][]*cover.Profile, 0)
 
 	gs.agents.Range(func(key, value interface{}) bool {
+		// check if id is in the query ids
+		if !ifInIdMap(key.(string)) {
+			// not in
+			return true
+		}
 
 		agent, ok := value.(*gocCoveredAgent)
 		if !ok {
 			return false
+		}
+
+		// check if extra matches
+		if !isExtra(agent.Extra) {
+			// not match
+			return true
 		}
 
 		wg.Add(1)
@@ -140,9 +158,17 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 				agent.closeRpcConnOnce()
 				return
 			}
+
+			// check if pattern matches
+			newProfile, err := filterProfileByPattern(pattern, profile)
+			if err != nil {
+				log.Errorf("%v", err)
+				return
+			}
+
 			mu.Lock()
 			defer mu.Unlock()
-			mergedProfiles = append(mergedProfiles, profile)
+			mergedProfiles = append(mergedProfiles, newProfile)
 		}()
 
 		return true
@@ -177,12 +203,29 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 //
 // it is async, the function will return immediately
 func (gs *gocServer) resetProfiles(c *gin.Context) {
+	idQuery := c.Query("id")
+	ifInIdMap := idMaps(idQuery)
+
+	extra := c.Query("extra")
+	isExtra := filterExtra(extra)
 
 	gs.agents.Range(func(key, value interface{}) bool {
+
+		// check if id is in the query ids
+		if !ifInIdMap(key.(string)) {
+			// not in
+			return true
+		}
 
 		agent, ok := value.(*gocCoveredAgent)
 		if !ok {
 			return false
+		}
+
+		// check if extra matches
+		if !isExtra(agent.Extra) {
+			// not match
+			return true
 		}
 
 		var req ProfileReq = "resetprofile"
@@ -256,54 +299,60 @@ func (gs *gocServer) watchProfileUpdate(c *gin.Context) {
 	<-gwc.exitCh
 }
 
-func (gs *gocServer) removeAgentById(c *gin.Context) {
-	id := c.Query("id")
+func filterProfileByPattern(pattern string, profiles []*cover.Profile) ([]*cover.Profile, error) {
 
-	rawagent, ok := gs.agents.Load(id)
-	if !ok {
-		c.JSON(http.StatusNotFound, gin.H{
-			"msg": "agent not found",
-		})
-		return
+	if strings.TrimSpace(pattern) == "" {
+		return profiles, nil
 	}
 
-	agent, ok := rawagent.(*gocCoveredAgent)
-	if !ok {
-		c.JSON(http.StatusNotFound, gin.H{
-			"msg": "agent not found",
-		})
-		return
+	var out = make([]*cover.Profile, 0)
+	for _, profile := range profiles {
+		matched, err := regexp.MatchString(pattern, profile.FileName)
+		if err != nil {
+			return nil, fmt.Errorf("filterProfile failed with pattern %s for profile %s, err: %v", pattern, profile.FileName, err)
+		}
+		if matched {
+			out = append(out, profile)
+			break // no need to check again for the file
+		}
+
 	}
 
-	// 关闭相应连接
-	agent.closeConnection()
-	// 从维护 agent 池里删除
-	gs.agents.Delete(id)
-	// 从持久化中删除
-	gs.removeAgentFromStore(id)
+	return out, nil
 }
 
-func (gs *gocServer) removeAgents(c *gin.Context) {
-	idQuery := c.Query("id")
-	ifInIdMap := idMaps(idQuery)
+func idMaps(idQuery string) func(key string) bool {
+	idMap := make(map[string]bool)
+	if len(strings.TrimSpace(idQuery)) == 0 {
+	} else {
+		ids := strings.Split(idQuery, ",")
+		for _, id := range ids {
+			idMap[id] = true
+		}
+	}
 
-	gs.agents.Range(func(key, value interface{}) bool {
-
-		// check if id is in the query ids
-		if !ifInIdMap(key.(string)) {
+	inIdMaps := func(key string) bool {
+		// if no id in query, then all id agent will be return
+		if len(idMap) == 0 {
 			return true
 		}
-
-		agent, ok := value.(*gocCoveredAgent)
+		// other
+		_, ok := idMap[key]
 		if !ok {
 			return false
+		} else {
+			return true
 		}
+	}
 
-		agent.closeConnection()
-		gs.agents.Delete(key)
+	return inIdMaps
+}
 
-		return true
-	})
+func filterExtra(extraPattern string) func(string) bool {
 
-	gs.removeAllAgentsFromStore()
+	re := regexp.MustCompile(extraPattern)
+
+	return func(extra string) bool {
+		return re.Match([]byte(extra))
+	}
 }

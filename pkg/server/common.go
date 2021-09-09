@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	PongWait = 10 * time.Second
-	PingWait = 5 * time.Second
+	PongWait = 5 * time.Second
+	PingWait = 2 * time.Second
 )
 
 type ProfileReq string

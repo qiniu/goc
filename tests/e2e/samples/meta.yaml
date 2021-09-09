@@ -5,3 +5,6 @@ samples:
   basic2:
     dir: basic4ever-project
     description: a basic project which will never exist
+  basic3:
+    dir: basic-longsleep-project
+    description: a basic project which sleep a long time

@@ -83,6 +83,7 @@ func init() {
 					if isOffline(tmp) {
 						log.Printf("[goc][Error] needs re-register")
 						register(host)
+						continue
 					}
 				} else {
 					log.Printf("[goc][Error] rpc fail to dial to goc server: %v", err)
