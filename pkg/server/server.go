@@ -191,7 +191,7 @@ func (gs *gocServer) register(c *gin.Context) {
 	log.Infof("one agent registered, id: %v, cmdline: %v, pid: %v, hostname: %v", id, agent.CmdLine, agent.Pid, agent.Hostname)
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":    strconv.Itoa(int(gs.idCount)),
+		"id":    id,
 		"token": token,
 	})
 }
