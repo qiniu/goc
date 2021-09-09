@@ -1,2 +1,3 @@
 tests/e2e/tmp/*
 .goc.kvstore
+coverage.txt

@@ -48,6 +48,10 @@ func (s *FileStore) Get(key string) (string, error) {
 		}
 	}
 
+	if scanner.Err() != nil {
+		return "", scanner.Err()
+	}
+
 	return "", fmt.Errorf("no key found")
 }
 
@@ -55,7 +59,7 @@ func (s *FileStore) Set(key string, value string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	f, err := os.OpenFile(s.storePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, os.ModePerm)
+	f, err := os.OpenFile(s.storePath, os.O_RDWR, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -64,6 +68,7 @@ func (s *FileStore) Set(key string, value string) error {
 	var outputLines string
 	scanner := bufio.NewScanner(f)
 	isFound := false
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		items := strings.SplitN(line, " ", 2)
@@ -78,6 +83,10 @@ func (s *FileStore) Set(key string, value string) error {
 		outputLines += line + "\n"
 	}
 
+	if scanner.Err() != nil {
+		return scanner.Err()
+	}
+
 	if !isFound {
 		outputLines += key + " " + value + "\n"
 	}
@@ -88,6 +97,7 @@ func (s *FileStore) Set(key string, value string) error {
 
 	f.Seek(0, os.SEEK_SET)
 	f.WriteString(outputLines)
+	f.Sync()
 
 	return nil
 }
@@ -96,7 +106,7 @@ func (s *FileStore) Remove(key string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	f, err := os.OpenFile(s.storePath, os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	f, err := os.OpenFile(s.storePath, os.O_RDWR, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -117,12 +127,17 @@ func (s *FileStore) Remove(key string) error {
 		}
 	}
 
+	if scanner.Err() != nil {
+		return scanner.Err()
+	}
+
 	if err := os.Truncate(s.storePath, 0); err != nil {
 		return err
 	}
 
 	f.Seek(0, os.SEEK_SET)
 	f.WriteString(outputLines)
+	f.Sync()
 
 	return nil
 }
@@ -151,6 +166,10 @@ func (s *FileStore) Range(pattern string) ([]string, error) {
 		}
 	}
 
+	if scanner.Err() != nil {
+		return nil, scanner.Err()
+	}
+
 	if len(output) == 0 {
 		return nil, fmt.Errorf("no key found")
 	} else {
@@ -162,7 +181,7 @@ func (s *FileStore) RangeRemove(pattern string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	f, err := os.OpenFile(s.storePath, os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	f, err := os.OpenFile(s.storePath, os.O_RDWR, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -183,12 +202,17 @@ func (s *FileStore) RangeRemove(pattern string) error {
 		}
 	}
 
+	if scanner.Err() != nil {
+		return scanner.Err()
+	}
+
 	if err := os.Truncate(s.storePath, 0); err != nil {
 		return err
 	}
 
 	f.Seek(0, os.SEEK_SET)
 	f.WriteString(outputLines)
+	f.Sync()
 
 	return nil
 }

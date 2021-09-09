@@ -232,7 +232,7 @@ func (gs *gocServer) restoreAgents() {
 
 		id, err := strconv.Atoi(agent.Id)
 		if err != nil {
-			log.Fatalf("fail to transfer id to number: %v", err)
+			log.Fatalf("fail to transform id to number: %v", err)
 		}
 		if maxId < id {
 			maxId = id
