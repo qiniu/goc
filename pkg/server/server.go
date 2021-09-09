@@ -44,6 +44,7 @@ type gocServer struct {
 	watchClients sync.Map
 
 	idCount int64
+	idL     sync.Mutex
 }
 
 type gocCliendId string
@@ -152,7 +153,10 @@ func (gs *gocServer) register(c *gin.Context) {
 		return
 	}
 
-	atomic.AddInt64(&gs.idCount, 1)
+	gs.idL.Lock()
+	gs.idCount++
+	globalId := gs.idCount
+	gs.idL.Unlock()
 
 	genToken := func(i int64) string {
 		now := time.Now().UnixNano()
@@ -165,8 +169,8 @@ func (gs *gocServer) register(c *gin.Context) {
 		return h
 	}
 
-	token := genToken(gs.idCount)
-	id := strconv.Itoa(int(gs.idCount))
+	token := genToken(globalId)
+	id := strconv.Itoa(int(globalId))
 
 	agent := &gocCoveredAgent{
 		Id:       id,

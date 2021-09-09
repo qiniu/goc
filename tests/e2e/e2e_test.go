@@ -73,8 +73,7 @@ var _ = Describe("1 [基础测试]", func() {
 
 			By("使用 goc profile get 获取覆盖率")
 			profileStr := `mode: count
-basic2/main.go:8.13,9.6 1 1
-basic2/main.go:9.6,12.3 2 2`
+basic2/main.go:8.13,9.6 1 1`
 			time.Sleep(time.Second)
 			output, err = RunShortRunCmd([]string{"goc", "profile", "get"}, dir, nil)
 			Expect(err).To(BeNil(), "goc profile get运行错误")
@@ -141,7 +140,7 @@ basic2/main.go:9.6,12.3 2 2`
 			defer basicC.Stop()
 
 			By("再长时间运行 basic2 -f hello")
-			time.Sleep(time.Microsecond * 100)
+			time.Sleep(time.Second * 1)
 			basicC2 := NewLongRunCmd([]string{"./basic2", "-f", "hello"}, dir,
 				[]string{
 					"GOC_REGISTER_EXTRA=fantastic", // 额外的注册信息
@@ -225,9 +224,11 @@ basic2/main.go:9.6,12.3 2 2`
 			time.Sleep(time.Second)
 
 			By("获取覆盖率")
-			output, err = RunShortRunCmd([]string{"goc", "profile", "get"}, dir, nil)
-			Expect(err).To(BeNil(), "获取覆盖率失败")
-			Expect(output).To(ContainSubstring("basic3/main.go:8.13,11.2 2 2"))
+			Eventually(func() {
+				output, err = RunShortRunCmd([]string{"goc", "profile", "get"}, dir, nil)
+				Expect(err).To(BeNil(), "获取覆盖率失败")
+				Expect(output).To(ContainSubstring("basic3/main.go:8.13,11.2 2 2"))
+			}, 3*time.Second, 1*time.Second).Should(Succeed())
 
 			By("只获取 id=1 的覆盖率")
 			output, err = RunShortRunCmd([]string{"goc", "profile", "get", "--id", "1"}, dir, nil)
@@ -242,9 +243,11 @@ basic2/main.go:9.6,12.3 2 2`
 			defer basicC3.Stop()
 
 			By("只获取 extra=fantastic 的覆盖率")
-			output, err = RunShortRunCmd([]string{"goc", "profile", "get", "--extra", "fantastic"}, dir, nil)
-			Expect(err).To(BeNil(), "获取覆盖率失败")
-			Expect(output).To(ContainSubstring("basic3/main.go:8.13,11.2 2 1"), "extra=fantastic 的覆盖率只有 1")
+			Eventually(func() {
+				output, err = RunShortRunCmd([]string{"goc", "profile", "get", "--extra", "fantastic"}, dir, nil)
+				Expect(err).To(BeNil(), "获取覆盖率失败")
+				Expect(output).To(ContainSubstring("basic3/main.go:8.13,11.2 2 1"), "extra=fantastic 的覆盖率只有 1")
+			}, 3*time.Second, 1*time.Second).Should(Succeed())
 
 			By("获取 id=10 的覆盖率")
 			output, err = RunShortRunCmd([]string{"goc", "profile", "get", "--id", "10"}, dir, nil)
@@ -259,17 +262,21 @@ basic2/main.go:9.6,12.3 2 2`
 			output, err = RunShortRunCmd([]string{"goc", "profile", "clear", "--id", "2"}, dir, nil)
 			Expect(err).To(BeNil(), "清空覆盖率失败")
 
-			output, err = RunShortRunCmd([]string{"goc", "profile", "get"}, dir, nil)
-			Expect(err).To(BeNil(), "获取覆盖率失败")
-			Expect(output).To(ContainSubstring("basic3/main.go:8.13,11.2 2 2"))
+			Eventually(func() {
+				output, err = RunShortRunCmd([]string{"goc", "profile", "get"}, dir, nil)
+				Expect(err).To(BeNil(), "获取覆盖率失败")
+				Expect(output).To(ContainSubstring("basic3/main.go:8.13,11.2 2 2"))
+			}, 3*time.Second, 1*time.Second).Should(Succeed())
 
 			By("清空 extra=fantastic 的覆盖率")
 			output, err = RunShortRunCmd([]string{"goc", "profile", "clear", "--extra", "fantastic"}, dir, nil)
 			Expect(err).To(BeNil(), "清空覆盖率失败")
 
-			output, err = RunShortRunCmd([]string{"goc", "profile", "get"}, dir, nil)
-			Expect(err).To(BeNil(), "获取覆盖率失败")
-			Expect(output).To(ContainSubstring("basic3/main.go:8.13,11.2 2 1"))
+			Eventually(func() {
+				output, err = RunShortRunCmd([]string{"goc", "profile", "get"}, dir, nil)
+				Expect(err).To(BeNil(), "获取覆盖率失败")
+				Expect(output).To(ContainSubstring("basic3/main.go:8.13,11.2 2 1"))
+			}, 3*time.Second, 1*time.Second).Should(Succeed())
 
 			By("运行 basic3 -h")
 			basicC4 := NewLongRunCmd([]string{"./basic3", "-h"}, dir, []string{
@@ -278,17 +285,21 @@ basic2/main.go:9.6,12.3 2 2`
 			basicC4.Run()
 			defer basicC4.Stop()
 
-			output, err = RunShortRunCmd([]string{"goc", "profile", "get"}, dir, nil)
-			Expect(err).To(BeNil(), "获取覆盖率失败")
-			Expect(output).To(ContainSubstring("basic3/main.go:8.13,11.2 2 2"))
+			Eventually(func() {
+				output, err = RunShortRunCmd([]string{"goc", "profile", "get"}, dir, nil)
+				Expect(err).To(BeNil(), "获取覆盖率失败")
+				Expect(output).To(ContainSubstring("basic3/main.go:8.13,11.2 2 2"))
+			}, 3*time.Second, 1*time.Second).Should(Succeed())
 
 			By("清空所有的覆盖率")
 			output, err = RunShortRunCmd([]string{"goc", "profile", "clear"}, dir, nil)
 			Expect(err).To(BeNil(), "清空覆盖率失败")
 
-			output, err = RunShortRunCmd([]string{"goc", "profile", "get"}, dir, nil)
-			Expect(err).To(BeNil(), "获取覆盖率失败")
-			Expect(output).To(ContainSubstring("basic3/main.go:8.13,11.2 2 0"))
+			Eventually(func() {
+				output, err = RunShortRunCmd([]string{"goc", "profile", "get"}, dir, nil)
+				Expect(err).To(BeNil(), "获取覆盖率失败")
+				Expect(output).To(ContainSubstring("basic3/main.go:8.13,11.2 2 0"))
+			}, 3*time.Second, 1*time.Second).Should(Succeed())
 		})
 	})
 
