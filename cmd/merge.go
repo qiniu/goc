@@ -24,7 +24,7 @@ import (
 var mergeCmd = &cobra.Command{
 	Use:   "merge [files...]",
 	Short: "Merge multiple coherent Go coverage files into a single file.",
-	Long: `merge will merge multiple Go coverage files into a single coverage file.
+	Long: `Merge will merge multiple Go coverage files into a single coverage file.
 merge requires that the files are 'coherent', meaning that if they both contain references to the
 same paths, then the contents of those source files were identical for the binary that generated
 each file.

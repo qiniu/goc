@@ -22,8 +22,7 @@ import (
 
 var serverCmd = &cobra.Command{
 	Use:     "server",
-	Short:   "start a service registry center",
-	Long:    "start a service registry center",
+	Short:   "Start a service registry center",
 	Example: "",
 
 	Run: serve,

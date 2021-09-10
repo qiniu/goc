@@ -16,12 +16,15 @@ package cmd
 import (
 	"github.com/qiniu/goc/v2/pkg/client"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var listCmd = &cobra.Command{
 	Use:   "service",
-	Short: "Lists all the registered services",
-	Long:  "Lists all the registered services",
+	Short: "Deal with the registered services",
+	Long: `It can be used to list, remove the registered services. 
+For disconnected services, remove will delete these serivces forever, 
+for connected services remove will force these services register again.`,
 }
 
 var (
@@ -31,9 +34,15 @@ var (
 )
 
 func init() {
-	listCmd.PersistentFlags().StringVar(&listHost, "host", "127.0.0.1:7777", "specify the host of the goc server")
-	listCmd.PersistentFlags().BoolVar(&listWide, "wide", false, "list all services with more information (such as pid)")
-	listCmd.PersistentFlags().StringSliceVar(&listIds, "id", nil, "specify the ids of the services")
+
+	add1Flags := func(f *pflag.FlagSet) {
+		f.StringVar(&listHost, "host", "127.0.0.1:7777", "specify the host of the goc server")
+		f.BoolVar(&listWide, "wide", false, "list all services with more information (such as pid)")
+		f.StringSliceVar(&listIds, "id", nil, "specify the ids of the services")
+	}
+
+	add1Flags(getServiceCmd.Flags())
+	add1Flags(deleteServiceCmd.Flags())
 
 	listCmd.AddCommand(getServiceCmd)
 	listCmd.AddCommand(deleteServiceCmd)
