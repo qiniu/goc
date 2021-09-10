@@ -49,10 +49,10 @@ websocket + jsonrpc2 有流式调用，消息边界。非常适合
 
 ### 注册
 
-注册信息放入 websocket url 中，例如：
+agent 首先通过以下 url 完成注册：
 
 ```
-/v2/internal/ws/rpcstream?cmdline=.%2Fcmd&hostname=nuc&pid=1699804
+GET /internal/register?cmdline=.%2Fcmd&hostname=nuc&pid=1699804
 ```
 
 注册信息为：
@@ -61,7 +61,22 @@ websocket + jsonrpc2 有流式调用，消息边界。非常适合
 2. hostname
 3. 进程 PID
 
-goc server 再加上 remote ip 对四个元信息生成一个唯一 hash id，作为该 agent 的 ID。
+goc server 会生成一个自增 id (全局唯一) 和 token (全局唯一) 返回给 agent。
+
+### websocket 连接
+
+agent 通过以下 url 发起 websocket 连接：
+
+```
+/internal/ws/rpcstream?id=[id]&token=[token]
+/internal/ws/watchstream?id=[id]&token=[token]
+```
+
+分别代表 rpc 通道和 watch 通道。
+
+服务端会校验 id 和 token 是否存在及是否匹配。不匹配返回错误。
+
+agent 收到错误会重新注册。
 
 ### 获取覆盖率
 
@@ -85,4 +100,5 @@ ProfileReq: resetprofile
 
 ### 异常处理
 
-goc server 端遇到 err 就关闭对应 agent 的 websocket 连接。
+1. goc server 端遇到 err 就关闭对应 agent 的 websocket 连接。
+2. goc server 会将 id 和 token 持久化，重启后，agent 再次上报时可直接校验，若成功保持 id 不变。
