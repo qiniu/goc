@@ -58,10 +58,12 @@ func (gs *gocServer) removeAgents(c *gin.Context) {
 	idQuery := c.Query("id")
 	ifInIdMap := idMaps(idQuery)
 
+	errs := ""
 	gs.agents.Range(func(key, value interface{}) bool {
 
 		// check if id is in the query ids
-		if !ifInIdMap(key.(string)) {
+		id := key.(string)
+		if !ifInIdMap(id) {
 			return true
 		}
 
@@ -70,13 +72,26 @@ func (gs *gocServer) removeAgents(c *gin.Context) {
 			return false
 		}
 
+		err := gs.removeAgentFromStore(id)
+		if err != nil {
+			log.Errorf("fail to remove agent: %v", id)
+			err := fmt.Errorf("fail to remove agent: %v, err: %v", id, err)
+			errs = errs + err.Error()
+			return true
+		}
 		agent.closeConnection()
 		gs.agents.Delete(key)
 
 		return true
 	})
 
-	gs.removeAllAgentsFromStore()
+	if errs != "" {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": errs,
+		})
+	} else {
+		c.JSON(http.StatusOK, nil)
+	}
 }
 
 // getProfiles get and merge all agents' informations
