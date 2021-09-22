@@ -102,10 +102,7 @@ func (b *Build) shouldUpdateGoMod() bool {
 	if !b.IsMod {
 		return false
 	}
-	if !strings.Contains(b.BuildFlags, "-mod=vendor") {
-		return false
-	}
-	if _, err := os.Stat(path.Join(b.ModRoot, "vendor")); err != nil {
+	if _, err := os.Stat(path.Join(b.ModRoot, "vendor")); err == nil && strings.Contains(b.BuildFlags, "-mod=vendor") {
 		return false
 	}
 	return true
