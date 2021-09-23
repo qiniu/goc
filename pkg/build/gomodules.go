@@ -55,7 +55,7 @@ func (b *Build) cpGoModulesProject() {
 func (b *Build) updateGoModFile() (updateFlag bool, newModFile []byte, err error) {
 	// use buildflags `-mod=vendor` and exist vendor folder, should not update go.mod
 	if _, err := os.Stat(path.Join(b.ModRoot, "vendor")); err == nil && strings.Contains(b.BuildFlags, "-mod=vendor") {
-	   return
+		return
 	}
 	tempModfile := filepath.Join(b.TmpDir, "go.mod")
 	buf, err := ioutil.ReadFile(tempModfile)
