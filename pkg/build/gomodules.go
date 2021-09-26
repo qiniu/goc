@@ -54,7 +54,7 @@ func (b *Build) cpGoModulesProject() {
 // 'replace github.com/qiniu/bar => /path/to/aa/bb/home/foo/bar'
 func (b *Build) updateGoModFile() (updateFlag bool, newModFile []byte, err error) {
 	// use buildflags `-mod=vendor` and exist vendor folder, should not update go.mod
-	if _, err := os.Stat(path.Join(b.ModRoot, "vendor")); err == nil && strings.Contains(b.BuildFlags, "-mod=vendor") {
+	if _, err1 := os.Stat(path.Join(b.ModRoot, "vendor")); err1 == nil && strings.Contains(b.BuildFlags, "-mod=vendor") {
 		return
 	}
 	tempModfile := filepath.Join(b.TmpDir, "go.mod")
