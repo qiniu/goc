@@ -18,7 +18,10 @@ package build
 
 import (
 	"io/ioutil"
+	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/tongjingran/copy"
@@ -50,6 +53,10 @@ func (b *Build) cpGoModulesProject() {
 // after the project is copied to temporary directory, it should be rewritten as
 // 'replace github.com/qiniu/bar => /path/to/aa/bb/home/foo/bar'
 func (b *Build) updateGoModFile() (updateFlag bool, newModFile []byte, err error) {
+	// use buildflags `-mod=vendor` and exist vendor folder, should not update go.mod
+	if _, err1 := os.Stat(path.Join(b.ModRoot, "vendor")); err1 == nil && strings.Contains(b.BuildFlags, "-mod=vendor") {
+		return
+	}
 	tempModfile := filepath.Join(b.TmpDir, "go.mod")
 	buf, err := ioutil.ReadFile(tempModfile)
 	if err != nil {
