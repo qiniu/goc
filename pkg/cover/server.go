@@ -166,22 +166,22 @@ func (s *server) profile(c *gin.Context) {
 	}
 
 	allInfos := s.Store.GetAll()
-	filterAddrList, err := filterAddrs(body.Service, body.Address, body.Force, allInfos)
+	filterAddrInfoList, err := filterAddrInfo(body.Service, body.Address, body.Force, allInfos)
 	if err != nil {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		return
 	}
 
 	var mergedProfiles = make([][]*cover.Profile, 0)
-	for _, addr := range filterAddrList {
-		pp, err := NewWorker(addr).Profile(ProfileParam{})
+	for _, addrInfo := range filterAddrInfoList {
+		pp, err := NewWorker(addrInfo.Address).Profile(ProfileParam{})
 		if err != nil {
 			if body.Force {
-				log.Warnf("get profile from [%s] failed, error: %s", addr, err.Error())
+				log.Warnf("get profile from [%s] failed, error: %s", addrInfo, err.Error())
 				continue
 			}
 
-			c.JSON(http.StatusExpectationFailed, gin.H{"error": fmt.Sprintf("failed to get profile from %s, error %s", addr, err.Error())})
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": fmt.Sprintf("failed to get profile from %s, service %s, error %s", addrInfo.Address, addrInfo.Name, err.Error())})
 			return
 		}
 
@@ -277,18 +277,18 @@ func (s *server) clear(c *gin.Context) {
 		return
 	}
 	svrsUnderTest := s.Store.GetAll()
-	filterAddrList, err := filterAddrs(body.Service, body.Address, true, svrsUnderTest)
+	filterAddrInfoList, err := filterAddrInfo(body.Service, body.Address, true, svrsUnderTest)
 	if err != nil {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		return
 	}
-	for _, addr := range filterAddrList {
-		pp, err := NewWorker(addr).Clear(ProfileParam{})
+	for _, addrInfo := range filterAddrInfoList {
+		pp, err := NewWorker(addrInfo.Address).Clear(ProfileParam{})
 		if err != nil {
 			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 			return
 		}
-		fmt.Fprintf(c.Writer, "Register service %s coverage counter %s", addr, string(pp))
+		fmt.Fprintf(c.Writer, "Register service %s coverage counter %s", addrInfo.Address, string(pp))
 	}
 
 }
@@ -309,18 +309,18 @@ func (s *server) removeServices(c *gin.Context) {
 		return
 	}
 	svrsUnderTest := s.Store.GetAll()
-	filterAddrList, err := filterAddrs(body.Service, body.Address, true, svrsUnderTest)
+	filterAddrInfoList, err := filterAddrInfo(body.Service, body.Address, true, svrsUnderTest)
 	if err != nil {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 		return
 	}
-	for _, addr := range filterAddrList {
-		err := s.Store.Remove(addr)
+	for _, addrInfo := range filterAddrInfoList {
+		err := s.Store.Remove(addrInfo.Address)
 		if err != nil {
 			c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
 			return
 		}
-		fmt.Fprintf(c.Writer, "Register service %s removed from the center.", addr)
+		fmt.Fprintf(c.Writer, "Register service %s removed from the center.", addrInfo.Address)
 	}
 }
 
@@ -350,8 +350,8 @@ func contains(arr []string, str string) bool {
 	return false
 }
 
-// filterAddrs filter address list by given service and address list
-func filterAddrs(serviceList, addressList []string, force bool, allInfos map[string][]string) (filterAddrList []string, err error) {
+// filterAddrInfo filter address list by given service and address list
+func filterAddrInfo(serviceList, addressList []string, force bool, allInfos map[string][]string) (filterAddrList []ServiceUnderTest, err error) {
 	addressAll := []string{}
 	for _, addr := range allInfos {
 		addressAll = append(addressAll, addr...)
@@ -363,8 +363,10 @@ func filterAddrs(serviceList, addressList []string, force bool, allInfos map[str
 
 	// Add matched services to map
 	for _, name := range serviceList {
-		if addr, ok := allInfos[name]; ok {
-			filterAddrList = append(filterAddrList, addr...)
+		if addrs, ok := allInfos[name]; ok {
+			for _, addr := range addrs {
+				filterAddrList = append(filterAddrList, ServiceUnderTest{Name: name, Address: addr})
+			}
 			continue // jump to match the next service
 		}
 		if !force {
@@ -376,7 +378,7 @@ func filterAddrs(serviceList, addressList []string, force bool, allInfos map[str
 	// Add matched addresses to map
 	for _, addr := range addressList {
 		if contains(addressAll, addr) {
-			filterAddrList = append(filterAddrList, addr)
+			filterAddrList = append(filterAddrList, ServiceUnderTest{Address: addr})
 			continue
 		}
 		if !force {
@@ -386,7 +388,9 @@ func filterAddrs(serviceList, addressList []string, force bool, allInfos map[str
 	}
 
 	if len(addressList) == 0 && len(serviceList) == 0 {
-		filterAddrList = addressAll
+		for _, addr := range addressAll {
+			filterAddrList = append(filterAddrList, ServiceUnderTest{Address: addr})
+		}
 	}
 
 	// Return all services when all param is nil
