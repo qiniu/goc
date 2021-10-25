@@ -105,10 +105,18 @@ func TestFilterAddrs(t *testing.T) {
 		},
 	}
 	for _, item := range items {
-		addrs, err := filterAddrs(item.svrList, item.addrList, item.force, svrAll)
+		res, err := filterAddrInfo(item.svrList, item.addrList, item.force, svrAll)
 		if err != nil {
 			assert.Equal(t, err.Error(), item.err)
 		} else {
+			addrs := []string{}
+			if len(res) == 0 {
+				addrs = nil
+			} else {
+				for _, addr := range res {
+					addrs = append(addrs, addr.Address)
+				}
+			}
 			if len(addrs) == 0 {
 				assert.Equal(t, addrs, item.addrRes)
 			}
