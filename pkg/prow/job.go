@@ -137,7 +137,7 @@ func trimGhFileToProfile(ghFiles []string) (pFiles []string) {
 	//TODO: need compatible other situation
 	logrus.Infof("trim PR changed file name to:")
 	for _, f := range ghFiles {
-		file := strings.TrimPrefix(f, "src/")
+		file := strings.TrimPrefix(f, "src/qiniu.com/kodo/")
 		logrus.Infof("%s", file)
 		pFiles = append(pFiles, file)
 	}
