@@ -93,6 +93,3 @@ Thanks to all [contributors](https://github.com/qiniu/goc/graphs/contributors)!!
 
 ## License
 Goc is released under the Apache 2.0 license. See [LICENSE.txt](https://github.com/qiniu/goc/blob/master/LICENSE)
-
-## Join goc WeChat Group
-![WeChat](docs/images/wechat.png)
