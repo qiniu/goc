@@ -104,6 +104,3 @@ goc 可以实时收集长时运行的 golang 服务覆盖率。收集步骤只�
 ## License
 
 Goc is released under the Apache 2.0 license. See [LICENSE.txt](https://github.com/qiniu/goc/blob/master/LICENSE)
-
-## 加入微信群聊
-![WeChat](docs/images/wechat.png)
