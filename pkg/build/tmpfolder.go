@@ -50,7 +50,7 @@ func (b *Build) MvProjectsToTmp() error {
 		return err
 	}
 	b.OriGOPATH = os.Getenv("GOPATH")
-	if b.IsMod == true {
+	if b.IsMod {
 		b.NewGOPATH = ""
 	} else if b.OriGOPATH == "" {
 		b.NewGOPATH = b.TmpDir
@@ -61,7 +61,7 @@ func (b *Build) MvProjectsToTmp() error {
 	// this kind of project does not have a pkg.Root value
 	// go 1.11, 1.12 has no pkg.Root,
 	// so add b.IsMod == false as secondary judgement
-	if b.Root == "" && b.IsMod == false {
+	if b.NewGOPATH == "" && b.Root == "" && !b.IsMod {
 		b.NewGOPATH = b.OriGOPATH
 	}
 	log.Infof("New GOPATH: %v", b.NewGOPATH)
