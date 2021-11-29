@@ -47,7 +47,8 @@ func (b *Build) Inject() {
 
 			// 向 main package 的依赖注入插桩变量
 			for _, dep := range pkg.Deps {
-				if _, ok := seen[dep]; ok {
+				if packageCover, ok := seen[dep]; ok {
+					allMainCovers = append(allMainCovers, packageCover)
 					continue
 				}
 
