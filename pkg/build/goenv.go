@@ -92,7 +92,13 @@ func (b *Build) readGOBIN() string {
 
 // listPackages list all packages under specific via go list command.
 func (b *Build) listPackages(dir string) map[string]*Package {
-	cmd := exec.Command("go", "list", "-json", "./...")
+	listArgs := []string{"list", "-json"}
+	if goflags.BuildTags != "" {
+		listArgs = append(listArgs, "-tags", goflags.BuildTags)
+	}
+	listArgs = append(listArgs, "./...")
+
+	cmd := exec.Command("go", listArgs...)
 	cmd.Dir = dir
 
 	var errBuf bytes.Buffer
