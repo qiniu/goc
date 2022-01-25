@@ -91,6 +91,10 @@ func (s *server) Route(w io.Writer) *gin.Engine {
 		v1.POST("/cover/init", s.initSystem)
 		v1.GET("/cover/list", s.listServices)
 		v1.POST("/cover/remove", s.removeServices)
+
+		// add get html/func
+		v1.GET("/cover/profile/html", s.profilehtml)
+		v1.GET("/cover/profile/func", s.profilefunc)
 	}
 
 	return r
@@ -159,6 +163,142 @@ func (s *server) registerService(c *gin.Context) {
 // POST /v1/cover/profile
 // { "force": "true", "service":["a","b"], "address":["c","d"],"coverfile":["e","f"] }
 func (s *server) profile(c *gin.Context) {
+	var body ProfileParam
+	if err := c.ShouldBind(&body); err != nil {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		return
+	}
+
+	allInfos := s.Store.GetAll()
+	filterAddrInfoList, err := filterAddrInfo(body.Service, body.Address, body.Force, allInfos)
+	if err != nil {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		return
+	}
+
+	var mergedProfiles = make([][]*cover.Profile, 0)
+	for _, addrInfo := range filterAddrInfoList {
+		pp, err := NewWorker(addrInfo.Address).Profile(ProfileParam{})
+		if err != nil {
+			if body.Force {
+				log.Warnf("get profile from [%s] failed, error: %s", addrInfo, err.Error())
+				continue
+			}
+
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": fmt.Sprintf("failed to get profile from %s, service %s, error %s", addrInfo.Address, addrInfo.Name, err.Error())})
+			return
+		}
+
+		profile, err := convertProfile(pp)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		mergedProfiles = append(mergedProfiles, profile)
+	}
+
+	if len(mergedProfiles) == 0 {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": "no profiles"})
+		return
+	}
+
+	merged, err := cov.MergeMultipleProfiles(mergedProfiles)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if len(body.CoverFilePatterns) > 0 {
+		merged, err = filterProfile(body.CoverFilePatterns, merged)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to filter profile based on the patterns: %v, error: %v", body.CoverFilePatterns, err)})
+			return
+		}
+	}
+
+	if len(body.SkipFilePatterns) > 0 {
+		merged, err = skipProfile(body.SkipFilePatterns, merged)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to skip profile based on the patterns: %v, error: %v", body.SkipFilePatterns, err)})
+			return
+		}
+	}
+
+	if err := cov.DumpProfile(merged, c.Writer); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+}
+
+func (s *server) profilehtml(c *gin.Context) {
+	var body ProfileParam
+	if err := c.ShouldBind(&body); err != nil {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		return
+	}
+
+	allInfos := s.Store.GetAll()
+	filterAddrInfoList, err := filterAddrInfo(body.Service, body.Address, body.Force, allInfos)
+	if err != nil {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})
+		return
+	}
+
+	var mergedProfiles = make([][]*cover.Profile, 0)
+	for _, addrInfo := range filterAddrInfoList {
+		pp, err := NewWorker(addrInfo.Address).Profile(ProfileParam{})
+		if err != nil {
+			if body.Force {
+				log.Warnf("get profile from [%s] failed, error: %s", addrInfo, err.Error())
+				continue
+			}
+
+			c.JSON(http.StatusExpectationFailed, gin.H{"error": fmt.Sprintf("failed to get profile from %s, service %s, error %s", addrInfo.Address, addrInfo.Name, err.Error())})
+			return
+		}
+
+		profile, err := convertProfile(pp)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		mergedProfiles = append(mergedProfiles, profile)
+	}
+
+	if len(mergedProfiles) == 0 {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": "no profiles"})
+		return
+	}
+
+	merged, err := cov.MergeMultipleProfiles(mergedProfiles)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if len(body.CoverFilePatterns) > 0 {
+		merged, err = filterProfile(body.CoverFilePatterns, merged)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to filter profile based on the patterns: %v, error: %v", body.CoverFilePatterns, err)})
+			return
+		}
+	}
+
+	if len(body.SkipFilePatterns) > 0 {
+		merged, err = skipProfile(body.SkipFilePatterns, merged)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to skip profile based on the patterns: %v, error: %v", body.SkipFilePatterns, err)})
+			return
+		}
+	}
+
+	if err := cov.DumpProfile(merged, c.Writer); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+}
+
+func (s *server) profilefunc(c *gin.Context) {
 	var body ProfileParam
 	if err := c.ShouldBind(&body); err != nil {
 		c.JSON(http.StatusExpectationFailed, gin.H{"error": err.Error()})

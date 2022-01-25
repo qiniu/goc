@@ -63,6 +63,8 @@ import (
 
 	_cover {{.GlobalCoverVarImportPath | printf "%q"}}
 
+	{{.CoverHtmlPath | printf "%q"}}
+
 )
 
 func init() {
@@ -209,6 +211,92 @@ func registerHandlers() {
 					return
 				}
 			}
+		}
+	})
+
+	// coverprofile reports a html profile string
+	mux.HandleFunc("/v1/cover/profile/html", func(w http.ResponseWriter, r *http.Request) {
+		var buf strings.Builder
+		fmt.Fprint(&buf, "mode: count\n")
+		counters, blocks := loadValues()
+		var active, total int64
+		var count uint32
+		for name, counts := range counters {
+			block := blocks[name]
+			for i := range counts {
+				stmts := int64(block[i].Stmts)
+				total += stmts
+				count = atomic.LoadUint32(&counts[i]) // For -mode=atomic.
+				if count > 0 {
+					active += stmts
+				}
+				_, err := fmt.Fprintf(&buf, "%s:%d.%d,%d.%d %d %d\n", name,
+					block[i].Line0, block[i].Col0,
+					block[i].Line1, block[i].Col1,
+					stmts,
+					count)
+				if err != nil {
+					fmt.Fprintf(w, "invalid block format, err: %v", err)
+					return
+				}
+			}
+		}
+
+		htmlReader := strings.NewReader(buf.String())
+		htmlStr, err := goc_utils.HtmlOutput(htmlReader)
+		if err != nil {
+			fmt.Fprintf(w, "invalid html format, err: %v", err)
+			return
+		}
+
+		_, err = fmt.Fprint(w,htmlStr)
+		if err != nil {
+			fmt.Fprintf(w, "invalid block format, err: %v", err)
+			return
+		}
+	})
+
+	// coverprofile reports a func profile string
+	mux.HandleFunc("/v1/cover/profile/func", func(w http.ResponseWriter, r *http.Request) {
+		var buf strings.Builder
+		fmt.Fprint(&buf, "mode: count\n")
+		counters, blocks := loadValues()
+		var active, total int64
+		var count uint32
+		for name, counts := range counters {
+			block := blocks[name]
+			for i := range counts {
+				stmts := int64(block[i].Stmts)
+				total += stmts
+				count = atomic.LoadUint32(&counts[i]) // For -mode=atomic.
+				if count > 0 {
+					active += stmts
+				}
+				_, err := fmt.Fprintf(&buf, "%s:%d.%d,%d.%d %d %d\n", name,
+					block[i].Line0, block[i].Col0,
+					block[i].Line1, block[i].Col1,
+					stmts,
+					count)
+				if err != nil {
+					fmt.Fprintf(w, "invalid block format, err: %v", err)
+					return
+				}
+			}
+		}
+
+		funcReader := strings.NewReader(buf.String())
+		var profileCover = &goc_utils.ProfileCover{}
+		err = goc_utils.FuncOutput1(funcReader, profileCover)
+		if err != nil {
+			fmt.Fprintf(w, "invalid func format, err: %v", err)
+			return
+		}
+
+		funcByte, err := json.Marshal(profileCover)
+		_, err = fmt.Fprint(w, string(funcByte))
+		if err != nil {
+			fmt.Fprintf(w, "invalid block format, err: %v", err)
+			return
 		}
 	})
 
