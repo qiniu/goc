@@ -64,7 +64,7 @@ export GOC_CUSTOM_HOST="127.0.0.1:7779"
 
 当使用 `goc build --gocmode watch .` 编译后，被测服务任何覆盖率变化都将实时推送到 goc server。
 
-用户可以使用该 websocket 连接 `ws://[goc_server_host]/cover/ws/watch` 观察到被测服务的新触发代码块，推送信息格式如下：
+用户可以使用该 websocket 连接 `ws://[goc_server_host]/v2/cover/ws/watch` 观察到被测服务的新触发代码块，推送信息格式如下：
 
 ```bash
 qiniu.com/kodo/apiserver/server/main.go:42.49,43.13 1 0
