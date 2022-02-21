@@ -40,6 +40,11 @@ func (b *Build) Install() {
 	b.updateGoModFile()
 	// 3. inject cover vars
 	b.Inject()
+
+	if b.IsVendorMod && b.IsModEdit {
+		b.reVendor()
+	}
+
 	// 4. install in the temp project
 	b.doInstallInTemp()
 }

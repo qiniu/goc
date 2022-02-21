@@ -43,6 +43,9 @@ type Build struct {
 	GoArgs   []string // go command line args
 	Packages []string // go command line [packages]
 
+	IsVendorMod bool // vendor, readonly, or mod?
+	IsModEdit   bool // is mod file edited?
+
 	ImportPath                  string // the whole import path of the project
 	Pkgs                        map[string]*Package
 	GlobalCoverVarImportPath    string
@@ -86,6 +89,11 @@ func (b *Build) Build() {
 	b.updateGoModFile()
 	// 3. inject cover vars
 	b.Inject()
+
+	if b.IsVendorMod && b.IsModEdit {
+		b.reVendor()
+	}
+
 	// 4. build in the temp project
 	b.doBuildInTemp()
 }
@@ -105,6 +113,10 @@ func (b *Build) doBuildInTemp() {
 	// 如果没被设置就加一个至原命令执行的目录
 	if !oSet {
 		goflags = append(goflags, "-o", b.CurWd)
+	}
+
+	if b.IsVendorMod && b.IsModEdit {
+		b.reVendor()
 	}
 
 	pacakges := b.Packages
@@ -148,4 +160,22 @@ func nicePrintArgs(args []string) []string {
 	}
 
 	return output
+}
+
+func (b *Build) reVendor() {
+	log.StartWait("re-vendoring the project")
+	cmd := exec.Command("go", "mod", "vendor")
+	cmd.Dir = b.TmpModProjectDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		log.Fatalf("fail to execute go vendor: %v", err)
+	}
+	if err := cmd.Wait(); err != nil {
+		log.Fatalf("fail to execute go vendor: %v", err)
+	}
+
+	log.StopWait()
+	log.Donef("re-vendor the project done")
 }

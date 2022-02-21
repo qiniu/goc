@@ -130,7 +130,18 @@ func (b *Build) buildCmdArgsParse() {
 			}
 			flags = append(flags, "-o", outputDir)
 		} else {
-			flags = append(flags, "-"+f.Name, f.Value.String())
+			if _, ok := booleanFlags[f.Name]; !ok {
+				flags = append(flags, "-"+f.Name, f.Value.String())
+			} else {
+				flags = append(flags, "-"+f.Name)
+			}
+			if f.Name == "mod" {
+				if f.Value.String() == "vendor" {
+					b.IsVendorMod = true
+				} else {
+					b.IsVendorMod = false
+				}
+			}
 		}
 	})
 
@@ -248,13 +259,18 @@ type goConfig struct {
 }
 
 var goflags goConfig
+var booleanFlags map[string]struct{} = make(map[string]struct{})
 
 func addBuildFlags(cmdSet *flag.FlagSet) {
 	cmdSet.BoolVar(&goflags.BuildA, "a", false, "")
+	booleanFlags["a"] = struct{}{}
 	cmdSet.BoolVar(&goflags.BuildN, "n", false, "")
+	booleanFlags["n"] = struct{}{}
 	cmdSet.IntVar(&goflags.BuildP, "p", 4, "")
 	cmdSet.BoolVar(&goflags.BuildV, "v", false, "")
+	booleanFlags["v"] = struct{}{}
 	cmdSet.BoolVar(&goflags.BuildX, "x", false, "")
+	booleanFlags["x"] = struct{}{}
 	cmdSet.StringVar(&goflags.BuildBuildmode, "buildmode", "default", "")
 	cmdSet.StringVar(&goflags.BuildMod, "mod", "", "")
 	cmdSet.StringVar(&goflags.Installsuffix, "installsuffix", "", "")
@@ -266,16 +282,22 @@ func addBuildFlags(cmdSet *flag.FlagSet) {
 	cmdSet.StringVar(&goflags.BuildGccgoflags, "gccgoflags", "", "")
 	// mod related
 	cmdSet.BoolVar(&goflags.ModCacheRW, "modcacherw", false, "")
+	booleanFlags["modcacherw"] = struct{}{}
 	cmdSet.StringVar(&goflags.ModFile, "modfile", "", "")
 	cmdSet.StringVar(&goflags.BuildLdflags, "ldflags", "", "")
 	cmdSet.BoolVar(&goflags.BuildLinkshared, "linkshared", false, "")
+	booleanFlags["linkshared"] = struct{}{}
 	cmdSet.StringVar(&goflags.BuildPkgdir, "pkgdir", "", "")
 	cmdSet.BoolVar(&goflags.BuildRace, "race", false, "")
+	booleanFlags["race"] = struct{}{}
 	cmdSet.BoolVar(&goflags.BuildMSan, "msan", false, "")
+	booleanFlags["msan"] = struct{}{}
 	cmdSet.StringVar(&goflags.BuildTags, "tags", "", "")
 	cmdSet.StringVar(&goflags.BuildToolexec, "toolexec", "", "")
 	cmdSet.BoolVar(&goflags.BuildTrimpath, "trimpath", false, "")
+	booleanFlags["trimpath"] = struct{}{}
 	cmdSet.BoolVar(&goflags.BuildWork, "work", false, "")
+	booleanFlags["work"] = struct{}{}
 }
 
 func addOutputFlags(cmdSet *flag.FlagSet) {

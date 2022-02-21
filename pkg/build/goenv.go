@@ -54,6 +54,9 @@ func (b *Build) readProjectMetaInfo() {
 		b.Pkgs = pkgs
 	}
 
+	// check if project is in vendor mod
+	b.checkIfVendorMod()
+
 	// get tmp folder name
 	b.TmpModProjectDir = filepath.Join(os.TempDir(), TmpFolderName(b.CurModProjectDir))
 	// get working dir in the corresponding tmp dir
@@ -69,6 +72,9 @@ func (b *Build) displayProjectMetaInfo() {
 	log.Infof("GOBIN: %v", b.GOBIN)
 	log.Infof("Project Directory: %v", b.CurModProjectDir)
 	log.Infof("Temporary Project Directory: %v", b.TmpModProjectDir)
+	if b.IsVendorMod {
+		log.Infof("Project in vendor mod")
+	}
 	log.Infof("")
 }
 
@@ -131,4 +137,17 @@ func (b *Build) listPackages(dir string) map[string]*Package {
 	}
 
 	return pkgs
+}
+
+func (b *Build) checkIfVendorMod() {
+	if b.IsVendorMod == true {
+		return
+	}
+
+	vendorDir := filepath.Join(b.CurModProjectDir, "vendor")
+	if _, err := os.Stat(vendorDir); err != nil {
+		b.IsVendorMod = false
+	}
+
+	b.IsVendorMod = true
 }
