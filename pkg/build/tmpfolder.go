@@ -145,6 +145,7 @@ func (b *Build) updateGoModFile() (updateFlag bool, newModFile []byte) {
 		if err != nil {
 			log.Fatalf("fail to update go.mod: %v", err)
 		}
+		b.IsModEdit = true
 	}
 	return
 }

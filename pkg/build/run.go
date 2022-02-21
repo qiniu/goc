@@ -59,6 +59,11 @@ func (b *Build) Run() {
 	b.updateGoModFile()
 	// 3. inject cover vars
 	b.Inject()
+
+	if b.IsVendorMod && b.IsModEdit {
+		b.reVendor()
+	}
+
 	// 4. run in the temp project
 	go func() {
 		ch := make(chan os.Signal, 1)

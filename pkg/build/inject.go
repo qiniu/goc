@@ -139,6 +139,14 @@ func (b *Build) getPkgTmpDir(pkgDir string) string {
 // 11111_22222_bridge.go 仅仅用于引用 11111_22222_package, where package contains ws agent main logic.
 // 使用 bridge.go 文件是为了避免插桩逻辑中的变量名污染 main 包
 func (b *Build) injectGocAgent(where string, covers []*PackageCover) {
+	if len(covers) == 0 {
+		return
+	}
+
+	if len(covers[0].Vars) == 0 {
+		return
+	}
+
 	injectPkgName := "goc-cover-agent-apis-auto-generated-11111-22222-package"
 	injectBridgeName := "goc-cover-agent-apis-auto-generated-11111-22222-bridge.go"
 	wherePkg := filepath.Join(where, injectPkgName)
