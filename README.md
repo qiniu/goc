@@ -58,6 +58,16 @@ Goc can collect code coverages at runtime for your long-run golang applications.
     enricofoltran/simple-go-server/main.go:74.46,76.4 1 0
     ...   
     ```
+    PS: 
+    ```
+    enricofoltran/simple-go-server/main.go:30.13,48.33 13 1
+    
+    File: enricofoltran/simple-go-server/main.go
+    Position of first point of this code block: 30.13
+    Position of second point of this code block: 48.33
+    Number of statements of this code block: 13
+    Number of executions of this code block: 1
+    ```
 
 ### Show Code Coverage Change at Runtime in Vscode
 
