@@ -61,6 +61,11 @@ goc 可以实时收集长时运行的 golang 服务覆盖率。收集步骤只�
     enricofoltran/simple-go-server/main.go:74.46,76.4 1 0
     ...   
     ```
+    PS:
+    ```
+    enricofoltran/simple-go-server/main.go:30.13,48.33 13 1
+    基本语义为 "文件:起始行.起始列,结束行.结束列 该基本块中的语句数量 该基本块被执行到的次数"
+    ```
 
 ### Vscode 中实时展示覆盖率动态变化
 
