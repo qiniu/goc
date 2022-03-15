@@ -102,7 +102,10 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 	ifInIdMap := idMaps(idQuery)
 
 	skippatternRaw := c.Query("skippattern")
-	skippattern := strings.Split(skippatternRaw, ",")
+	var skippattern []string
+	if skippatternRaw != "" {
+		skippattern = strings.Split(skippatternRaw, ",")
+	}
 
 	extra := c.Query("extra")
 	isExtra := filterExtra(extra)
