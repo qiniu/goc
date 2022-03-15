@@ -320,13 +320,16 @@ func filterProfileByPattern(skippattern []string, profiles []*cover.Profile) []*
 
 	var out = make([]*cover.Profile, 0)
 	for _, profile := range profiles {
+		skip := false
 		for _, pattern := range skippattern {
 			if strings.Contains(profile.FileName, pattern) {
-				// skip, so continue
-				continue
-			} else {
-				out = append(out, profile)
+				skip = true
+				break
 			}
+		}
+
+		if !skip {
+			out = append(out, profile)
 		}
 	}
 
