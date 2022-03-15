@@ -36,9 +36,9 @@ type ProfileInterface interface {
 }
 
 type profileClient struct {
-	c              *resty.Client
-	packagePattern string
-	extraPattern   string
+	c            *resty.Client
+	skipPatterns []string
+	extraPattern string
 }
 
 func NewProfileClient(c *resty.Client) *profileClient {
@@ -49,9 +49,9 @@ func NewProfileClient(c *resty.Client) *profileClient {
 
 type profileOption func(*profileClient)
 
-func WithPackagePattern(pattern string) profileOption {
+func WithPackagePattern(skips []string) profileOption {
 	return func(pc *profileClient) {
-		pc.packagePattern = pattern
+		pc.skipPatterns = skips
 	}
 }
 
@@ -69,9 +69,10 @@ func (p *profileClient) Get(ids []string, opts ...profileOption) (string, error)
 	req := p.c.R()
 
 	idQuery := strings.Join(ids, ",")
+	skipQuery := strings.Join(p.skipPatterns, ",")
 
 	req.QueryParam.Add("id", idQuery)
-	req.QueryParam.Add("pattern", p.packagePattern)
+	req.QueryParam.Add("skippattern", skipQuery)
 	req.QueryParam.Add("extra", p.extraPattern)
 
 	res := struct {
@@ -105,9 +106,10 @@ func (p *profileClient) Delete(ids []string, opts ...profileOption) error {
 	req := p.c.R()
 
 	idQuery := strings.Join(ids, ",")
+	skipQuery := strings.Join(p.skipPatterns, ",")
 
 	req.QueryParam.Add("id", idQuery)
-	req.QueryParam.Add("pattern", p.packagePattern)
+	req.QueryParam.Add("skippattern", skipQuery)
 	req.QueryParam.Add("extra", p.extraPattern)
 
 	_, err := req.

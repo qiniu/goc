@@ -101,7 +101,12 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 	idQuery := c.Query("id")
 	ifInIdMap := idMaps(idQuery)
 
-	pattern := c.Query("pattern")
+	skippatternRaw := c.Query("skippattern")
+	var skippattern []string
+	if skippatternRaw != "" {
+		skippattern = strings.Split(skippatternRaw, ",")
+	}
+
 	extra := c.Query("extra")
 	isExtra := filterExtra(extra)
 
@@ -174,12 +179,8 @@ func (gs *gocServer) getProfiles(c *gin.Context) {
 				return
 			}
 
-			// check if pattern matches
-			newProfile, err := filterProfileByPattern(pattern, profile)
-			if err != nil {
-				log.Errorf("%v", err)
-				return
-			}
+			// check if skippattern matches
+			newProfile := filterProfileByPattern(skippattern, profile)
 
 			mu.Lock()
 			defer mu.Unlock()
@@ -314,26 +315,28 @@ func (gs *gocServer) watchProfileUpdate(c *gin.Context) {
 	<-gwc.exitCh
 }
 
-func filterProfileByPattern(pattern string, profiles []*cover.Profile) ([]*cover.Profile, error) {
+func filterProfileByPattern(skippattern []string, profiles []*cover.Profile) []*cover.Profile {
 
-	if strings.TrimSpace(pattern) == "" {
-		return profiles, nil
+	if len(skippattern) == 0 {
+		return profiles
 	}
 
 	var out = make([]*cover.Profile, 0)
 	for _, profile := range profiles {
-		matched, err := regexp.MatchString(pattern, profile.FileName)
-		if err != nil {
-			return nil, fmt.Errorf("filterProfile failed with pattern %s for profile %s, err: %v", pattern, profile.FileName, err)
-		}
-		if matched {
-			out = append(out, profile)
-			break // no need to check again for the file
+		skip := false
+		for _, pattern := range skippattern {
+			if strings.Contains(profile.FileName, pattern) {
+				skip = true
+				break
+			}
 		}
 
+		if !skip {
+			out = append(out, profile)
+		}
 	}
 
-	return out, nil
+	return out
 }
 
 func idMaps(idQuery string) func(key string) bool {
