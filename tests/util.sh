@@ -73,3 +73,12 @@ go_version_at_least() {
 
     return 0
 }
+
+# returns demo service name to use
+demo_service_name() {
+    if go_version_at_least 1 18; then
+        echo run_for_several_seconds_with_generics
+    else
+        echo run_for_several_seconds
+    fi
+}

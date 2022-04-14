@@ -48,7 +48,7 @@ teardown_file() {
 
 @test "register a covered service" {
     WORKDIR=$PWD
-    cd $WORKDIR/samples/run_for_several_seconds
+    cd $WORKDIR/samples/$(demo_service_name)
 
     run goc build --debug --center=http://127.0.0.1:60001
     [ "$status" -eq 0 ]
