@@ -28,7 +28,7 @@ setup_file() {
     sleep 1
 
     WORKDIR=$PWD
-    cd samples/run_for_several_seconds
+    cd $WORKDIR/samples/$(demo_service_name)
     goc build --center=http://127.0.0.1:60001
 
     info "goc server started"

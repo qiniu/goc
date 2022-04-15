@@ -35,7 +35,7 @@ setup() {
 
 @test "test basic goc build command" {
     cd samples/run_for_several_seconds
-    
+
     wait_profile_backend "build1" &
     profile_pid=$!
 
@@ -90,7 +90,7 @@ setup() {
 
 @test "test goc build on complex project" {
     cd samples/complex_project
-    
+
     wait_profile_backend "build5" &
     profile_pid=$!
 
@@ -116,12 +116,30 @@ setup() {
 
 @test "test basic goc build command with singleton" {
     cd samples/run_for_several_seconds
-    
+
     wait_profile_backend "build7" &
     profile_pid=$!
 
     run gocc build --debug --singleton --debugcisyncfile ci-sync.bak;
     info build7 output: $output
+    [ "$status" -eq 0 ]
+
+    wait $profile_pid
+}
+
+@test "test goc build command on project using Go generics" {
+    if ! go_version_at_least 1 18; then
+        info skipped on old Go versions
+        return 0
+    fi
+
+    cd samples/simple_project_with_generics
+
+    wait_profile_backend "build8" &
+    profile_pid=$!
+
+    run gocc build --debug --debugcisyncfile ci-sync.bak;
+    info build8 output: $output
     [ "$status" -eq 0 ]
 
     wait $profile_pid
