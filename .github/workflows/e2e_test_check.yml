@@ -18,7 +18,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.14.x
+          go-version: 1.18.x
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Go build
@@ -43,7 +43,7 @@ jobs:
     needs: job_1
     strategy:
       matrix:
-        go-version: [1.11.x, 1.12.x, 1.13.x, 1.14.x, 1.15.x, 1.16.x]
+        go-version: [1.16.x, 1.17.x, 1.18.x]
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
@@ -56,7 +56,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           path: /home/runner/tools
-      - name: Install bats-core 
+      - name: Install bats-core
         run: |
           git clone https://github.com/bats-core/bats-core.git
           cd bats-core
