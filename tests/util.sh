@@ -39,3 +39,37 @@ wait_profile_backend() {
     rm ci-sync.bak || true
     wait_profile $1
 }
+
+# usage: go_version_at_least [version components]
+#
+# example:
+#
+# go_version_at_least 1
+# go_version_at_least 2
+# go_version_at_least 1 18
+# go_version_at_least 1 18 1
+#
+# if ! go_version_at_least 1 18; then
+#   info "skipping on old go version"
+#   return 0
+# fi
+go_version_at_least() {
+    # looks like "go version goX.XX[.XX] goos/goarch" for tagged Go releases
+    # extract the "X.XX[.XX]" part
+    local go_version_out="$(go version)"
+    go_version_out="${go_version_out#go version go}"
+    go_version_out="${go_version_out% *}"
+
+    local v=()
+    IFS=. read -ra v <<< "$go_version_out"
+
+    while [[ $# -gt 0 ]]; do
+        [[ ${v[0]} -lt $1 ]] && return 1
+        [[ ${v[0]} -gt $1 ]] && return 0
+
+        shift
+        v=("${v[@]:1}")
+    done
+
+    return 0
+}
