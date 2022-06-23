@@ -104,7 +104,7 @@ func init() {
 	profileCmd.Flags().StringVarP(&output, "output", "o", "", "download cover profile")
 	profileCmd.Flags().StringSliceVarP(&svrList, "service", "", nil, "service name to fetch profile, see 'goc list' for all services.")
 	profileCmd.Flags().StringSliceVarP(&addrList, "address", "", nil, "address to fetch profile, see 'goc list' for all addresses.")
-	profileCmd.Flags().BoolVarP(&force, "force", "f", false, "force fetching all available profiles")
+	profileCmd.Flags().BoolVarP(&force, "force", "f", true, "force fetching all available profiles")
 	profileCmd.Flags().StringSliceVarP(&coverFilePatterns, "coverfile", "", nil, "only output coverage data of the files matching the patterns")
 	profileCmd.Flags().StringSliceVarP(&skipFilePatterns, "skipfile", "", nil, "skip the files matching the patterns when outputing coverage data")
 	addBasicFlags(profileCmd.Flags())
