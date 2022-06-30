@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -129,18 +128,12 @@ func (s *server) registerService(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	host, port, err := net.SplitHostPort(u.Host)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if u.Scheme != "https" && u.Scheme != "http" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupport schema"})
 		return
-	}
-
-	realIP := c.ClientIP()
-	// only for IPV4
-	// refer: https://github.com/qiniu/goc/issues/177
-	if net.ParseIP(realIP).To4() != nil && host != realIP {
-		log.Printf("the registered host %s of service %s is different with the real one %s, here we choose the real one", service.Name, host, realIP)
-		service.Address = fmt.Sprintf("http://%s:%s", realIP, port)
+	} else if u.Host == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "address is empty"})
+		return
 	}
 
 	address := s.Store.Get(service.Name)
@@ -152,7 +145,6 @@ func (s *server) registerService(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
-	return
 }
 
 // profile API examples:
