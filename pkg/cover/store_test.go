@@ -18,12 +18,14 @@ package cover
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestLocalStore(t *testing.T) {
+	os.Remove("_svrs_address.txt") //remove _svrs_address.txt file，make sure no data effect this unit test
 	localStore, err := NewFileStore("_svrs_address.txt")
 	assert.NoError(t, err)
 	var tc1 = ServiceUnderTest{
