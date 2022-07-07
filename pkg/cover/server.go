@@ -134,6 +134,9 @@ func (s *server) registerService(c *gin.Context) {
 	} else if u.Host == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "address is empty"})
 		return
+	} else if u.Hostname() == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "empty host name"})
+		return
 	}
 
 	address := s.Store.Get(service.Name)

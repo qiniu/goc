@@ -154,19 +154,29 @@ func TestRegisterService(t *testing.T) {
 	// register with host but no port
 	data = url.Values{}
 	data.Set("name", "aaa")
+	//in http if no port info，the default is 80，so http://127.0.0.1 is a can access address
 	data.Set("address", "http://127.0.0.1")
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("POST", "/v1/cover/register", strings.NewReader(data.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
 
+	// register with port but no host
+	data = url.Values{}
+	data.Set("name", "aaa")
+	data.Set("address", "http://:64444")
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/v1/cover/register", strings.NewReader(data.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "missing port in address")
+	assert.Contains(t, w.Body.String(), "empty host name")
 
 	// register with store failure
 	expectedS := ServiceUnderTest{
 		Name:    "foo",
-		Address: "http://:64444", // the real IP is empty in unittest, so server will get a empty one
+		Address: "http://127.0.0.1:64444", // the real IP is empty in unittest, so server will get a empty one
 	}
 	testObj := new(MockStore)
 	testObj.On("Get", "foo").Return([]string{"http://127.0.0.1:66666"})
