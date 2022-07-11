@@ -17,9 +17,10 @@
 package cmd
 
 import (
+	"log"
+
 	"github.com/qiniu/goc/pkg/cover"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 var serverCmd = &cobra.Command{
@@ -41,14 +42,20 @@ goc server --port=localhost:8080
 		if err != nil {
 			log.Fatalf("New file based server failed, err: %v", err)
 		}
+		if netwrok == "direct" {
+			server.NetworkType = "direct"
+		} else {
+			server.NetworkType = "default"
+		}
 		server.Run(port)
 	},
 }
 
-var port, localPersistence string
+var port, localPersistence, netwrok string
 
 func init() {
 	serverCmd.Flags().StringVarP(&port, "port", "", ":7777", "listen port to start a coverage host center")
 	serverCmd.Flags().StringVarP(&localPersistence, "local-persistence", "", "_svrs_address.txt", "the file to save services address information")
+	serverCmd.Flags().StringVarP(&netwrok, "network", "", "default", "setting the network type(default:regist server use proxy or under nat、same network ect,direct:use register request parm)")
 	rootCmd.AddCommand(serverCmd)
 }

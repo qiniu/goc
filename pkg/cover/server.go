@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -37,6 +38,7 @@ const LogFile = "goc.log"
 
 type server struct {
 	PersistenceFile string
+	NetworkType     string //solve different network type(1.regist client can direct access ,2.regist client under a proxy network or nat network、same network ect)
 	Store           Store
 }
 
@@ -99,6 +101,7 @@ func (s *server) Route(w io.Writer) *gin.Engine {
 type ServiceUnderTest struct {
 	Name    string `form:"name" json:"name" binding:"required"`
 	Address string `form:"address" json:"address" binding:"required"`
+	Network string `form:"network" json:"-"`
 }
 
 // ProfileParam is param of profile API
@@ -122,7 +125,9 @@ func (s *server) registerService(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
+	if service.Network == "" {
+		service.Network = s.NetworkType
+	}
 	u, err := url.Parse(service.Address)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -131,12 +136,42 @@ func (s *server) registerService(c *gin.Context) {
 	if u.Scheme != "https" && u.Scheme != "http" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupport schema"})
 		return
-	} else if u.Host == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "address is empty"})
+	} else if u.Path != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "uri path must empty"})
 		return
-	} else if u.Hostname() == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "empty host name"})
-		return
+	}
+	if service.Network == "direct" {
+		if u.Host == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "address is empty"})
+			return
+		}
+		if u.Hostname() == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "empty host name"})
+			return
+		}
+	} else {
+		host := u.Hostname()
+		port := u.Port()
+		if host == "" {
+			host = c.ClientIP()
+		}
+		if port == "" {
+			port = "80"
+		}
+		u.Host = fmt.Sprintf("%s:%s", host, port)
+		host, port, err := net.SplitHostPort(u.Host)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		realIP := c.ClientIP()
+		// only for IPV4
+		// refer: https://github.com/qiniu/goc/issues/177
+		if net.ParseIP(realIP).To4() != nil && host != realIP {
+			log.Printf("the registered host %s of service %s is different with the real one %s, here we choose the real one", service.Name, host, realIP)
+			service.Address = fmt.Sprintf("%s://%s:%s", u.Scheme, realIP, port)
+		}
 	}
 
 	address := s.Store.Get(service.Name)
