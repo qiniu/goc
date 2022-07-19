@@ -42,20 +42,17 @@ goc server --port=localhost:8080
 		if err != nil {
 			log.Fatalf("New file based server failed, err: %v", err)
 		}
-		if netwrok == "direct" {
-			server.NetworkType = "direct"
-		} else {
-			server.NetworkType = "default"
-		}
+		server.IPRevise = iprevise
 		server.Run(port)
 	},
 }
 
-var port, localPersistence, netwrok string
+var port, localPersistence string
+var iprevise bool
 
 func init() {
 	serverCmd.Flags().StringVarP(&port, "port", "", ":7777", "listen port to start a coverage host center")
 	serverCmd.Flags().StringVarP(&localPersistence, "local-persistence", "", "_svrs_address.txt", "the file to save services address information")
-	serverCmd.Flags().StringVarP(&netwrok, "network", "", "default", "setting the network type(default:regist server use proxy or under nat、same network ect,direct:use register request parm)")
+	serverCmd.Flags().BoolVarP(&iprevise, "ip_revise", "", true, "setting the network type(default:regist server use proxy or under nat、same network ect,direct:use register request parm)")
 	rootCmd.AddCommand(serverCmd)
 }
