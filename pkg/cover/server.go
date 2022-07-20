@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -38,7 +39,7 @@ const LogFile = "goc.log"
 
 type server struct {
 	PersistenceFile string
-	NetworkType     string //solve different network type(1.regist client can direct access ,2.regist client under a proxy network or nat network、same network ect)
+	IPRevise        bool // whether to do ip revise during registering
 	Store           Store
 }
 
@@ -99,9 +100,9 @@ func (s *server) Route(w io.Writer) *gin.Engine {
 
 // ServiceUnderTest is a entry under being tested
 type ServiceUnderTest struct {
-	Name    string `form:"name" json:"name" binding:"required"`
-	Address string `form:"address" json:"address" binding:"required"`
-	Network string `form:"network" json:"-"`
+	Name     string `form:"name" json:"name" binding:"required"`
+	Address  string `form:"address" json:"address" binding:"required"`
+	IPRevise string `form:"iprevise" json:"-"`
 }
 
 // ProfileParam is param of profile API
@@ -125,8 +126,12 @@ func (s *server) registerService(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if service.Network == "" {
-		service.Network = s.NetworkType
+	if service.IPRevise == "" {
+		service.IPRevise = strconv.FormatBool(s.IPRevise)
+	}
+	isrevise, err := strconv.ParseBool(service.IPRevise)
+	if err != nil {
+		isrevise = s.IPRevise
 	}
 	u, err := url.Parse(service.Address)
 	if err != nil {
@@ -140,7 +145,7 @@ func (s *server) registerService(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "uri path must empty"})
 		return
 	}
-	if service.Network == "direct" {
+	if !isrevise {
 		if u.Host == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "address is empty"})
 			return

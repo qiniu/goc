@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -175,7 +176,7 @@ func TestRegisterService(t *testing.T) {
 
 	// regist with empty host(in direct mode,empty must fail,default is success)
 	// in default,use request realhost as host,use 80 as port
-	server.NetworkType = "direct"
+	server.IPRevise = false
 	data = url.Values{}
 	data.Set("name", "aaa")
 	data.Set("address", "http://")
@@ -209,14 +210,14 @@ func TestRegisterService(t *testing.T) {
 	data = url.Values{}
 	data.Set("name", "aaa")
 	data.Set("address", "http://")
-	data.Set("network", "default")
+	data.Set("iprevise", "true")
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("POST", "/v1/cover/register", strings.NewReader(data.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	server.NetworkType = "default" //use clientip and default port(80)
+	server.IPRevise = true //use clientip and default port(80)
 	data = url.Values{}
 	data.Set("name", "aaa")
 	data.Set("address", "http://")
@@ -246,9 +247,9 @@ func TestRegisterService(t *testing.T) {
 
 	// register with store failure
 	expectedS := ServiceUnderTest{
-		Name:    "foo",
-		Address: "http://:64444", // the real IP is empty in unittest, so server will get a empty one
-		Network: server.NetworkType,
+		Name:     "foo",
+		Address:  "http://:64444", // the real IP is empty in unittest, so server will get a empty one
+		IPRevise: strconv.FormatBool(server.IPRevise),
 	}
 	testObj := new(MockStore)
 	testObj.On("Get", "foo").Return([]string{"http://127.0.0.1:66666"})
