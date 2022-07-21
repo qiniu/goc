@@ -103,7 +103,7 @@ func (s *server) Route(w io.Writer) *gin.Engine {
 type ServiceUnderTest struct {
 	Name     string `form:"name" json:"name" binding:"required"`
 	Address  string `form:"address" json:"address" binding:"required"`
-	IPRevise string `form:"ip_revise" json:"-"` // whether to do ip revise during registering
+	IPRevise string `form:"ip_revise" json:"ip_revise" binding:"-"` // whether to do ip revise during registering
 }
 
 // ProfileParam is param of profile API
@@ -142,9 +142,14 @@ func (s *server) registerService(c *gin.Context) {
 		return
 	}
 	host, port, err := net.SplitHostPort(u.Host)
-	if err != nil && !strings.Contains(err.Error(), "missing port in address") {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("net.SplitHostPort %s failed: %s", u.Host, err.Error())})
-		return
+	if err != nil {
+		if strings.Contains(err.Error(), "missing port in address") {
+			// valid scenario, keep going
+			host = u.Host
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("net.SplitHostPort %s failed: %s", u.Host, err.Error())})
+			return
+		}
 	}
 
 	var doIPRevise bool
