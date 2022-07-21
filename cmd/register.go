@@ -34,8 +34,9 @@ goc register [flags]
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		s := cover.ServiceUnderTest{
-			Name:    name,
-			Address: address,
+			Name:     name,
+			Address:  address,
+			IPRevise: ipRevise,
 		}
 		res, err := cover.NewWorker(center).RegisterService(s)
 		if err != nil {
@@ -46,14 +47,16 @@ goc register [flags]
 }
 
 var (
-	name    string
-	address string
+	name     string
+	address  string
+	ipRevise string
 )
 
 func init() {
 	registerCmd.Flags().StringVarP(&center, "center", "", "http://127.0.0.1:7777", "cover profile host center")
 	registerCmd.Flags().StringVarP(&name, "name", "n", "", "service name")
 	registerCmd.Flags().StringVarP(&address, "address", "a", "", "service address")
+	registerCmd.Flags().StringVarP(&ipRevise, "ip_revise", "", "true", "whether to do ip revise during registering")
 	registerCmd.MarkFlagRequired("name")
 	registerCmd.MarkFlagRequired("address")
 	rootCmd.AddCommand(registerCmd)

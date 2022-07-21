@@ -27,6 +27,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -129,7 +130,7 @@ func (s *server) registerService(c *gin.Context) {
 
 	u, err := url.Parse(service.Address)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("url.Parse %s failed: %s", service.Address, err.Error())})
 		return
 	}
 	if u.Scheme != "https" && u.Scheme != "http" {
@@ -141,8 +142,8 @@ func (s *server) registerService(c *gin.Context) {
 		return
 	}
 	host, port, err := net.SplitHostPort(u.Host)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err != nil && !strings.Contains(err.Error(), "missing port in address") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("net.SplitHostPort %s failed: %s", u.Host, err.Error())})
 		return
 	}
 
@@ -151,7 +152,7 @@ func (s *server) registerService(c *gin.Context) {
 	if service.IPRevise != "" {
 		doIPRevise, err = strconv.ParseBool(service.IPRevise)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("strconv.ParseBool %s failed: %s", service.IPRevise, err.Error())})
 			return
 		}
 	} else {
