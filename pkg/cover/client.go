@@ -79,7 +79,7 @@ func (c *client) RegisterService(srv ServiceUnderTest) ([]byte, error) {
 	if strings.TrimSpace(srv.Name) == "" {
 		return nil, fmt.Errorf("invalid service name")
 	}
-	u := fmt.Sprintf("%s%s?name=%s&address=%s", c.Host, CoverRegisterServiceAPI, srv.Name, srv.Address)
+	u := fmt.Sprintf("%s%s?name=%s&address=%s&ip_revise=%s", c.Host, CoverRegisterServiceAPI, srv.Name, srv.Address, srv.IPRevise)
 	_, res, err := c.do("POST", u, "", nil)
 	return res, err
 }

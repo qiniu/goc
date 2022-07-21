@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"reflect"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -166,13 +165,12 @@ func TestRegisterService(t *testing.T) {
 	// regist with unempty path
 	data = url.Values{}
 	data.Set("name", "aaa")
-	data.Set("address", "http://127.0.0.1:21/")
+	data.Set("address", "http://127.0.0.1:21/") // valid scenario, the final stored address will be http://127.0.0.0.1:21
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("POST", "/v1/cover/register", strings.NewReader(data.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "uri path must empty")
+	assert.Equal(t, http.StatusOK, w.Code)
 
 	// regist with empty host(in direct mode,empty must fail,default is success)
 	// in default,use request realhost as host,use 80 as port
@@ -185,32 +183,20 @@ func TestRegisterService(t *testing.T) {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "address is empty")
+	assert.Contains(t, w.Body.String(), "empty host")
 
 	data = url.Values{}
 	data.Set("name", "aaa")
-	data.Set("address", "http://:8080")
-	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("POST", "/v1/cover/register", strings.NewReader(data.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, w.Body.String(), "empty host name")
-
-	data = url.Values{}
-	data.Set("name", "aaa")
-	data.Set("address", "http://127.0.0.1")
+	data.Set("address", "http://:8080") //valid scenario, be consistent with curl
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("POST", "/v1/cover/register", strings.NewReader(data.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	//change network type
 	data = url.Values{}
 	data.Set("name", "aaa")
-	data.Set("address", "http://")
-	data.Set("iprevise", "true")
+	data.Set("address", "http://127.0.0.1")
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("POST", "/v1/cover/register", strings.NewReader(data.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -225,7 +211,7 @@ func TestRegisterService(t *testing.T) {
 	req, _ = http.NewRequest("POST", "/v1/cover/register", strings.NewReader(data.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 
 	data = url.Values{}
 	data.Set("name", "aaa")
@@ -248,8 +234,8 @@ func TestRegisterService(t *testing.T) {
 	// register with store failure
 	expectedS := ServiceUnderTest{
 		Name:     "foo",
-		Address:  "http://:64444", // the real IP is empty in unittest, so server will get a empty one
-		IPRevise: strconv.FormatBool(server.IPRevise),
+		Address:  "http://:8080",
+		IPRevise: "true",
 	}
 	testObj := new(MockStore)
 	testObj.On("Get", "foo").Return([]string{"http://127.0.0.1:66666"})
@@ -260,7 +246,7 @@ func TestRegisterService(t *testing.T) {
 	w = httptest.NewRecorder()
 	data.Set("name", expectedS.Name)
 	data.Set("address", expectedS.Address)
-	data.Set("network", "")
+	data.Set("ip_revise", expectedS.IPRevise)
 	req, _ = http.NewRequest("POST", "/v1/cover/register", strings.NewReader(data.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	router.ServeHTTP(w, req)

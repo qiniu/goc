@@ -42,17 +42,17 @@ goc server --port=localhost:8080
 		if err != nil {
 			log.Fatalf("New file based server failed, err: %v", err)
 		}
-		server.IPRevise = iprevise
+		server.IPRevise = IPRevise
 		server.Run(port)
 	},
 }
 
 var port, localPersistence string
-var iprevise bool
+var IPRevise bool
 
 func init() {
 	serverCmd.Flags().StringVarP(&port, "port", "", ":7777", "listen port to start a coverage host center")
 	serverCmd.Flags().StringVarP(&localPersistence, "local-persistence", "", "_svrs_address.txt", "the file to save services address information")
-	serverCmd.Flags().BoolVarP(&iprevise, "ip_revise", "", true, "setting the network type(default:regist server use proxy or under nat、same network ect,direct:use register request parm)")
+	serverCmd.Flags().BoolVarP(&IPRevise, "ip_revise", "", true, "whether to do ip revise during registering. Recommend to set this as false if under NAT or Proxy environment")
 	rootCmd.AddCommand(serverCmd)
 }
