@@ -59,7 +59,7 @@ teardown_file() {
     run gocc register --center=http://127.0.0.1:60001 --name=xyz --address=http://137.0.0.1 --debug --debugcisyncfile ci-sync.bak;
     info register2 output: $output
     [ "$status" -eq 0 ]
-    [[ "$output" == *"missing port"* ]]
+    [[ "$output" != *"missing port"* ]]
 
     wait $profile_pid
 }

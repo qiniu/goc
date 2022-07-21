@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -38,6 +39,7 @@ const LogFile = "goc.log"
 
 type server struct {
 	PersistenceFile string
+	IPRevise        bool // whether to do ip revise during registering
 	Store           Store
 }
 
@@ -98,8 +100,9 @@ func (s *server) Route(w io.Writer) *gin.Engine {
 
 // ServiceUnderTest is a entry under being tested
 type ServiceUnderTest struct {
-	Name    string `form:"name" json:"name" binding:"required"`
-	Address string `form:"address" json:"address" binding:"required"`
+	Name     string `form:"name" json:"name" binding:"required"`
+	Address  string `form:"address" json:"address" binding:"required"`
+	IPRevise string `form:"iprevise" json:"-"`
 }
 
 // ProfileParam is param of profile API
@@ -123,24 +126,57 @@ func (s *server) registerService(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
+	if service.IPRevise == "" {
+		service.IPRevise = strconv.FormatBool(s.IPRevise)
+	}
+	isrevise, err := strconv.ParseBool(service.IPRevise)
+	if err != nil {
+		isrevise = s.IPRevise
+	}
 	u, err := url.Parse(service.Address)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	host, port, err := net.SplitHostPort(u.Host)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if u.Scheme != "https" && u.Scheme != "http" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupport schema"})
+		return
+	} else if u.Path != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "uri path must empty"})
 		return
 	}
+	if !isrevise {
+		if u.Host == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "address is empty"})
+			return
+		}
+		if u.Hostname() == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "empty host name"})
+			return
+		}
+	} else {
+		host := u.Hostname()
+		port := u.Port()
+		if host == "" {
+			host = c.ClientIP()
+		}
+		if port == "" {
+			port = "80"
+		}
+		u.Host = fmt.Sprintf("%s:%s", host, port)
+		host, port, err := net.SplitHostPort(u.Host)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 
-	realIP := c.ClientIP()
-	// only for IPV4
-	// refer: https://github.com/qiniu/goc/issues/177
-	if net.ParseIP(realIP).To4() != nil && host != realIP {
-		log.Printf("the registered host %s of service %s is different with the real one %s, here we choose the real one", service.Name, host, realIP)
-		service.Address = fmt.Sprintf("http://%s:%s", realIP, port)
+		realIP := c.ClientIP()
+		// only for IPV4
+		// refer: https://github.com/qiniu/goc/issues/177
+		if net.ParseIP(realIP).To4() != nil && host != realIP {
+			log.Printf("the registered host %s of service %s is different with the real one %s, here we choose the real one", service.Name, host, realIP)
+			service.Address = fmt.Sprintf("%s://%s:%s", u.Scheme, realIP, port)
+		}
 	}
 
 	address := s.Store.Get(service.Name)
@@ -152,7 +188,6 @@ func (s *server) registerService(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": "success"})
-	return
 }
 
 // profile API examples:
