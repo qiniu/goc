@@ -87,6 +87,8 @@ goc 可以实时收集长时运行的 golang 服务覆盖率。收集步骤只�
     2. 测试结束后，通过 `goc profile -o b.cov` 命令再收集一次覆盖率
     3. 通过 `goc merge a.cov b.cov -o merge.cov` 命令合并两次的覆盖率
 
+5. 默认情况下，goc使用编译产物的名称作为注册标识。你可以通过设置 `GOC_SERVICE_NAME` 环境变量以自定义该标识（可参见 [#293](https://github.com/qiniu/goc/issues/293)）。 
+
 ## Blogs
 
 - [Go语言系统测试覆盖率收集利器 goc](https://mp.weixin.qq.com/s/DzXEXwepaouSuD2dPVloOg)

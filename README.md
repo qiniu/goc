@@ -89,6 +89,8 @@ We provide a vscode extension - [Goc Coverage](https://marketplace.visualstudio.
     2. After service restarted and test finished, collect coverage again with `goc profile -o b.cov`
     3. Merge two coverage profiles together: `goc merge a.cov b.cov -o merge.cov`
 
+5. By default, goc will use the artifact's file name as its service name. You can overwrite it by setting environment variable `GOC_SERVICE_NAME`. (See [#293](https://github.com/qiniu/goc/issues/293) for details)
+
 ## RoadMap
 - [x] Support code coverage collection for system testing.
 - [x] Support code coverage counters clear for the services under test at runtime.
