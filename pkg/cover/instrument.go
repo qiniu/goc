@@ -222,7 +222,13 @@ func registerHandlers() {
 }
 
 func registerSelf(address string) ([]byte, error) {
-	selfName := filepath.Base(os.Args[0])
+	customServiceName, ok := os.LookupEnv("GOC_SERVICE_NAME")
+	var selfName string
+	if ok {
+		selfName = customServiceName
+	} else {
+		selfName = filepath.Base(os.Args[0])
+	}
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/cover/register?name=%s&address=%s", {{.Center | printf "%q"}}, selfName, address), nil)
 	if err != nil {
 		log.Fatalf("http.NewRequest failed: %v", err)
