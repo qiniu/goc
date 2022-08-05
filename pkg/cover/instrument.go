@@ -222,10 +222,10 @@ func registerHandlers() {
 }
 
 func registerSelf(address string) ([]byte, error) {
-	baymaxId, ok := os.LookupEnv("BAYMAX_APP_ID")
+	customServiceName, ok := os.LookupEnv("GOC_SERVICE_NAME")
 	var selfName string
 	if ok {
-		selfName = baymaxId
+		selfName = customServiceName
 	} else {
 		selfName = filepath.Base(os.Args[0])
 	}
