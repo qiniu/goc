@@ -115,7 +115,7 @@ type ProfileParam struct {
 	SkipFilePatterns  []string `form:"skipfile" json:"skipfile"`
 }
 
-//listServices list all the registered services
+// listServices list all the registered services
 func (s *server) listServices(c *gin.Context) {
 	services := s.Store.GetAll()
 	c.JSON(http.StatusOK, services)

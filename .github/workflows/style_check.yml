@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         # We have generics code, so only 1.18+ can work
-        go-version: [1.18.x]
+        go-version: [1.19.x]
     runs-on: ubuntu-latest
     steps:
       - name: Install Go

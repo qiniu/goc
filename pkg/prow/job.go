@@ -131,7 +131,8 @@ func (j *Job) RunPeriodic() error {
 	return nil
 }
 
-//trim github filename to profile format:
+// trim github filename to profile format:
+//
 //	src/qiniu.com/kodo/io/io/io_svr.go -> qiniu.com/kodo/io/io/io_svr.go
 func trimGhFileToProfile(ghFiles []string) (pFiles []string) {
 	//TODO: need compatible other situation
