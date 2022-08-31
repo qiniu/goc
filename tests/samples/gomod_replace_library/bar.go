@@ -2,7 +2,7 @@ package foo
 
 import "fmt"
 
-//Bar fake method
+// Bar fake method
 func Bar() {
 	fmt.Println("foo bar")
 }

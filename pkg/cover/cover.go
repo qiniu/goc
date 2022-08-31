@@ -143,7 +143,7 @@ type CoverInfo struct {
 	Singleton                bool
 }
 
-//Execute inject cover variables for all the .go files in the target folder
+// Execute inject cover variables for all the .go files in the target folder
 func Execute(coverInfo *CoverInfo) error {
 	target := coverInfo.Target
 	newGopath := coverInfo.GoPath

@@ -423,7 +423,7 @@ func (f *File) newCounter(start, end token.Pos, numStmt int) string {
 //	S1
 //	if cond {
 //		S2
-// 	}
+//	}
 //	S3
 //
 // counters will be added before S1 and before S3. The block containing S2

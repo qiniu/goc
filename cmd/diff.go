@@ -98,14 +98,14 @@ func init() {
 	rootCmd.AddCommand(diffCmd)
 }
 
-//goc diff --new-profile=./new.cov --base-profile=./base.cov
-//+------------------------------------------------------+---------------+--------------+--------+
-//|                         File                         | Base Coverage | New Coverage | Delta  |
-//+------------------------------------------------------+---------------+--------------+--------+
-//| qiniu.com/kodo/bd/pfd/pfdstg/cursor/mgr.go           |     53.5%     |    50.5%     | -3.0%  |
-//| qiniu.com/kodo/bd/pfd/pfdstg/svr/getstripe.go        |     0.5%      |     0.0%     | -0.5%  |
-//| Total                                                |     35.7%     |    35.7%     | -0.0%  |
-//+------------------------------------------------------+---------------+--------------+--------+
+// goc diff --new-profile=./new.cov --base-profile=./base.cov
+// +------------------------------------------------------+---------------+--------------+--------+
+// |                         File                         | Base Coverage | New Coverage | Delta  |
+// +------------------------------------------------------+---------------+--------------+--------+
+// | qiniu.com/kodo/bd/pfd/pfdstg/cursor/mgr.go           |     53.5%     |    50.5%     | -3.0%  |
+// | qiniu.com/kodo/bd/pfd/pfdstg/svr/getstripe.go        |     0.5%      |     0.0%     | -0.5%  |
+// | Total                                                |     35.7%     |    35.7%     | -0.0%  |
+// +------------------------------------------------------+---------------+--------------+--------+
 func doDiffForLocalProfiles(cmd *cobra.Command, args []string) {
 	localP, err := cover.ReadFileToCoverList(newProfile)
 	if err != nil {
