@@ -50,7 +50,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
+	_log "log"
 	"net"
 	"net/http"
 	"os"
@@ -137,12 +137,12 @@ func registerHandlers() {
 	ln, host, err := listen()
 	{{end}}
 	if err != nil {
-		log.Fatalf("listen failed, err:%v", err)
+		_log.Fatalf("listen failed, err:%v", err)
 	}
 	{{if not .Singleton}}
 	profileAddr := "http://" + host
 	if resp, err := registerSelf(profileAddr); err != nil {
-		log.Fatalf("register address %v failed, err: %v, response: %v", profileAddr, err, string(resp))
+		_log.Fatalf("register address %v failed, err: %v, response: %v", profileAddr, err, string(resp))
 	}
 
 	fn := func() {
@@ -152,7 +152,7 @@ func registerHandlers() {
 			addresses    []string
 		)
 		if addresses, err = getAllHosts(ln); err != nil {
-				log.Fatalf("get all host failed, err: %v", err)
+				_log.Fatalf("get all host failed, err: %v", err)
 				return
 		}
 		for _, addr := range addresses {
@@ -218,7 +218,7 @@ func registerHandlers() {
 		fmt.Fprintln(w, "clear call successfully")
 	})
 
-	log.Fatal(http.Serve(ln, mux))
+	_log.Fatal(http.Serve(ln, mux))
 }
 
 func registerSelf(address string) ([]byte, error) {
@@ -231,13 +231,13 @@ func registerSelf(address string) ([]byte, error) {
 	}
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/cover/register?name=%s&address=%s", {{.Center | printf "%q"}}, selfName, address), nil)
 	if err != nil {
-		log.Fatalf("http.NewRequest failed: %v", err)
+		_log.Fatalf("http.NewRequest failed: %v", err)
 		return nil, err
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil && isNetworkError(err) {
-		log.Printf("[goc][WARN]error occurred:%v, try again", err)
+		_log.Printf("[goc][WARN]error occurred:%v, try again", err)
 		resp, err = http.DefaultClient.Do(req)
 	}
 	if err != nil {
@@ -267,14 +267,14 @@ func deregisterSelf(address []string) ([]byte, error) {
         }
         req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/cover/remove", {{.Center | printf "%q"}}), bytes.NewReader(jsonBody))
         if err != nil {
-                log.Fatalf("http.NewRequest failed: %v", err)
+                _log.Fatalf("http.NewRequest failed: %v", err)
                 return nil, err
         }
         req.Header.Set("Content-Type", "application/json")
 
         resp, err := http.DefaultClient.Do(req)
         if err != nil && isNetworkError(err) {
-                log.Printf("[goc][WARN]error occurred:%v, try again", err)
+                _log.Printf("[goc][WARN]error occurred:%v, try again", err)
                 resp, err = http.DefaultClient.Do(req)
         }
         if err != nil {
@@ -302,7 +302,7 @@ func watchSignal(fn CallbackFunc) {
         signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
         for {
                 si := <-c
-                log.Printf("get a signal %s", si.String())
+                _log.Printf("get a signal %s", si.String())
                 switch si {
                 case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
                         fn()
@@ -411,7 +411,7 @@ func genProfileAddr(profileAddr string) {
 	fn := os.Args[0] + "_profile_listen_addr"
 	f, err := os.OpenFile(fn, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		log.Println(err)
+		_log.Println(err)
 		return
 	}
 	defer f.Close()
