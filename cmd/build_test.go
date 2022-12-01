@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -26,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/qiniu/goc/pkg/qiniu"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,12 +48,12 @@ func TestGeneratedBinary(t *testing.T) {
 	args := []string{"."}
 	runBuild(args, workingDir)
 
-	obj := filepath.Join(workingDir, "simple-project")
+	obj := filepath.Join(workingDir, qiniu.Artifact("simple-project"))
 	fInfo, err := os.Lstat(obj)
 	assert.Equal(t, err, nil, "the binary should be generated.")
 	assert.Equal(t, startTime.Before(fInfo.ModTime()), true, obj+"new binary should be generated, not the old one")
 
-	cmd := exec.Command("go", "tool", "objdump", "simple-project")
+	cmd := qiniu.Command("go", "tool", "objdump", qiniu.Artifact("simple-project"))
 	cmd.Dir = workingDir
 	out, _ := cmd.CombinedOutput()
 	cnt := strings.Count(string(out), "main.registerSelf")
@@ -76,12 +76,12 @@ func TestBuildBinaryName(t *testing.T) {
 	args := []string{"."}
 	runBuild(args, workingDir)
 
-	obj := filepath.Join(workingDir, "simple-project")
+	obj := filepath.Join(workingDir, qiniu.Artifact("simple-project"))
 	fInfo, err := os.Lstat(obj)
 	assert.Equal(t, err, nil, "the binary should be generated.")
 	assert.Equal(t, startTime.Before(fInfo.ModTime()), true, obj+"new binary should be generated, not the old one")
 
-	cmd := exec.Command("go", "tool", "objdump", "simple-project")
+	cmd := qiniu.Command("go", "tool", "objdump", qiniu.Artifact("simple-project"))
 	cmd.Dir = workingDir
 	out, _ := cmd.CombinedOutput()
 	cnt := strings.Count(string(out), "main.registerSelf")
@@ -102,7 +102,7 @@ func TestBuildBinaryWithGenerics(t *testing.T) {
 
 	// only run this test on go1.18+
 	{
-		cmd := exec.Command("go", "version")
+		cmd := qiniu.Command("go", "version")
 		cmd.Dir = workingDir
 		out, err := cmd.CombinedOutput()
 		assert.NoError(t, err, "go version invocation should succeed")
@@ -123,12 +123,12 @@ func TestBuildBinaryWithGenerics(t *testing.T) {
 	args := []string{"."}
 	runBuild(args, workingDir)
 
-	obj := filepath.Join(workingDir, "simple-project")
+	obj := filepath.Join(workingDir, qiniu.Artifact("simple-project"))
 	fInfo, err := os.Lstat(obj)
 	assert.Equal(t, err, nil, "the binary should be generated.")
 	assert.Equal(t, startTime.Before(fInfo.ModTime()), true, obj+"new binary should be generated, not the old one")
 
-	cmd := exec.Command("go", "tool", "objdump", "simple-project")
+	cmd := qiniu.Command("go", "tool", "objdump", qiniu.Artifact("simple-project"))
 	cmd.Dir = workingDir
 	out, _ := cmd.CombinedOutput()
 	cnt := strings.Count(string(out), "main.registerSelf")
@@ -152,7 +152,7 @@ func TestBuildBinaryForInternalPackage(t *testing.T) {
 	args := []string{"."}
 	runBuild(args, workingDir)
 
-	obj := filepath.Join(workingDir, "simple-project")
+	obj := filepath.Join(workingDir, qiniu.Artifact("simple-project"))
 	fInfo, err := os.Lstat(obj)
 	assert.Equal(t, err, nil, "the binary should be generated.")
 	assert.Equal(t, startTime.Before(fInfo.ModTime()), true, obj+"new binary should be generated, not the old one")

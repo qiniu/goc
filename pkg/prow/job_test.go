@@ -227,7 +227,7 @@ func TestRunPresubmitError(t *testing.T) {
 			j: Job{
 				LocalProfilePath: "unknown",
 			},
-			err: "no such file or directory",
+			err: qiniu.ErrFileNotExists,
 		},
 		{
 			prepare: true,

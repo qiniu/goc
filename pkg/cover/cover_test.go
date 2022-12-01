@@ -25,6 +25,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/qiniu/goc/pkg/qiniu"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/assert"
@@ -95,7 +96,7 @@ func TestCovList(t *testing.T) {
 func TestReadFileToCoverList(t *testing.T) {
 	path := "unknown"
 	_, err := ReadFileToCoverList(path)
-	assert.Equal(t, err.Error(), "open unknown: no such file or directory")
+	assert.Contains(t, err.Error(), qiniu.ErrFileNotExists)
 }
 
 func TestTotalPercentage(t *testing.T) {

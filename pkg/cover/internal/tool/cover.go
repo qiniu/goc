@@ -16,6 +16,7 @@ import (
 	"os"
 	"sort"
 
+	"github.com/qiniu/goc/pkg/qiniu"
 	log "github.com/sirupsen/logrus" // QINIU
 	// "cmd/internal/edit"
 	// "cmd/internal/objabi"
@@ -348,7 +349,7 @@ func Annotate(name string, mode string, varVar string, globalCoverVarImportPath 
 		file.edit = NewBuffer(newContent)
 		// add global cover variables import path
 		file.edit.Insert(file.offset(file.astFile.Name.End()),
-			fmt.Sprintf("; import %s %q", ".", globalCoverVarImportPath))
+			fmt.Sprintf("; import %s %q", ".", qiniu.ToSlash(globalCoverVarImportPath)))
 
 		if mode == "atomic" {
 			// Add import of sync/atomic immediately after package clause.
