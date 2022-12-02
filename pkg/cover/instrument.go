@@ -152,11 +152,11 @@ func registerHandlers() {
 			addresses    []string
 		)
 		if addresses, err = getAllHosts(ln); err != nil {
-				_log.Fatalf("get all host failed, err: %v", err)
-				return
+			_log.Fatalf("get all host failed, err: %v", err)
+			return
 		}
 		for _, addr := range addresses {
-				profileAddrs = append(profileAddrs, "http://"+addr)
+			profileAddrs = append(profileAddrs, "http://"+addr)
 		}
 		deregisterSelf(profileAddrs)
 	}
@@ -258,60 +258,60 @@ func registerSelf(address string) ([]byte, error) {
 }
 
 func deregisterSelf(address []string) ([]byte, error) {
-        param := map[string]interface{}{
-                "address": address,
-        }
-        jsonBody, err := json.Marshal(param)
-        if err != nil {
-                return nil, err
-        }
-        req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/cover/remove", {{.Center | printf "%q"}}), bytes.NewReader(jsonBody))
-        if err != nil {
-                _log.Fatalf("http.NewRequest failed: %v", err)
-                return nil, err
-        }
-        req.Header.Set("Content-Type", "application/json")
+	param := map[string]interface{}{
+		"address": address,
+	}
+	jsonBody, err := json.Marshal(param)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/cover/remove", {{.Center | printf "%q"}}), bytes.NewReader(jsonBody))
+	if err != nil {
+		_log.Fatalf("http.NewRequest failed: %v", err)
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
 
-        resp, err := http.DefaultClient.Do(req)
-        if err != nil && isNetworkError(err) {
-                _log.Printf("[goc][WARN]error occurred:%v, try again", err)
-                resp, err = http.DefaultClient.Do(req)
-        }
-        if err != nil {
-                return nil, fmt.Errorf("failed to deregister into coverage center, err:%v", err)
-        }
-        defer resp.Body.Close()
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil && isNetworkError(err) {
+		_log.Printf("[goc][WARN]error occurred:%v, try again", err)
+		resp, err = http.DefaultClient.Do(req)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to deregister into coverage center, err:%v", err)
+	}
+	defer resp.Body.Close()
 
-        body, err := ioutil.ReadAll(resp.Body)
-        if err != nil {
-                return nil, fmt.Errorf("failed to read response body, err:%v", err)
-        }
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body, err:%v", err)
+	}
 
-        if resp.StatusCode != 200 {
-                err = fmt.Errorf("failed to deregister into coverage center, response code %d", resp.StatusCode)
-        }
+	if resp.StatusCode != 200 {
+		err = fmt.Errorf("failed to deregister into coverage center, response code %d", resp.StatusCode)
+	}
 
-        return body, err
+	return body, err
 }
 
 type CallbackFunc func()
 
 func watchSignal(fn CallbackFunc) {
-        // init signal
-        c := make(chan os.Signal, 1)
-        signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
-        for {
-                si := <-c
-                _log.Printf("get a signal %s", si.String())
-                switch si {
-                case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-                        fn()
-                        os.Exit(0) // Exit successfully.
-                case syscall.SIGHUP:
-                default:
-                        return
-                }
-        }
+	// init signal
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+	for {
+		si := <-c
+		_log.Printf("get a signal %s", si.String())
+		switch si {
+		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
+			fn()
+			os.Exit(0) // Exit successfully.
+		case syscall.SIGHUP:
+		default:
+			return
+		}
+	}
 }
 
 func isNetworkError(err error) bool {
@@ -346,7 +346,7 @@ func listen() (ln net.Listener, host string, err error) {
 			return
 		}
 		if host, err = getRealHost(ln); err != nil {
-			return 
+			return
 		}
 	}
 	go genProfileAddr(host)
