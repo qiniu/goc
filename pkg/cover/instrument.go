@@ -53,6 +53,7 @@ import (
 	_log "log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -353,29 +354,27 @@ func listen() (ln net.Listener, host string, err error) {
 	return
 }
 
-func getRealHost(ln net.Listener) (host string, err error) {
-	adds, err := net.InterfaceAddrs()
+func getLocalIP(hostOnly string) (string, error) {
+	conn, err := net.Dial("udp4", net.JoinHostPort(hostOnly, "80"))
 	if err != nil {
-		return
+		return "", err
 	}
+	defer conn.Close()
+	ip := conn.LocalAddr().(*net.UDPAddr).IP.String()
+	return ip, nil
+}
 
-	var localIPV4 string
-	var nonLocalIPV4 string
-	for _, addr := range adds {
-		if ipNet, ok := addr.(*net.IPNet); ok && ipNet.IP.To4() != nil {
-			if ipNet.IP.IsLoopback() {
-				localIPV4 = ipNet.IP.String()
-			} else {
-				nonLocalIPV4 = ipNet.IP.String()
-			}
-		}
+func getRealHost(ln net.Listener) (host string, err error) {
+	centerUrl, err := url.Parse({{.Center | printf "%q" }})
+	if err != nil {
+		return "", err
 	}
-	if nonLocalIPV4 != "" {
-		host = fmt.Sprintf("%s:%d", nonLocalIPV4, ln.Addr().(*net.TCPAddr).Port)
-	} else {
-		host = fmt.Sprintf("%s:%d", localIPV4, ln.Addr().(*net.TCPAddr).Port)
+	localIPV4, err := getLocalIP(centerUrl.Hostname())
+	if err != nil {
+		return "", err
 	}
-
+	host = fmt.Sprintf("%s:%d", localIPV4, ln.Addr().(*net.TCPAddr).Port)
+	err = nil
 	return
 }
 
