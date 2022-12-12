@@ -19,11 +19,11 @@ package build
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/qiniu/goc/pkg/cover"
+	"github.com/qiniu/goc/pkg/qiniu"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -90,7 +90,7 @@ func (b *Build) Build() error {
 	log.Infoln("Go building in temp...")
 	// new -o will overwrite  previous ones
 	b.BuildFlags = b.BuildFlags + " -o " + b.Target
-	cmd := exec.Command("/bin/bash", "-c", "go build "+b.BuildFlags+" "+b.Packages)
+	cmd := qiniu.ShellCommand("go build " + b.BuildFlags + " " + b.Packages)
 	cmd.Dir = b.TmpWorkingDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

@@ -11,3 +11,5 @@ _svrs_address.txt
 *.iml
 .DS_Store
 .idea
+*.exe
+/**/tmp/*

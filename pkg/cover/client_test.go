@@ -24,6 +24,7 @@ import (
 
 	"net/http"
 
+	"github.com/qiniu/goc/pkg/qiniu"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -199,7 +200,7 @@ func TestClientListServices(t *testing.T) {
 		client: http.DefaultClient,
 	}
 	_, err := c.ListServices()
-	assert.Contains(t, err.Error(), "connect: connection refused")
+	assert.Contains(t, err.Error(), qiniu.ErrConnectionRefused)
 }
 
 func TestClientDo(t *testing.T) {

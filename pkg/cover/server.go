@@ -18,6 +18,7 @@ package cover
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -25,9 +26,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
@@ -35,13 +39,18 @@ import (
 	"k8s.io/test-infra/gopherage/pkg/cov"
 )
 
-// LogFile a file to save log.
-const LogFile = "goc.log"
+const (
+	// LogFile a file to save log.
+	LogFile       = "goc.log"
+	evictInterval = time.Second * 5
+)
 
 type server struct {
 	PersistenceFile string
 	IPRevise        bool // whether to do ip revise during registering
 	Store           Store
+	ticker          *time.Ticker
+	stopChan        chan struct{}
 }
 
 // NewFileBasedServer new a file based server with persistenceFile
@@ -73,7 +82,9 @@ func (s *server) Run(port string) {
 	// both log to stdout and file by default
 	mw := io.MultiWriter(f, os.Stdout)
 	r := s.Route(mw)
-	log.Fatal(r.Run(port))
+	s.registerTicker()
+	defer s.releaseTicker()
+	s.runGocServer(r, port)
 }
 
 // Router init goc server engine
@@ -97,6 +108,77 @@ func (s *server) Route(w io.Writer) *gin.Engine {
 	}
 
 	return r
+}
+
+// registerTicker register evict schedule
+func (s *server) registerTicker() {
+	if s.stopChan != nil {
+		return
+	}
+	s.stopChan = make(chan struct{})
+	s.ticker = time.NewTicker(evictInterval)
+	go func() {
+		for {
+			ticker := s.ticker
+			if ticker == nil {
+				return
+			}
+			select {
+			case <-ticker.C:
+				_, _ = s.Store.Evict()
+			case <-s.stopChan:
+				return
+			}
+		}
+	}()
+}
+
+// releaseTicker stop the ticker
+func (s *server) releaseTicker() {
+	if s.ticker != nil {
+		s.ticker.Stop()
+		s.ticker = nil
+	}
+	if s.stopChan != nil {
+		close(s.stopChan)
+		s.stopChan = nil
+	}
+}
+
+// runServer start goc server
+func (s *server) runGocServer(engine *gin.Engine, port string) {
+	// 定义 http 服务器
+	serv := &http.Server{
+		Addr:           port,
+		ReadTimeout:    60 * time.Second,
+		WriteTimeout:   60 * time.Second,
+		MaxHeaderBytes: 1 << 20, //1 MB
+		Handler:        engine,
+	}
+	errorChan := make(chan error, 1)
+	quitChan := make(chan os.Signal, 1)
+	// 监听系统信号
+	signal.Notify(quitChan, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+	// 异步启动服务
+	go func() {
+		log.Infof("goc server is starting %v", serv.Addr)
+		errorChan <- serv.ListenAndServe()
+	}()
+	//等待监听失败或收到退出信号
+	select {
+	case err := <-errorChan:
+		log.Errorf("goc server failed to start, %v", err)
+	case <-quitChan:
+		log.Info("goc server is shutting down...")
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
+		defer cancel()
+		if err := serv.Shutdown(ctx); err != nil {
+			_ = serv.Close()
+			log.Errorf("goc server already forced shutdown, %v", err)
+			return
+		}
+		log.Info("goc server already shutdown")
+	}
 }
 
 // ServiceUnderTest is a entry under being tested
@@ -179,12 +261,9 @@ func (s *server) registerService(c *gin.Context) {
 		service.Address = fmt.Sprintf("%s:%s", service.Address, port)
 	}
 
-	address := s.Store.Get(service.Name)
-	if !contains(address, service.Address) {
-		if err := s.Store.Add(service); err != nil && err != ErrServiceAlreadyRegistered {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
+	if err := s.Store.Add(service); err != nil && err != ErrServiceAlreadyRegistered {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"result": "success"})

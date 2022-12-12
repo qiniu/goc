@@ -18,12 +18,12 @@ package cmd
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/qiniu/goc/pkg/qiniu"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,12 +40,12 @@ func TestInstalledBinaryForMod(t *testing.T) {
 	args := []string{"."}
 	runInstall(args, workingDir)
 
-	obj := filepath.Join(gopath, "bin", "simple-project")
+	obj := filepath.Join(gopath, "bin", qiniu.Artifact("simple-project"))
 	fInfo, err := os.Lstat(obj)
 	assert.Equal(t, err, nil, "the binary should be generated.")
 	assert.Equal(t, startTime.Before(fInfo.ModTime()), true, obj+"new binary should be generated, not the old one")
 
-	cmd := exec.Command("go", "tool", "objdump", "simple-project")
+	cmd := qiniu.Command("go", "tool", "objdump", qiniu.Artifact("simple-project"))
 	cmd.Dir = workingDir
 	out, _ := cmd.CombinedOutput()
 	cnt := strings.Count(string(out), "main.registerSelf")
@@ -73,7 +73,7 @@ func TestInstalledBinaryForLegacy(t *testing.T) {
 	assert.Equal(t, err, nil, "the binary should be generated.")
 	assert.Equal(t, startTime.Before(fInfo.ModTime()), true, obj+"new binary should be generated, not the old one")
 
-	cmd := exec.Command("go", "tool", "objdump", obj)
+	cmd := qiniu.Command("go", "tool", "objdump", obj)
 	cmd.Dir = workingDir
 	out, _ := cmd.CombinedOutput()
 	cnt := strings.Count(string(out), "main.registerSelf")

@@ -19,9 +19,9 @@ package build
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 
+	"github.com/qiniu/goc/pkg/qiniu"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -48,7 +48,7 @@ func NewInstall(buildflags string, args []string, workingDir string) (*Build, er
 // Install use the 'go install' tool to install packages
 func (b *Build) Install() error {
 	log.Println("Go building in temp...")
-	cmd := exec.Command("/bin/bash", "-c", "go install "+b.BuildFlags+" "+b.Packages)
+	cmd := qiniu.ShellCommand("go install " + b.BuildFlags + " " + b.Packages)
 	cmd.Dir = b.TmpWorkingDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

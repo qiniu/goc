@@ -24,11 +24,27 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
 var ErrServiceAlreadyRegistered = errors.New("service already registered")
+
+const (
+	timeFormat      = "2006-01-02T15:04:05.000Z07:00"
+	timeoutDuration = time.Second * 20
+)
+
+type serviceAddress struct {
+	Address string
+	Active  time.Time
+}
+
+// isTimeout if timeout should be evicted
+func (s *serviceAddress) isTimeout() bool {
+	return time.Since(s.Active) > timeoutDuration
+}
 
 // Store persistents the registered service information
 type Store interface {
@@ -45,10 +61,17 @@ type Store interface {
 	Init() error
 
 	// Set stores the services information into internal state
-	Set(services map[string][]string) error
+	Set(services map[string][]*serviceAddress) error
 
 	// Remove the service from the store by address
 	Remove(addr string) error
+
+	//GetRaw return all registered information
+	GetRaw() map[string][]*serviceAddress
+
+	// Evict delete all addresses which is timeout.
+	// return true if any address removed.
+	Evict() (bool, error)
 }
 
 // fileStore holds the registered services into memory and persistent to a local file
@@ -90,7 +113,7 @@ func (l *fileStore) Add(s ServiceUnderTest) error {
 	// persistent to local store
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	return l.appendToFile(s)
+	return l.save()
 }
 
 // Get returns the registered service information with the given name
@@ -110,7 +133,32 @@ func (l *fileStore) Remove(addr string) error {
 		return err
 	}
 
-	return l.Set(l.memoryStore.GetAll())
+	// persistent to local store
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.save()
+}
+
+// GetRaw return all registered information
+func (l *fileStore) GetRaw() map[string][]*serviceAddress {
+	return l.memoryStore.GetRaw()
+}
+
+// Evict delete all addresses which is timeout.
+// return true if any address removed.
+func (l *fileStore) Evict() (bool, error) {
+	removed, err := l.memoryStore.Evict()
+	if err != nil {
+		return removed, err
+	}
+	if !removed {
+		return false, nil
+	}
+
+	// persistent to local store
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return true, l.save()
 }
 
 // Init cleanup all the registered service information
@@ -131,7 +179,7 @@ func (l *fileStore) Init() error {
 
 // load all registered service from file to memory
 func (l *fileStore) load() error {
-	var svrsMap = make(map[string][]string, 0)
+	var svrsMap = make(map[string][]*serviceAddress, 0)
 
 	f, err := os.Open(l.persistentFile)
 	if err != nil {
@@ -148,12 +196,18 @@ func (l *fileStore) load() error {
 		ss := strings.FieldsFunc(line, split)
 
 		// TODO: use regex
-		if len(ss) == 2 {
-			if urls, ok := svrsMap[ss[0]]; ok {
-				urls = append(urls, ss[1])
-				svrsMap[ss[0]] = urls
+		if len(ss) == 3 {
+			name := ss[0]
+			addr := ss[1]
+			active, er := time.ParseInLocation(timeFormat, ss[2], time.Local)
+			if er != nil {
+				continue
+			}
+			if urls, ok := svrsMap[name]; ok {
+				urls = append(urls, &serviceAddress{Address: addr, Active: active})
+				svrsMap[name] = urls
 			} else {
-				svrsMap[ss[0]] = []string{ss[1]}
+				svrsMap[name] = []*serviceAddress{{Address: addr, Active: active}}
 			}
 		}
 	}
@@ -163,29 +217,20 @@ func (l *fileStore) load() error {
 	}
 
 	// set information to memory
-	l.memoryStore.Set(svrsMap)
-	return nil
+	return l.memoryStore.Set(svrsMap)
 }
 
-func (l *fileStore) Set(services map[string][]string) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	// no error will return from memorystore.set
-	err := l.memoryStore.Set(services)
-	if err != nil {
-		return err
-	}
-
+// save all registered service to file
+func (l *fileStore) save() error {
 	f, err := os.OpenFile(l.persistentFile, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return err
 	}
 
 	s := ""
-	for name, addrs := range services {
+	for name, addrs := range l.memoryStore.GetRaw() {
 		for _, addr := range addrs {
-			s += fmt.Sprintf("%s&%s\n", name, addr)
+			s += fmt.Sprintf("%s&%s&%s\n", name, addr.Address, addr.Active.In(time.Local).Format(timeFormat))
 		}
 	}
 
@@ -197,24 +242,17 @@ func (l *fileStore) Set(services map[string][]string) error {
 	return f.Sync()
 }
 
-func (l *fileStore) appendToFile(s ServiceUnderTest) error {
-	f, err := os.OpenFile(l.persistentFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+func (l *fileStore) Set(services map[string][]*serviceAddress) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	// no error will return from memorystore.set
+	err := l.memoryStore.Set(services)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 
-	_, err = f.WriteString(format(s) + "\n")
-	if err != nil {
-		return err
-	}
-
-	f.Sync()
-	return nil
-}
-
-func format(s ServiceUnderTest) string {
-	return fmt.Sprintf("%s&%s", s.Name, s.Address)
+	return l.save()
 }
 
 func split(r rune) bool {
@@ -224,13 +262,13 @@ func split(r rune) bool {
 // memoryStore holds the registered services only into memory
 type memoryStore struct {
 	mu          sync.RWMutex
-	servicesMap map[string][]string
+	servicesMap map[string][]*serviceAddress
 }
 
 // NewMemoryStore creates a memory store
 func NewMemoryStore() Store {
 	return &memoryStore{
-		servicesMap: make(map[string][]string, 0),
+		servicesMap: make(map[string][]*serviceAddress, 0),
 	}
 }
 
@@ -241,15 +279,15 @@ func (l *memoryStore) Add(s ServiceUnderTest) error {
 	// load to memory
 	if addrs, ok := l.servicesMap[s.Name]; ok {
 		for _, addr := range addrs {
-			if addr == s.Address {
-				log.Printf("service registered already, name: %s, address: %s", s.Name, s.Address)
+			if addr.Address == s.Address {
+				addr.Active = time.Now()
 				return ErrServiceAlreadyRegistered
 			}
 		}
-		addrs = append(addrs, s.Address)
+		addrs = append(addrs, &serviceAddress{Address: s.Address, Active: time.Now()})
 		l.servicesMap[s.Name] = addrs
 	} else {
-		l.servicesMap[s.Name] = []string{s.Address}
+		l.servicesMap[s.Name] = []*serviceAddress{{Address: s.Address, Active: time.Now()}}
 	}
 
 	return nil
@@ -259,7 +297,15 @@ func (l *memoryStore) Add(s ServiceUnderTest) error {
 func (l *memoryStore) Get(name string) []string {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	return l.servicesMap[name]
+	v := l.servicesMap[name]
+	if v == nil {
+		return nil
+	}
+	addrs := make([]string, 0, len(v))
+	for _, addr := range v {
+		addrs = append(addrs, addr.Address)
+	}
+	return addrs
 }
 
 // Get returns all the registered service information
@@ -268,7 +314,11 @@ func (l *memoryStore) GetAll() map[string][]string {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	for k, v := range l.servicesMap {
-		res[k] = append(make([]string, 0, len(v)), v...)
+		addrs := make([]string, 0, len(v))
+		for _, addr := range v {
+			addrs = append(addrs, addr.Address)
+		}
+		res[k] = addrs
 	}
 	return res
 }
@@ -279,11 +329,11 @@ func (l *memoryStore) Init() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.servicesMap = make(map[string][]string, 0)
+	l.servicesMap = make(map[string][]*serviceAddress, 0)
 	return nil
 }
 
-func (l *memoryStore) Set(services map[string][]string) error {
+func (l *memoryStore) Set(services map[string][]*serviceAddress) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -300,9 +350,9 @@ func (l *memoryStore) Remove(removeAddr string) error {
 
 	flag := false
 	for name, addrs := range l.servicesMap {
-		newAddrs := make([]string, 0)
+		newAddrs := make([]*serviceAddress, 0, len(addrs))
 		for _, addr := range addrs {
-			if removeAddr != addr {
+			if removeAddr != addr.Address {
 				newAddrs = append(newAddrs, addr)
 			} else {
 				flag = true
@@ -321,4 +371,36 @@ func (l *memoryStore) Remove(removeAddr string) error {
 	}
 
 	return nil
+}
+
+// GetRaw return all registered information
+func (l *memoryStore) GetRaw() map[string][]*serviceAddress {
+	return l.servicesMap
+}
+
+// Evict delete all addresses which is timeout.
+// return true if any address removed.
+func (l *memoryStore) Evict() (bool, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	flag := false
+	for name, addrs := range l.servicesMap {
+		newAddrs := make([]*serviceAddress, 0, len(addrs))
+		for _, addr := range addrs {
+			if !addr.isTimeout() {
+				newAddrs = append(newAddrs, addr)
+			} else {
+				flag = true
+			}
+		}
+		// if no services left, remove by name
+		if len(newAddrs) == 0 {
+			delete(l.servicesMap, name)
+		} else {
+			l.servicesMap[name] = newAddrs
+		}
+	}
+
+	return flag, nil
 }

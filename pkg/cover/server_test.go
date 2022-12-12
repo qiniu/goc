@@ -47,9 +47,19 @@ func (m *MockStore) Init() error {
 	return args.Error(0)
 }
 
-func (m *MockStore) Set(services map[string][]string) error {
+func (m *MockStore) Set(services map[string][]*serviceAddress) error {
 	args := m.Called()
 	return args.Error(0)
+}
+
+func (m *MockStore) GetRaw() map[string][]*serviceAddress {
+	args := m.Called()
+	return args.Get(0).(map[string][]*serviceAddress)
+}
+
+func (m *MockStore) Evict() (bool, error) {
+	args := m.Called()
+	return args.Bool(0), args.Error(0)
 }
 
 func TestContains(t *testing.T) {

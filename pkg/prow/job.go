@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path"
 	"strconv"
 	"strings"
@@ -206,7 +205,7 @@ func (j *Job) CreateChangedCovHtml() error {
 	pathHtmlCov := path.Join(os.Getenv("ARTIFACTS"), j.HtmlProfile())
 	cmdTxt := fmt.Sprintf("go tool cover -html=%s -o %s", pathProfileCov, pathHtmlCov)
 	logrus.Printf("Running command '%s'\n", cmdTxt)
-	cmd := exec.Command("go", "tool", "cover", "-html="+pathProfileCov, "-o", pathHtmlCov)
+	cmd := qiniu.Command("go", "tool", "cover", "-html="+pathProfileCov, "-o", pathHtmlCov)
 	stdOut, err := cmd.CombinedOutput()
 	if err != nil {
 		logrus.Printf("Error executing cmd: %v; combinedOutput=%s", err, stdOut)

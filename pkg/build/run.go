@@ -19,14 +19,14 @@ package build
 import (
 	"fmt"
 	"os"
-	"os/exec"
 
+	"github.com/qiniu/goc/pkg/qiniu"
 	log "github.com/sirupsen/logrus"
 )
 
 // Run excutes the main package in addition with the internal goc features
 func (b *Build) Run() error {
-	cmd := exec.Command("/bin/bash", "-c", "go run "+b.BuildFlags+" "+b.GoRunExecFlag+" "+b.Packages+" "+b.GoRunArguments)
+	cmd := qiniu.ShellCommand("go run " + b.BuildFlags + " " + b.GoRunExecFlag + " " + b.Packages + " " + b.GoRunArguments)
 	cmd.Dir = b.TmpWorkingDir
 
 	if b.NewGOPATH != "" {

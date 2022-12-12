@@ -68,7 +68,9 @@ func TestUpdateModFileIfContainsReplace(t *testing.T) {
 	updated, newmod, err := b.updateGoModFile()
 	assert.Equal(t, err, nil)
 	assert.Equal(t, updated, true)
-	assert.Contains(t, string(newmod), "replace github.com/qiniu/bar => /aa/bb/home/foo/bar")
+	abs, err := filepath.Abs("/aa/bb/home/foo/bar")
+	assert.Nil(t, err)
+	assert.Contains(t, string(newmod), "replace github.com/qiniu/bar => "+abs)
 
 	// old replace should be removed
 	assert.NotContains(t, string(newmod), "github.com/qiniu/bar => ../home/foo/bar")
