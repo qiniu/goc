@@ -3,7 +3,7 @@ module github.com/qiniu/goc
 go 1.13
 
 require (
-	github.com/gin-gonic/gin v1.7.2
+	github.com/gin-gonic/gin v1.7.7
 	github.com/go-playground/validator/v10 v10.8.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-github v17.0.0+incompatible
