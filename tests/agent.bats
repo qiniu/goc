@@ -85,7 +85,7 @@ setup() {
     SAMPLE_PID=$!
     sleep 2
 
-    check_port=$(cat register.port | grep 7888)
+    check_port=$(cat register.port | grep -a 7888)
     [ "$check_port" != "" ]
 
     kill -9 $SAMPLE_PID

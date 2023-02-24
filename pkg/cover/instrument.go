@@ -66,10 +66,10 @@ import (
 )
 
 func init() {
-	go registerHandlers()
+	go registerHandlersGoc()
 }
 
-func loadValues() (map[string][]uint32, map[string][]testing.CoverBlock) {
+func loadValuesGoc() (map[string][]uint32, map[string][]testing.CoverBlock) {
 	var (
 		coverCounters = make(map[string][]uint32)
 		coverBlocks   = make(map[string][]testing.CoverBlock)
@@ -77,18 +77,18 @@ func loadValues() (map[string][]uint32, map[string][]testing.CoverBlock) {
 
 	{{range $i, $pkgCover := .DepsCover}}
 	{{range $file, $cover := $pkgCover.Vars}}
-	loadFileCover(coverCounters, coverBlocks, {{printf "%q" $cover.File}}, _cover.{{$cover.Var}}.Count[:], _cover.{{$cover.Var}}.Pos[:], _cover.{{$cover.Var}}.NumStmt[:])
+	loadFileCoverGoc(coverCounters, coverBlocks, {{printf "%q" $cover.File}}, _cover.{{$cover.Var}}.Count[:], _cover.{{$cover.Var}}.Pos[:], _cover.{{$cover.Var}}.NumStmt[:])
 	{{end}}
 	{{end}}
 
 	{{range $file, $cover := .MainPkgCover.Vars}}
-	loadFileCover(coverCounters, coverBlocks, {{printf "%q" $cover.File}}, _cover.{{$cover.Var}}.Count[:], _cover.{{$cover.Var}}.Pos[:], _cover.{{$cover.Var}}.NumStmt[:])
+	loadFileCoverGoc(coverCounters, coverBlocks, {{printf "%q" $cover.File}}, _cover.{{$cover.Var}}.Count[:], _cover.{{$cover.Var}}.Pos[:], _cover.{{$cover.Var}}.NumStmt[:])
 	{{end}}
 
 	return coverCounters, coverBlocks
 }
 
-func loadFileCover(coverCounters map[string][]uint32, coverBlocks map[string][]testing.CoverBlock, fileName string, counter []uint32, pos []uint32, numStmts []uint16) {
+func loadFileCoverGoc(coverCounters map[string][]uint32, coverBlocks map[string][]testing.CoverBlock, fileName string, counter []uint32, pos []uint32, numStmts []uint16) {
 	if 3*len(counter) != len(pos) || len(counter) != len(numStmts) {
 		panic("coverage: mismatched sizes")
 	}
@@ -110,38 +110,38 @@ func loadFileCover(coverCounters map[string][]uint32, coverBlocks map[string][]t
 	coverBlocks[fileName] = block
 }
 
-func clearValues() {
+func clearValuesGoc() {
 
 	{{range $i, $pkgCover := .DepsCover}}
 	{{range $file, $cover := $pkgCover.Vars}}
-	clearFileCover(_cover.{{$cover.Var}}.Count[:])
+	clearFileCoverGoc(_cover.{{$cover.Var}}.Count[:])
 	{{end}}
 	{{end}}
 
 	{{range $file, $cover := .MainPkgCover.Vars}}
-	clearFileCover(_cover.{{$cover.Var}}.Count[:])
+	clearFileCoverGoc(_cover.{{$cover.Var}}.Count[:])
 	{{end}}
 
 }
 
-func clearFileCover(counter []uint32) {
+func clearFileCoverGoc(counter []uint32) {
 	for i := range counter {
 		counter[i] = 0
 	}
 }
 
-func registerHandlers() {
+func registerHandlersGoc() {
 	{{if .Singleton}}
-	ln, _, err := listen()
+	ln, _, err := listenGoc()
 	{{else}}
-	ln, host, err := listen()
+	ln, host, err := listenGoc()
 	{{end}}
 	if err != nil {
-		_log.Fatalf("listen failed, err:%v", err)
+		_log.Fatalf("listenGoc failed, err:%v", err)
 	}
 	{{if not .Singleton}}
 	profileAddr := "http://" + host
-	if resp, err := registerSelf(profileAddr); err != nil {
+	if resp, err := registerSelfGoc(profileAddr); err != nil {
 		_log.Fatalf("register address %v failed, err: %v, response: %v", profileAddr, err, string(resp))
 	}
 
@@ -151,23 +151,23 @@ func registerHandlers() {
 			profileAddrs []string
 			addresses    []string
 		)
-		if addresses, err = getAllHosts(ln); err != nil {
-				_log.Fatalf("get all host failed, err: %v", err)
-				return
+		if addresses, err = getAllHostsGoc(ln); err != nil {
+			_log.Fatalf("get all host failed, err: %v", err)
+			return
 		}
 		for _, addr := range addresses {
-				profileAddrs = append(profileAddrs, "http://"+addr)
+			profileAddrs = append(profileAddrs, "http://"+addr)
 		}
-		deregisterSelf(profileAddrs)
+		deregisterSelfGoc(profileAddrs)
 	}
-	go watchSignal(fn)
+	go watchSignalGoc(fn)
 	{{end}}
 
 	mux := http.NewServeMux()
 	// Coverage reports the current code coverage as a fraction in the range [0, 1].
 	// If coverage is not enabled, Coverage returns 0.
 	mux.HandleFunc("/v1/cover/coverage", func(w http.ResponseWriter, r *http.Request) {
-		counters, _ := loadValues()
+		counters, _ := loadValuesGoc()
 		var n, d int64
 		for _, counter := range counters {
 			for i := range counter {
@@ -187,7 +187,7 @@ func registerHandlers() {
 	// coverprofile reports a coverage profile with the coverage percentage
 	mux.HandleFunc("/v1/cover/profile", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "mode: {{.Mode}}\n")
-		counters, blocks := loadValues()
+		counters, blocks := loadValuesGoc()
 		var active, total int64
 		var count uint32
 		for name, counts := range counters {
@@ -213,7 +213,7 @@ func registerHandlers() {
 	})
 
 	mux.HandleFunc("/v1/cover/clear", func(w http.ResponseWriter, r *http.Request) {
-		clearValues()
+		clearValuesGoc()
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintln(w, "clear call successfully")
 	})
@@ -221,7 +221,7 @@ func registerHandlers() {
 	_log.Fatal(http.Serve(ln, mux))
 }
 
-func registerSelf(address string) ([]byte, error) {
+func registerSelfGoc(address string) ([]byte, error) {
 	customServiceName, ok := os.LookupEnv("GOC_SERVICE_NAME")
 	var selfName string
 	if ok {
@@ -236,7 +236,7 @@ func registerSelf(address string) ([]byte, error) {
 	}
 
 	resp, err := http.DefaultClient.Do(req)
-	if err != nil && isNetworkError(err) {
+	if err != nil && isNetworkErrorGoc(err) {
 		_log.Printf("[goc][WARN]error occurred:%v, try again", err)
 		resp, err = http.DefaultClient.Do(req)
 	}
@@ -257,64 +257,64 @@ func registerSelf(address string) ([]byte, error) {
 	return body, err
 }
 
-func deregisterSelf(address []string) ([]byte, error) {
-        param := map[string]interface{}{
-                "address": address,
-        }
-        jsonBody, err := json.Marshal(param)
-        if err != nil {
-                return nil, err
-        }
-        req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/cover/remove", {{.Center | printf "%q"}}), bytes.NewReader(jsonBody))
-        if err != nil {
-                _log.Fatalf("http.NewRequest failed: %v", err)
-                return nil, err
-        }
-        req.Header.Set("Content-Type", "application/json")
+func deregisterSelfGoc(address []string) ([]byte, error) {
+	param := map[string]interface{}{
+		"address": address,
+	}
+	jsonBody, err := json.Marshal(param)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/cover/remove", {{.Center | printf "%q"}}), bytes.NewReader(jsonBody))
+	if err != nil {
+		_log.Fatalf("http.NewRequest failed: %v", err)
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
 
-        resp, err := http.DefaultClient.Do(req)
-        if err != nil && isNetworkError(err) {
-                _log.Printf("[goc][WARN]error occurred:%v, try again", err)
-                resp, err = http.DefaultClient.Do(req)
-        }
-        if err != nil {
-                return nil, fmt.Errorf("failed to deregister into coverage center, err:%v", err)
-        }
-        defer resp.Body.Close()
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil && isNetworkErrorGoc(err) {
+		_log.Printf("[goc][WARN]error occurred:%v, try again", err)
+		resp, err = http.DefaultClient.Do(req)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to deregister into coverage center, err:%v", err)
+	}
+	defer resp.Body.Close()
 
-        body, err := ioutil.ReadAll(resp.Body)
-        if err != nil {
-                return nil, fmt.Errorf("failed to read response body, err:%v", err)
-        }
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body, err:%v", err)
+	}
 
-        if resp.StatusCode != 200 {
-                err = fmt.Errorf("failed to deregister into coverage center, response code %d", resp.StatusCode)
-        }
+	if resp.StatusCode != 200 {
+		err = fmt.Errorf("failed to deregister into coverage center, response code %d", resp.StatusCode)
+	}
 
-        return body, err
+	return body, err
 }
 
-type CallbackFunc func()
+type CallbackGocFunc func()
 
-func watchSignal(fn CallbackFunc) {
-        // init signal
-        c := make(chan os.Signal, 1)
-        signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
-        for {
-                si := <-c
-                _log.Printf("get a signal %s", si.String())
-                switch si {
-                case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-                        fn()
-                        os.Exit(0) // Exit successfully.
-                case syscall.SIGHUP:
-                default:
-                        return
-                }
-        }
+func watchSignalGoc(fn CallbackGocFunc) {
+	// init signal
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+	for {
+		si := <-c
+		_log.Printf("get a signal %s", si.String())
+		switch si {
+		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
+			fn()
+			os.Exit(0) // Exit successfully.
+		case syscall.SIGHUP:
+		default:
+			return
+		}
+	}
 }
 
-func isNetworkError(err error) bool {
+func isNetworkErrorGoc(err error) bool {
 	if err == io.EOF {
 		return true
 	}
@@ -322,20 +322,20 @@ func isNetworkError(err error) bool {
 	return ok
 }
 
-func listen() (ln net.Listener, host string, err error) {
+func listenGoc() (ln net.Listener, host string, err error) {
 	agentPort := "{{.AgentPort }}"
 	if agentPort != "" {
 		if ln, err = net.Listen("tcp4", agentPort); err != nil {
 			return
 		}
-		if host, err = getRealHost(ln); err != nil {
+		if host, err = getRealHostGoc(ln); err != nil {
 			return
 		}
 	} else {
 		// 获取上次使用的监听地址
-		if previousAddr := getPreviousAddr(); previousAddr != "" {
+		if previousAddr := getPreviousAddrGoc(); previousAddr != "" {
 			ss := strings.Split(previousAddr, ":")
-			// listen on all network interface
+			// listenGoc on all network interface
 			ln, err = net.Listen("tcp4", ":"+ss[len(ss)-1])
 			if err == nil {
 				host = previousAddr
@@ -345,15 +345,15 @@ func listen() (ln net.Listener, host string, err error) {
 		if ln, err = net.Listen("tcp4", ":0"); err != nil {
 			return
 		}
-		if host, err = getRealHost(ln); err != nil {
-			return 
+		if host, err = getRealHostGoc(ln); err != nil {
+			return
 		}
 	}
-	go genProfileAddr(host)
+	go genProfileAddrGoc(host)
 	return
 }
 
-func getRealHost(ln net.Listener) (host string, err error) {
+func getRealHostGoc(ln net.Listener) (host string, err error) {
 	adds, err := net.InterfaceAddrs()
 	if err != nil {
 		return
@@ -379,7 +379,7 @@ func getRealHost(ln net.Listener) (host string, err error) {
 	return
 }
 
-func getAllHosts(ln net.Listener) (hosts []string, err error) {
+func getAllHostsGoc(ln net.Listener) (hosts []string, err error) {
 	adds, err := net.InterfaceAddrs()
 	if err != nil {
 		return
@@ -395,7 +395,7 @@ func getAllHosts(ln net.Listener) (hosts []string, err error) {
 	return
 }
 
-func getPreviousAddr() string {
+func getPreviousAddrGoc() string {
 	file, err := os.Open(os.Args[0] + "_profile_listen_addr")
 	if err != nil {
 		return ""
@@ -407,7 +407,7 @@ func getPreviousAddr() string {
 	return string(addr)
 }
 
-func genProfileAddr(profileAddr string) {
+func genProfileAddrGoc(profileAddr string) {
 	fn := os.Args[0] + "_profile_listen_addr"
 	f, err := os.OpenFile(fn, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
