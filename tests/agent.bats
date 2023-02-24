@@ -85,7 +85,9 @@ setup() {
     SAMPLE_PID=$!
     sleep 2
 
-    check_port=$(cat register.port | grep -a 7888)
+    info register.port: `cat register.port`
+    check_port=$(cat register.port | grep -a -Z 7888)
+    info check_port: `echo $check_port`
     [ "$check_port" != "" ]
 
     kill -9 $SAMPLE_PID
@@ -101,7 +103,7 @@ setup() {
     [ -e './simple-agent_profile_listen_addr' ]
     host=$(cat ./simple-agent_profile_listen_addr)
 
-    check_port=$(cat register.port | grep $host)
+    check_port=$(cat register.port | grep -a -Z $host)
     [ "$check_port" != "" ]
 
     kill -9 $SAMPLE_PID
