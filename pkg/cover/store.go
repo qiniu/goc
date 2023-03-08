@@ -287,7 +287,11 @@ func (l *memoryStore) Set(services map[string][]string) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.servicesMap = services
+	newMap := make(map[string][]string)
+	for k, v := range services {
+		newMap[k] = append(make([]string, 0), v...)
+	}
+	l.servicesMap = newMap
 
 	return nil
 }

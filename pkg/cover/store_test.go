@@ -18,10 +18,10 @@ package cover
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
+	"time"
 )
 
 func TestLocalStore(t *testing.T) {
@@ -129,4 +129,23 @@ func TestFileStoreRemove(t *testing.T) {
 
 	err = store.Remove("http")
 	assert.Error(t, err, fmt.Errorf("no service found"))
+}
+
+// verify issue fix https://github.com/golang/go/issues/56552
+func TestConcurrentRemoval(t *testing.T) {
+	store, _ := NewFileStore("_svrs_address.txt")
+	_ = store.Init()
+
+	for i := 0; i < 100; i++ {
+		_ = store.Add(ServiceUnderTest{
+			Name:    fmt.Sprintf("test%d", i),
+			Address: fmt.Sprintf("http://127.0.0.1:890%d", i),
+		})
+	}
+
+	for i := 0; i < 100; i++ {
+		go store.Remove(fmt.Sprintf("http://127.0.0.1:890%d", i))
+	}
+
+	time.Sleep(time.Second * 5) // if no issue then pass.
 }
