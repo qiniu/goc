@@ -26,6 +26,7 @@ setup_file() {
 }
 
 teardown_file() {
+    rm *_profile_listen_addr
     kill -9 $GOC_PID
 }
 
