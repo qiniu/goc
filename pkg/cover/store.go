@@ -105,12 +105,15 @@ func (l *fileStore) GetAll() map[string][]string {
 
 // Remove the service from the memory store and the file store
 func (l *fileStore) Remove(addr string) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
 	err := l.memoryStore.Remove(addr)
 	if err != nil {
 		return err
 	}
 
-	return l.Set(l.memoryStore.GetAll())
+	return syncToFile(l.persistentFile, l.memoryStore.GetAll())
 }
 
 // Init cleanup all the registered service information
@@ -177,24 +180,7 @@ func (l *fileStore) Set(services map[string][]string) error {
 		return err
 	}
 
-	f, err := os.OpenFile(l.persistentFile, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		return err
-	}
-
-	s := ""
-	for name, addrs := range services {
-		for _, addr := range addrs {
-			s += fmt.Sprintf("%s&%s\n", name, addr)
-		}
-	}
-
-	_, err = f.WriteString(s)
-	if err != nil {
-		return err
-	}
-
-	return f.Sync()
+	return syncToFile(l.persistentFile, services)
 }
 
 func (l *fileStore) appendToFile(s ServiceUnderTest) error {
@@ -219,6 +205,27 @@ func format(s ServiceUnderTest) string {
 
 func split(r rune) bool {
 	return r == '&'
+}
+
+func syncToFile(persistentFile string, services map[string][]string) error {
+	f, err := os.OpenFile(persistentFile, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+
+	s := ""
+	for name, addrs := range services {
+		for _, addr := range addrs {
+			s += fmt.Sprintf("%s&%s\n", name, addr)
+		}
+	}
+
+	_, err = f.WriteString(s)
+	if err != nil {
+		return err
+	}
+
+	return f.Sync()
 }
 
 // memoryStore holds the registered services only into memory
@@ -287,7 +294,11 @@ func (l *memoryStore) Set(services map[string][]string) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.servicesMap = services
+	newMap := make(map[string][]string)
+	for k, v := range services {
+		newMap[k] = append(make([]string, 0), v...)
+	}
+	l.servicesMap = newMap
 
 	return nil
 }
@@ -317,7 +328,7 @@ func (l *memoryStore) Remove(removeAddr string) error {
 	}
 
 	if !flag {
-		return fmt.Errorf("no service found")
+		return fmt.Errorf("no service found: %s", removeAddr)
 	}
 
 	return nil
