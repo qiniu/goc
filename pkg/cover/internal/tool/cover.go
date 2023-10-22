@@ -6,6 +6,8 @@ package tool
 
 import (
 	"bytes"
+	"strings"
+
 	// "flag"
 	"fmt"
 	"go/ast"
@@ -342,6 +344,8 @@ func Annotate(name string, mode string, varVar string, globalCoverVarImportPath 
 
 	if bytes.Equal(content, newContent) {
 		log.Info("no cover var injected for: ", name)
+	} else if strings.Contains(string(file.content), globalCoverVarImportPath) {
+		log.Info("global cover var already imported for: ", name)
 	} else {
 		// reback to the beginning
 		file.astFile, _ = parser.ParseFile(fset, name, content, parser.ParseComments)
