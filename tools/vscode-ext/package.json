@@ -60,7 +60,7 @@
 		"vscode-test": "^1.2.2"
 	},
 	"dependencies": {
-		"axios": "^0.21.2",
+		"axios": "^1.6.0",
 		"log4js": "^6.4.0",
 		"upath": "^1.2.0"
 	}
