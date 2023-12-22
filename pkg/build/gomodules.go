@@ -78,7 +78,8 @@ func (b *Build) updateGoModFile() (updateFlag bool, newModFile []byte, err error
 		// absolute path no need to rewrite
 		if newVersion == "" && !filepath.IsAbs(newPath) {
 			var absPath string
-			fullPath := filepath.Join(b.ModRoot, newPath)
+			//替换原路径为目标路径
+			fullPath := filepath.Join(b.TmpDir, newPath)
 			absPath, _ = filepath.Abs(fullPath)
 			// DropReplace & AddReplace will not return error
 			// so no need to check the error

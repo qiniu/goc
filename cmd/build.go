@@ -83,6 +83,7 @@ func runBuild(args []string, wd string) {
 		ModRootPath:              gocBuild.ModRootPath,
 		OneMainPackage:           true, // it is a go build
 		GlobalCoverVarImportPath: gocBuild.GlobalCoverVarImportPath,
+		CoverModName:             "coverPackageMod",
 	}
 	err = cover.Execute(ci)
 	if err != nil {
