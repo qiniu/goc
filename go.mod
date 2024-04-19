@@ -22,9 +22,9 @@ require (
 	github.com/tongjingran/copy v1.4.2
 	github.com/ugorji/go v1.2.6 // indirect
 	golang.org/x/mod v0.9.0
-	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
+	golang.org/x/net v0.23.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/tools v0.1.12
+	golang.org/x/tools v0.6.0
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/test-infra v0.0.0-20200511080351-8ac9dbfab055
