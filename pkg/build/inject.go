@@ -127,14 +127,14 @@ func (b *Build) getPkgTmpDir(pkgDir string) string {
 
 // injectGocAgent inject handlers like following
 //
-// - xxx.go
-// - yyy_package
-// - main.go
-// - goc-cover-agent-apis-auto-generated-11111-22222-bridge.go
-// - goc-cover-agent-apis-auto-generated-11111-22222-package
-//  |
-//  -- rpcagent.go
-//  -- watchagent.go
+//   - xxx.go
+//   - yyy_package
+//   - main.go
+//   - goc-cover-agent-apis-auto-generated-11111-22222-bridge.go
+//   - goc-cover-agent-apis-auto-generated-11111-22222-package
+//     |
+//     -- rpcagent.go
+//     -- watchagent.go
 //
 // 11111_22222_bridge.go 仅仅用于引用 11111_22222_package, where package contains ws agent main logic.
 // 使用 bridge.go 文件是为了避免插桩逻辑中的变量名污染 main 包
@@ -195,12 +195,14 @@ func (b *Build) injectGocAgent(where string, covers []*PackageCover) {
 		Package                  string
 		Host                     string
 		Mode                     string
+		Extra                    string
 	}{
 		Covers:                   covers,
 		GlobalCoverVarImportPath: b.GlobalCoverVarImportPath,
 		Package:                  injectPkgName,
 		Host:                     b.Host,
 		Mode:                     _coverMode,
+		Extra:                    b.Extra,
 	}
 
 	if err := coverMainTmpl.Execute(f2, tmplData); err != nil {

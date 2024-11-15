@@ -31,6 +31,7 @@ type Build struct {
 	Debug bool
 	Host  string
 	Mode  string // cover mode
+	Extra string
 
 	GOPATH           string
 	GOBIN            string
@@ -53,7 +54,6 @@ type Build struct {
 }
 
 // NewBuild creates a Build struct
-//
 func NewBuild(opts ...gocOption) *Build {
 	b := &Build{}
 

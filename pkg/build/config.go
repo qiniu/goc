@@ -14,6 +14,8 @@
 package build
 
 import (
+	"strings"
+
 	"github.com/spf13/pflag"
 )
 
@@ -58,5 +60,11 @@ func WithInstall() gocOption {
 func WithDebug(enable bool) gocOption {
 	return func(b *Build) {
 		b.Debug = enable
+	}
+}
+
+func WithExtra(extra string) gocOption {
+	return func(b *Build) {
+		b.Extra = strings.TrimSpace(extra)
 	}
 }

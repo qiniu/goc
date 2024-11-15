@@ -28,6 +28,7 @@ var installCmd = &cobra.Command{
 func init() {
 	installCmd.Flags().StringVarP(&gocmode, "gocmode", "", "count", "coverage mode: set, count, atomic, watch")
 	installCmd.Flags().StringVarP(&gochost, "gochost", "", "127.0.0.1:7777", "specify the host of the goc sever")
+	installCmd.Flags().StringVarP(&gocextra, "gocextra", "", "", "specify the extra information injected into the build")
 	rootCmd.AddCommand(installCmd)
 }
 
@@ -42,6 +43,7 @@ func installAction(cmd *cobra.Command, args []string) {
 		build.WithArgs(args),
 		build.WithInstall(),
 		build.WithDebug(globalDebug),
+		build.WithExtra(gocextra),
 	)
 	b.Install()
 

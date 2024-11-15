@@ -26,13 +26,15 @@ var buildCmd = &cobra.Command{
 }
 
 var (
-	gocmode string
-	gochost string
+	gocmode  string
+	gochost  string
+	gocextra string
 )
 
 func init() {
 	buildCmd.Flags().StringVarP(&gocmode, "gocmode", "", "count", "coverage mode: set, count, atomic, watch")
 	buildCmd.Flags().StringVarP(&gochost, "gochost", "", "127.0.0.1:7777", "specify the host of the goc sever")
+	buildCmd.Flags().StringVarP(&gocextra, "gocextra", "", "", "specify the extra information injected into the build")
 	rootCmd.AddCommand(buildCmd)
 }
 
@@ -47,6 +49,7 @@ func buildAction(cmd *cobra.Command, args []string) {
 		build.WithArgs(args),
 		build.WithBuild(),
 		build.WithDebug(globalDebug),
+		build.WithExtra(gocextra),
 	)
 	b.Build()
 
