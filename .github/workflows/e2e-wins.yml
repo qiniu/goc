@@ -33,5 +33,5 @@ jobs:
           .\goc.exe build -o gocc .
       - name: run e2e test
         run: |
-          go get github.com/onsi/ginkgo/ginkgo
+          go install github.com/onsi/ginkgo/ginkgo
           ginkgo tests/e2e/...
