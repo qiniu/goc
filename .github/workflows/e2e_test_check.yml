@@ -28,12 +28,12 @@ jobs:
         run: |
           ./goc build --output ./gocc --debug
       - name: Upload goc binary
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: goc
           path: goc
       - name: Upload covered self goc binary
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: gocc
           path: gocc
@@ -53,7 +53,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Download built binary
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           path: /home/runner/tools
       - name: Install bats-core
