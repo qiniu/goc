@@ -21,7 +21,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.16.x
+          go-version: 1.22.x
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Go build
@@ -33,5 +33,5 @@ jobs:
           .\goc.exe build -o gocc .
       - name: run e2e test
         run: |
-          go get github.com/onsi/ginkgo/ginkgo
+          go install github.com/onsi/ginkgo/ginkgo
           ginkgo tests/e2e/...
