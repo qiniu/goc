@@ -17,10 +17,15 @@
 package cover
 
 import (
+	"bufio"
 	"fmt"
+	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 	"text/template"
 )
 
@@ -61,7 +66,7 @@ import (
 	"syscall"
 	"testing"
 
-	_cover {{.GlobalCoverVarImportPath | printf "%q"}}
+	_cover "coverPackageMod"
 
 )
 
@@ -511,6 +516,188 @@ func injectGlobalCoverVarFile(ci *CoverInfo, content string) error {
 		return err
 	}
 	_, err = coverFile.WriteString(content)
+	if err != nil {
+		log.Errorf("err:", err)
+		return err
+	}
+
+	goVersion, err := getModuleGoVersion(filepath.Join(ci.Target, "go.mod"))
+	if goVersion == "" || err != nil {
+		goVersion = "1.13" //其他情况默认使用1.13版本
+	}
+
+	//将cover.go所在package模块化
+	modFilePath := filepath.Join(ci.Target, ci.GlobalCoverVarImportPath, "go.mod")
+	modContent := fmt.Sprintf("module %s\n\ngo %s\n", extractSuffix(ci.GlobalCoverVarImportPath), goVersion)
+	modFile, err := os.Create(modFilePath)
+	if err != nil {
+		log.Errorf("create modFile err:", err)
+		return err
+	}
+	defer modFile.Close()
+
+	_, err = modFile.WriteString(modContent)
+	if err != nil {
+		log.Errorf("modFile write err:", err)
+		return err
+	}
+
+	// 更新所有模块的 go.mod 文件以包含对新模块的引用
+	err = UpdateAllModuleDependencies(ci.Target, ci.GlobalCoverVarImportPath, ci.CoverModName)
+	if err != nil {
+		return err
+	}
+	startDir := ci.Target // 从当前目录开始搜索，你可以修改为任何起始路径
+	err = filepath.Walk(startDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip if it's not a directory
+		if !info.IsDir() {
+			return nil
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		log.Errorf("Error walking the path %q: %v\n", startDir, err)
+	}
 
 	return err
+}
+
+func extractSuffix(input string) string {
+	// Find the last index of "/"
+	lastIndex := strings.LastIndex(input, "/")
+	if lastIndex == -1 {
+		return input // 如果没有找到"/"，则返回整个字符串
+	}
+	// 返回最后一个"/"之后的子串
+	return input[lastIndex+1:]
+}
+
+// UpdateAllModuleDependencies 递归修改所有模块替换依赖
+func UpdateAllModuleDependencies(moduleRootPath, modFileDir, coverPackageMod string) error {
+	// 获取 cover.go 文件所在的模块名称
+	coverModFilePath := filepath.Join(moduleRootPath, modFileDir, "go.mod")
+	coverModuleName, err := getModuleName(coverModFilePath)
+	if err != nil {
+		return err
+	}
+	coverLocalPath := filepath.Join(moduleRootPath, modFileDir)
+	// 遍历根目录下的所有子目录
+	return filepath.WalkDir(moduleRootPath, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// 忽略非目录项
+		if !d.IsDir() {
+			return nil
+		}
+
+		// 检查目录下是否有 go.mod 文件
+		thisModFilePath := filepath.Join(path, "go.mod")
+		if _, err := os.Stat(thisModFilePath); err == nil {
+			// 获取当前模块名称
+			currentModuleName, err := getModuleName(thisModFilePath)
+			if err != nil {
+				log.Errorf("err:", err)
+				return err
+			}
+
+			// 如果当前模块是 cover.go 所在的模块，则跳过
+			if currentModuleName == coverModuleName {
+				return nil
+			}
+
+			// 添加依赖
+			return addLocalDependencyToModFile(thisModFilePath, coverPackageMod, coverLocalPath, coverModuleName)
+		}
+		return nil
+	})
+}
+
+// addLocalDependencyToModFile 替换依赖
+func addLocalDependencyToModFile(modFilePath, importPath, localPath, rootModuleName string) error {
+	// 获取当前模块名称
+	currentModuleName, err := getModuleName(modFilePath)
+	if err != nil {
+		return err
+	}
+
+	// 如果当前模块是根模块，则跳过
+	if currentModuleName == rootModuleName {
+		return nil
+	}
+
+	// 添加 replace 指令
+	replaceCmd := exec.Command("go", "mod", "edit", fmt.Sprintf("-replace=%s=%s", importPath, localPath), modFilePath)
+	replaceOutput, err := replaceCmd.CombinedOutput()
+	if err != nil {
+		log.Errorf("go mod edit -replace output:\n%s\n", string(replaceOutput))
+		return fmt.Errorf("failed to add replace for %s: %w", importPath, err)
+	}
+
+	// 添加 require 指令
+	requireCmd := exec.Command("go", "mod", "edit", fmt.Sprintf("-require=%s@v0.0.0-00010101000000-000000000000", importPath), modFilePath)
+	requireOutput, err := requireCmd.CombinedOutput()
+	if err != nil {
+		log.Infof("go mod edit -require output:\n%s\n", string(requireOutput))
+		return fmt.Errorf("failed to add require for %s: %w", importPath, err)
+	}
+
+	return nil
+}
+
+// getModuleName 获取module名
+func getModuleName(modFilePath string) (string, error) {
+	// 读取 go.mod 文件内容
+	content, err := ioutil.ReadFile(modFilePath)
+	if err != nil {
+		return "", err
+	}
+
+	// 查找 module 语句
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, "module ") {
+			// 获取模块名称
+			return strings.TrimSpace(strings.TrimPrefix(line, "module ")), nil
+		}
+	}
+
+	return "", fmt.Errorf("module directive not found in %s", modFilePath)
+}
+
+// getModuleGoVersion 获取mudule的版本号
+func getModuleGoVersion(modFilePath string) (string, error) {
+
+	// 打开文件
+	file, err := os.Open(modFilePath)
+	if err != nil {
+		log.Fatalf("Error opening go.mod file: %v", err)
+	}
+	defer file.Close()
+
+	// 创建文件的 bufio.Reader
+	scanner := bufio.NewScanner(file)
+
+	// 读取文件行并查找 Go 版本
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "go ") {
+			// 找到 Go 版本行
+			version := strings.TrimSpace(strings.TrimPrefix(line, "go"))
+			return version, nil
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Error reading go.mod file: %v", err)
+		return "", err
+	}
+	return "", nil
 }

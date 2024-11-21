@@ -53,6 +53,7 @@ func runCover(target string) {
 		Center:         center,
 		Singleton:      singleton,
 		OneMainPackage: false,
+		CoverModName:   "coverPackageMod",
 	}
 	_ = cover.Execute(ci)
 }

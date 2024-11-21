@@ -141,6 +141,7 @@ type CoverInfo struct {
 	AgentPort                string
 	Center                   string
 	Singleton                bool
+	CoverModName             string
 }
 
 // Execute inject cover variables for all the .go files in the target folder
@@ -154,6 +155,7 @@ func Execute(coverInfo *CoverInfo) error {
 	center := coverInfo.Center
 	singleton := coverInfo.Singleton
 	globalCoverVarImportPath := coverInfo.GlobalCoverVarImportPath
+	coverPackageMod := coverInfo.CoverModName
 
 	if coverInfo.IsMod {
 		globalCoverVarImportPath = filepath.Join(coverInfo.ModRootPath, globalCoverVarImportPath)
@@ -170,7 +172,7 @@ func Execute(coverInfo *CoverInfo) error {
 		listArgs = append(listArgs, args)
 	}
 	listArgs = append(listArgs, "./...")
-	pkgs, err := ListPackages(target, strings.Join(listArgs, " "), newGopath)
+	pkgs, err := ListPackagesInAllModule(target, strings.Join(listArgs, " "), newGopath)
 	if err != nil {
 		log.Errorf("Fail to list all packages, the error: %v", err)
 		return err
@@ -183,7 +185,7 @@ func Execute(coverInfo *CoverInfo) error {
 		if pkg.Name == "main" {
 			log.Printf("handle package: %v", pkg.ImportPath)
 			// inject the main package
-			mainCover, mainDecl := AddCounters(pkg, mode, globalCoverVarImportPath)
+			mainCover, mainDecl := AddCounters(pkg, mode, coverPackageMod)
 			allDecl += mainDecl
 			// new a testcover for this service
 			tc := TestCover{
@@ -206,7 +208,7 @@ func Execute(coverInfo *CoverInfo) error {
 
 				//only focus package neither standard Go library nor dependency library
 				if depPkg, ok := pkgs[dep]; ok {
-					packageCover, depDecl := AddCounters(depPkg, mode, globalCoverVarImportPath)
+					packageCover, depDecl := AddCounters(depPkg, mode, coverPackageMod)
 					allDecl += depDecl
 					tc.DepsCover = append(tc.DepsCover, packageCover)
 					seen[dep] = packageCover
@@ -264,6 +266,63 @@ func ListPackages(dir string, args string, newgopath string) (map[string]*Packag
 
 		pkgs[pkg.ImportPath] = &pkg
 	}
+	return pkgs, nil
+}
+
+// ListPackagesInAllModule 递归地列出指定目录及其子模块中的所有Go包
+func ListPackagesInAllModule(dir string, args string, newgopath string) (map[string]*Package, error) {
+	pkgs := make(map[string]*Package)
+
+	// processModule 处理一个Go模块目录，运行go list并收集包信息
+	processModule := func(modDir string) error {
+		cmd := exec.Command("/bin/bash", "-c", "go list "+args)
+		cmd.Dir = modDir
+		if newgopath != "" {
+			cmd.Env = append(os.Environ(), "GOPATH="+newgopath)
+		}
+
+		var errbuf bytes.Buffer
+		cmd.Stderr = &errbuf
+
+		out, err := cmd.Output()
+		if err != nil {
+			return fmt.Errorf("%s: %v", errbuf.String(), err)
+		}
+
+		dec := json.NewDecoder(bytes.NewReader(out))
+		for {
+			var pkg Package
+			if err := dec.Decode(&pkg); err == io.EOF {
+				break
+			} else if err != nil {
+				return err
+			}
+			pkgs[pkg.ImportPath] = &pkg
+		}
+
+		return nil
+	}
+	// 遍历目录查找子模块
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() && info.Name() == "vendor" {
+			return filepath.SkipDir // 跳过 vendor 目录
+		}
+		if info.Name() == "go.mod" {
+			modDir := filepath.Dir(path)
+			if err := processModule(modDir); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
 	return pkgs, nil
 }
 
