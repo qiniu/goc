@@ -97,6 +97,9 @@ var (
 	force             bool     // --force flag
 	output            string   // --output flag
 	coverFilePatterns []string // --coverfile flag
+
+
+	
 	skipFilePatterns  []string // --skipfile flag
 )
 
