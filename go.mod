@@ -1,4 +1,4 @@
-module github.com/qiniu/goc
+module github.com/shuaibizhang/goc
 
 go 1.23
 
