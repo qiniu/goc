@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/qiniu/goc/pkg/cover"
+	"github.com/shuaibizhang/goc/pkg/cover"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -21,7 +21,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/qiniu/goc/pkg/cover"
+	"github.com/shuaibizhang/goc/pkg/cover"
 	"github.com/spf13/cobra"
 )
 

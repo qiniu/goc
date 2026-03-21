@@ -5,7 +5,7 @@
 	"version": "0.0.5",
 	"publisher": "lyyyuna",
 	"repository": {
-		"url": "https://github.com/qiniu/goc"
+		"url": "https://github.com/shuaibizhang/goc"
 	},
 	"engines": {
 		"vscode": "^1.43.0"
