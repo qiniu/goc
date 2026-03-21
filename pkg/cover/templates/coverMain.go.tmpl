@@ -42,12 +42,8 @@ func init() {
 	_startTimestamp = time.Now().Unix()
 	// 初始化构建信息
 	initBuildInfo()
-	// 休眠10s后向注册中心cover-agent注册
-	go func() {
-		time.Sleep(10 * time.Second)
-		registerHandlersGoc()
-	}()
-}
+// 向注册中心注册并启动监听
+go registerHandlersGoc()}
 
 func initBuildInfo() {
 	_buildInfo = &buildInfo{
@@ -126,31 +122,9 @@ func registerHandlersGoc() {
 	ln, host, err := listenGoc()
 	{{end}}
 	if err != nil {
-		_log.Fatalf("[goc][FATAL]listenGoc failed, err:%v", err)
+		_log.Printf("[goc][ERROR]listenGoc failed, err:%v", err)
+		return
 	}
-	{{if not .Singleton}}
-	profileAddr := "http://" + host
-	if resp, err := registerSelfGoc(profileAddr); err != nil {
-		_log.Fatalf("[goc][FATAL]register address %v failed, err: %v, response: %v", profileAddr, err, string(resp))
-	}
-
-	fn := func() {
-		var (
-			err          error
-			profileAddrs []string
-			addresses    []string
-		)
-		if addresses, err = getAllHostsGoc(ln); err != nil {
-			_log.Fatalf("[goc][FATAL]get all host failed, err: %v", err)
-			return
-		}
-		for _, addr := range addresses {
-			profileAddrs = append(profileAddrs, "http://"+addr)
-		}
-		deregisterSelfGoc(profileAddrs)
-	}
-	go watchSignalGoc(fn)
-	{{end}}
 
 	mux := http.NewServeMux()
 	// Coverage reports the current code coverage as a fraction in the range [0, 1].
@@ -214,7 +188,41 @@ func registerHandlersGoc() {
 		fmt.Fprintln(w, "clear call successfully")
 	})
 
-	_log.Fatalf("[goc][FATAL]http.Serve failed, err:%v", http.Serve(ln, mux))
+	// 1. 启动 HTTP 服务
+	go func() {
+		if err := http.Serve(ln, mux); err != nil {
+			_log.Printf("[goc][ERROR]http.Serve failed, err:%v", err)
+		}
+	}()
+
+	{{if not .Singleton}}
+	// 2. 异步延迟注册
+	go func() {
+		time.Sleep(10 * time.Second)
+		profileAddr := "http://" + host
+		if resp, err := registerSelfGoc(profileAddr); err != nil {
+			_log.Printf("[goc][ERROR]register address %v failed, err: %v, response: %v", profileAddr, err, string(resp))
+		}
+	}()
+
+	// 3. 信号处理
+	fn := func() {
+		var (
+			err          error
+			profileAddrs []string
+			addresses    []string
+		)
+		if addresses, err = getAllHostsGoc(ln); err != nil {
+			_log.Printf("[goc][ERROR]get all host failed, err: %v", err)
+			return
+		}
+		for _, addr := range addresses {
+			profileAddrs = append(profileAddrs, "http://"+addr)
+		}
+		deregisterSelfGoc(profileAddrs)
+	}
+	go watchSignalGoc(fn)
+	{{end}}
 }
 
 func registerSelfGoc(address string) ([]byte, error) {
@@ -241,7 +249,7 @@ func registerSelfGoc(address string) ([]byte, error) {
 	reqURL := fmt.Sprintf("%s/v1/cover/register", {{.Center | printf "%q"}})
 	req, err := http.NewRequest("POST", reqURL, bytes.NewReader(reqBody))
 	if err != nil {
-		_log.Fatalf("[goc][FATAL]http.NewRequest failed: %v", err)
+		_log.Printf("[goc][ERROR]http.NewRequest failed: %v", err)
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -278,7 +286,7 @@ func deregisterSelfGoc(address []string) ([]byte, error) {
 	}
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/v1/cover/remove", {{.Center | printf "%q"}}), bytes.NewReader(jsonBody))
 	if err != nil {
-		_log.Fatalf("[goc][FATAL]http.NewRequest failed: %v", err)
+		_log.Printf("[goc][ERROR]http.NewRequest failed: %v", err)
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
