@@ -17,7 +17,9 @@
 package build
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -36,6 +38,13 @@ func (b *Build) cpLegacyProject() {
 		if _, ok := visited[src]; ok {
 			// Skip if already copied
 			continue
+		}
+
+		// 调用cp命令拷贝代码，避免编译时插桩污染源代码，构造一个沙箱环境
+		cmd := exec.Command("bash", "-c", fmt.Sprintf("cp -rf %s/* %s/", src, dst))
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v, the output is: %v", src, dst, err, string(output))
 		}
 
 		if err := copy.Copy(src, dst, copy.Options{Skip: skipCopy}); err != nil {
@@ -67,8 +76,10 @@ func (b *Build) cpDepPackages(pkg *cover.Package, visited map[string]bool) {
 
 		dst := filepath.Join(b.TmpDir, "src", dep)
 
-		if err := copy.Copy(src, dst, copy.Options{Skip: skipCopy}); err != nil {
-			log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
+		cmd := exec.Command("bash", "-c", fmt.Sprintf("cp -rf %s/* %s/", src, dst))
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v, the output is: %v", src, dst, err, string(output))
 		}
 
 		visited[src] = true
@@ -81,8 +92,10 @@ func (b *Build) cpNonStandardLegacy() {
 			dst := b.TmpDir
 			src := v.Dir
 
-			if err := copy.Copy(src, dst, copy.Options{Skip: skipCopy}); err != nil {
-				log.Printf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
+			cmd := exec.Command("bash", "-c", fmt.Sprintf("cp -rf %s/* %s/", src, dst))
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v, the output is: %v", src, dst, err, string(output))
 			}
 			break
 		}

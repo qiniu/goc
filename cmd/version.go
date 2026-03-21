@@ -24,7 +24,10 @@ import (
 )
 
 // the version value will be injected when publishing
-var version = "Unstable"
+var (
+	version = "Unstable"
+	tag = "bingo-goc"
+)
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
@@ -41,7 +44,7 @@ goc version
 			}
 		} else {
 			// otherwise the value is injected in CI
-			fmt.Println(version)
+			fmt.Println(tag, version)
 		}
 	},
 }

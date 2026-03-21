@@ -77,7 +77,7 @@ func runBuild(args []string, wd string) {
 		Target:                   gocBuild.TmpDir,
 		Mode:                     coverMode.String(),
 		AgentPort:                agentPort.String(),
-		Center:                   center,
+		Center:                   center, // 优先级 --center指定 > 环境变量 > 默认值
 		Singleton:                singleton,
 		IsMod:                    gocBuild.IsMod,
 		ModRootPath:              gocBuild.ModRootPath,
