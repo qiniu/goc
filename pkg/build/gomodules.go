@@ -17,14 +17,15 @@
 package build
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/tongjingran/copy"
 	"golang.org/x/mod/modfile"
 )
 
@@ -34,8 +35,10 @@ func (b *Build) cpGoModulesProject() {
 			dst := b.TmpDir
 			src := v.Module.Dir
 
-			if err := copy.Copy(src, dst, copy.Options{Skip: skipCopy}); err != nil {
-				log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v ", src, dst, err)
+			cmd := exec.Command("bash", "-c", fmt.Sprintf("cp -rf %s/* %s/", src, dst))
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				log.Errorf("Failed to Copy the folder from %v to %v, the error is: %v, the output is: %v", src, dst, err, string(output))
 			}
 			break
 		} else {
@@ -62,7 +65,7 @@ func (b *Build) updateGoModFile() (updateFlag bool, newModFile []byte, err error
 	if err != nil {
 		return
 	}
-	oriGoModFile, err := modfile.Parse(tempModfile, buf, nil)
+	oriGoModFile, err := modfile.ParseLax(tempModfile, buf, nil)
 	if err != nil {
 		return
 	}
