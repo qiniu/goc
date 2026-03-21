@@ -17,7 +17,7 @@
 package cmd
 
 import (
-	"github.com/qiniu/goc/pkg/cover"
+	"github.com/shuaibizhang/goc/pkg/cover"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

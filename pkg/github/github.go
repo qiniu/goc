@@ -31,7 +31,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 
-	"github.com/qiniu/goc/pkg/cover"
+	"github.com/shuaibizhang/goc/pkg/cover"
 )
 
 // CommentsPrefix is the prefix when commenting on Github Pull Requests

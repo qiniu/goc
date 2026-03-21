@@ -167,7 +167,7 @@ func (s *server) registerService(c *gin.Context) {
 	if doIPRevise {
 		realIP := c.ClientIP()
 		// only for IPV4
-		// refer: https://github.com/qiniu/goc/issues/177
+		// refer: https://github.com/shuaibizhang/goc/issues/177
 		if net.ParseIP(realIP).To4() != nil && host != realIP {
 			log.Printf("the registered host %s of service %s is different with the real one %s, here we choose the real one", service.Name, host, realIP)
 			host = realIP

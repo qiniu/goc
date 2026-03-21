@@ -36,7 +36,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/qiniu/goc/pkg/cover/internal/tool"
+	"github.com/shuaibizhang/goc/pkg/cover/internal/tool"
 	"github.com/sirupsen/logrus"
 )
 
@@ -59,10 +59,10 @@ type TestCover struct {
 	GlobalCoverVarImportPath string
 
 	// 补充的四元组信息，用于给覆盖率信息补充元数据
-	Module     string
-	Branch     string
-	Commit     string
-	BaseCommit string
+	Module       string
+	Branch       string
+	CommitID     string
+	BaseCommitID string
 }
 
 // PackageCover holds all the generate coverage variables of a package
@@ -201,8 +201,8 @@ func Execute(coverInfo *CoverInfo) error {
 				GlobalCoverVarImportPath: globalCoverVarImportPath,
 				Module:                   os.Getenv("MODULE"),
 				Branch:                   os.Getenv("BRANCH"),
-				Commit:                   os.Getenv("COMMIT"),
-				BaseCommit:               os.Getenv("BASE_COMMIT"),
+				CommitID:                 os.Getenv("COMMIT"),
+				BaseCommitID:             os.Getenv("BASE_COMMIT"),
 			}
 
 			// handle its dependency
