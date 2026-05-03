@@ -44,6 +44,7 @@ goc cover --center=http://127.0.0.1:7777 --target=/path/to/target --mode=atomic
 
 func runCover(target string) {
 	buildFlags := viper.GetString("buildflags")
+	
 	ci := &cover.CoverInfo{
 		Args:           buildFlags,
 		GoPath:         "",
