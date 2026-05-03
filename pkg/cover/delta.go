@@ -70,6 +70,7 @@ func GetFullDeltaCov(newList CoverageList, baseList CoverageList) (delta DeltaCo
 func GetDeltaCov(newList CoverageList, baseList CoverageList) (delta DeltaCovList) {
 	d := GetFullDeltaCov(newList, baseList)
 	for _, v := range d {
+		
 		if v.DeltaPer == "0.0%" {
 			continue
 		}
