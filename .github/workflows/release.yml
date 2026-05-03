@@ -56,7 +56,7 @@ jobs:
 
   release-linux-amd64:
     name: release linux/amd64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@master
     - name: Install Go
