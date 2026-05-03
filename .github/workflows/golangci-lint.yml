@@ -4,7 +4,7 @@ on:
 jobs:
   golangci:
     name: lint
-    runs-on: ubuntu-22.04
+    runs-on: qn-ubuntu-22.04
     steps:
       - uses: actions/setup-go@v3
         with:
