@@ -4,16 +4,16 @@ on:
   # but only for the master branch
   push:
     paths-ignore:
-      - '**.md'
-      - '**.png'
+      - "**.md"
+      - "**.png"
   pull_request:
     paths-ignore:
-      - '**.md'
-      - '**.png'
+      - "**.md"
+      - "**.png"
 jobs:
   job_1:
     name: Build goc binary
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Install Go
         uses: actions/setup-go@v2
