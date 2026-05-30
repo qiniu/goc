@@ -88,7 +88,7 @@ func (s *server) Route(w io.Writer) *gin.Engine {
 	v1 := r.Group("/v1")
 	{
 		v1.POST("/cover/register", s.registerService)
-		v1.GET("/cover/profile", s.profile)
+		v1.GET("/cover/profile/", s.profileByServiceName)
 		v1.POST("/cover/profile", s.profile)
 		v1.POST("/cover/clear", s.clear)
 		v1.POST("/cover/init", s.initSystem)
@@ -253,6 +253,63 @@ func (s *server) profile(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to skip profile based on the patterns: %v, error: %v", body.SkipFilePatterns, err)})
 			return
 		}
+	}
+
+	if err := cov.DumpProfile(merged, c.Writer); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+}
+
+// profileByServiceName API example:
+// GET /v1/cover/profile/?name=relay-agent
+func (s *server) profileByServiceName(c *gin.Context) {
+	serviceName := c.Query("name")
+	if serviceName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "service name is required"})
+		return
+	}
+
+	allInfos := s.Store.GetAll()
+	serviceAddresses, exists := allInfos[serviceName]
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("service [%s] not found", serviceName)})
+		return
+	}
+
+	if len(serviceAddresses) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("service [%s] has no registered instances", serviceName)})
+		return
+	}
+
+	var mergedProfiles = make([][]*cover.Profile, 0)
+	var failedAddresses []string
+
+	for _, address := range serviceAddresses {
+		pp, err := NewWorker(address).Profile(ProfileParam{})
+		if err != nil {
+			log.Warnf("get profile from [%s] failed, error: %s", address, err.Error())
+			failedAddresses = append(failedAddresses, address)
+			continue
+		}
+
+		profile, err := convertProfile(pp)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		mergedProfiles = append(mergedProfiles, profile)
+	}
+
+	if len(mergedProfiles) == 0 {
+		c.JSON(http.StatusExpectationFailed, gin.H{"error": fmt.Sprintf("no profiles available for service [%s]. Failed addresses: %v", serviceName, failedAddresses)})
+		return
+	}
+
+	merged, err := cov.MergeMultipleProfiles(mergedProfiles)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	if err := cov.DumpProfile(merged, c.Writer); err != nil {

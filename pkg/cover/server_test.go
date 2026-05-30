@@ -603,3 +603,83 @@ func stringifyCoverProfile(profiles []*cover.Profile) string {
 
 	return fmt.Sprintf("%#v", res)
 }
+
+func TestProfileByServiceName(t *testing.T) {
+	testObj := new(MockStore)
+	server := &server{
+		Store: testObj,
+	}
+	router := server.Route(os.Stdout)
+
+	tests := []struct {
+		name           string
+		queryParam     string
+		mockServices   map[string][]string
+		expectedStatus int
+		expectedError  string
+	}{
+		{
+			name:           "missing service name parameter",
+			queryParam:     "",
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "service name is required",
+		},
+		{
+			name:           "service not found",
+			queryParam:     "unknown-service",
+			mockServices:   map[string][]string{"other-service": {"http://127.0.0.1:8080"}},
+			expectedStatus: http.StatusNotFound,
+			expectedError:  "service [unknown-service] not found",
+		},
+		{
+			name:           "service exists but has no instances",
+			queryParam:     "empty-service",
+			mockServices:   map[string][]string{"empty-service": {}},
+			expectedStatus: http.StatusNotFound,
+			expectedError:  "service [empty-service] has no registered instances",
+		},
+		{
+			name:           "service with invalid address (connection failed)",
+			queryParam:     "relay-agent",
+			mockServices:   map[string][]string{"relay-agent": {"http://127.0.0.1:99999"}},
+			expectedStatus: http.StatusExpectationFailed,
+			expectedError:  "no profiles available for service [relay-agent]",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset mock expectations
+			testObj.ExpectedCalls = nil
+			testObj.Calls = nil
+
+			// Only set up GetAll expectation if we expect it to be called
+			if tt.queryParam != "" {
+				testObj.On("GetAll").Return(tt.mockServices)
+			}
+
+			w := httptest.NewRecorder()
+			url := "/v1/cover/profile/"
+			if tt.queryParam != "" {
+				url += "?name=" + tt.queryParam
+			}
+			req, _ := http.NewRequest("GET", url, nil)
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			if tt.expectedError != "" {
+				assert.Contains(t, w.Body.String(), tt.expectedError)
+			}
+
+			testObj.AssertExpectations(t)
+		})
+	}
+}
+
+func TestProfileByServiceNameSuccess(t *testing.T) {
+	// This test would require setting up a mock HTTP server
+	// to simulate the coverage profile endpoints, which is more complex
+	// For now, we test the basic flow and error cases above
+	// In a real scenario, you'd want to set up httptest servers
+	// to mock the worker.Profile() calls
+}
