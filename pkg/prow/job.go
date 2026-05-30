@@ -30,9 +30,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/qiniu/goc/pkg/cover"
-	"github.com/qiniu/goc/pkg/github"
-	"github.com/qiniu/goc/pkg/qiniu"
+	"github.com/shuaibizhang/goc/pkg/cover"
+	"github.com/shuaibizhang/goc/pkg/github"
+	"github.com/shuaibizhang/goc/pkg/qiniu"
 )
 
 // IProwAction defines the normal action in prow system

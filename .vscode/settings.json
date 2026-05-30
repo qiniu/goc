@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.tmpl": "gotmpl",
+        "*.go.tmpl": "go"
+    }
+}

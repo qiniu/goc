@@ -16,7 +16,7 @@
 
 package main
 
-import "github.com/qiniu/goc/cmd"
+import "github.com/shuaibizhang/goc/cmd"
 
 func main() {
 	cmd.Execute()

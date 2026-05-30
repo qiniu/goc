@@ -36,7 +36,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/qiniu/goc/pkg/cover/internal/tool"
+	"github.com/shuaibizhang/goc/pkg/cover/internal/tool"
 	"github.com/sirupsen/logrus"
 )
 
@@ -57,6 +57,12 @@ type TestCover struct {
 	DepsCover                []*PackageCover
 	CacheCover               map[string]*PackageCover
 	GlobalCoverVarImportPath string
+
+	// 补充的四元组信息，用于给覆盖率信息补充元数据
+	Module       string
+	Branch       string
+	CommitID     string
+	BaseCommitID string
 }
 
 // PackageCover holds all the generate coverage variables of a package
@@ -193,23 +199,29 @@ func Execute(coverInfo *CoverInfo) error {
 				Singleton:                singleton,
 				MainPkgCover:             mainCover,
 				GlobalCoverVarImportPath: globalCoverVarImportPath,
+				Module:                   os.Getenv("MODULE"),
+				Branch:                   os.Getenv("BRANCH"),
+				CommitID:                 os.Getenv("COMMIT"),
+				BaseCommitID:             os.Getenv("BASE_COMMIT"),
 			}
 
 			// handle its dependency
 			// var internalPkgCache = make(map[string][]*PackageCover)
 			tc.CacheCover = make(map[string]*PackageCover)
 			for _, dep := range pkg.Deps {
-				if packageCover, ok := seen[dep]; ok {
+				// go早期版本，go list命令会包含额外信息，需要过滤掉
+				depPkgPath := strings.SplitN(dep, " ", 2)[0]
+				if packageCover, ok := seen[depPkgPath]; ok {
 					tc.DepsCover = append(tc.DepsCover, packageCover)
 					continue
 				}
 
 				//only focus package neither standard Go library nor dependency library
-				if depPkg, ok := pkgs[dep]; ok {
+				if depPkg, ok := pkgs[depPkgPath]; ok {
 					packageCover, depDecl := AddCounters(depPkg, mode, globalCoverVarImportPath)
 					allDecl += depDecl
 					tc.DepsCover = append(tc.DepsCover, packageCover)
-					seen[dep] = packageCover
+					seen[depPkgPath] = packageCover
 				}
 			}
 

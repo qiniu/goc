@@ -27,7 +27,6 @@ import (
 var (
 	target            string
 	center            string
-	agentPort         AgentPort
 	debugGoc          bool
 	debugInCISyncFile string
 	buildFlags        string
@@ -41,11 +40,18 @@ var coverMode = CoverMode{
 	mode: "count",
 }
 
+var agentPort = AgentPort{
+	port: ":7778",
+}
+
 // addBasicFlags adds a
 func addBasicFlags(cmdset *pflag.FlagSet) {
 	cmdset.StringVar(&center, "center", "http://127.0.0.1:7777", "cover profile host center")
 	// bind to viper
 	viper.BindPFlags(cmdset)
+	// 绑定环境变量
+	viper.BindEnv("center", "GOC_PROFILE_CENTER")
+	center = viper.GetString("center")
 }
 
 func addCommonFlags(cmdset *pflag.FlagSet) {

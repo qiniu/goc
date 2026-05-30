@@ -1,11 +1,11 @@
 # goc
-[![Go Report Card](https://goreportcard.com/badge/github.com/qiniu/goc)](https://goreportcard.com/report/github.com/qiniu/goc)
-![](https://github.com/qiniu/goc/workflows/ut-check/badge.svg)
-![](https://github.com/qiniu/goc/workflows/style-check/badge.svg)
-![](https://github.com/qiniu/goc/workflows/e2e%20test/badge.svg)
-![Build Release](https://github.com/qiniu/goc/workflows/Build%20Release/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/shuaibizhang/goc)](https://goreportcard.com/report/github.com/shuaibizhang/goc)
+![](https://github.com/shuaibizhang/goc/workflows/ut-check/badge.svg)
+![](https://github.com/shuaibizhang/goc/workflows/style-check/badge.svg)
+![](https://github.com/shuaibizhang/goc/workflows/e2e%20test/badge.svg)
+![Build Release](https://github.com/shuaibizhang/goc/workflows/Build%20Release/badge.svg)
 [![codecov](https://codecov.io/gh/qiniu/goc/branch/master/graph/badge.svg)](https://codecov.io/gh/qiniu/goc)
-[![GoDoc](https://godoc.org/github.com/qiniu/goc?status.svg)](https://godoc.org/github.com/qiniu/goc)
+[![GoDoc](https://godoc.org/github.com/shuaibizhang/goc?status.svg)](https://godoc.org/github.com/shuaibizhang/goc)
 
 **English | [简体中文](./README_zh.md)**
 
@@ -89,7 +89,7 @@ We provide a vscode extension - [Goc Coverage](https://marketplace.visualstudio.
     2. After service restarted and test finished, collect coverage again with `goc profile -o b.cov`
     3. Merge two coverage profiles together: `goc merge a.cov b.cov -o merge.cov`
 
-5. By default, goc will use the artifact's file name as its service name. You can overwrite it by setting environment variable `GOC_SERVICE_NAME`. (See [#293](https://github.com/qiniu/goc/issues/293) for details)
+5. By default, goc will use the artifact's file name as its service name. You can overwrite it by setting environment variable `GOC_SERVICE_NAME`. (See [#293](https://github.com/shuaibizhang/goc/issues/293) for details)
 
 ## RoadMap
 - [x] Support code coverage collection for system testing.
@@ -101,7 +101,7 @@ We provide a vscode extension - [Goc Coverage](https://marketplace.visualstudio.
 ## Contributing
 We welcome all kinds of contribution, including bug reports, feature requests, documentation improvements, UI refinements, etc.
 
-Thanks to all [contributors](https://github.com/qiniu/goc/graphs/contributors)!!
+Thanks to all [contributors](https://github.com/shuaibizhang/goc/graphs/contributors)!!
 
 ## License
-Goc is released under the Apache 2.0 license. See [LICENSE.txt](https://github.com/qiniu/goc/blob/master/LICENSE)
+Goc is released under the Apache 2.0 license. See [LICENSE.txt](https://github.com/shuaibizhang/goc/blob/master/LICENSE)

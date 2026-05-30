@@ -23,7 +23,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/qiniu/goc/pkg/cover"
+	"github.com/shuaibizhang/goc/pkg/cover"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )

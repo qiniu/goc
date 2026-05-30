@@ -1,0 +1,14 @@
+
+import (
+
+	{{range $i, $pkgCover := .}}
+	_cover{{$i}} {{$pkgCover.Package.ImportPath | printf "%q"}}
+	{{end}} 
+
+)
+
+{{range $i, $pkgCover := .}}
+{{range $v, $cover := $pkgCover.Vars}}
+var {{$v}} = &_cover{{$i}}.{{$cover.Var}}
+{{end}}
+{{end}}

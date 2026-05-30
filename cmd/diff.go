@@ -25,10 +25,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/qiniu/goc/pkg/cover"
-	"github.com/qiniu/goc/pkg/github"
-	"github.com/qiniu/goc/pkg/prow"
-	"github.com/qiniu/goc/pkg/qiniu"
+	"github.com/shuaibizhang/goc/pkg/cover"
+	"github.com/shuaibizhang/goc/pkg/github"
+	"github.com/shuaibizhang/goc/pkg/prow"
+	"github.com/shuaibizhang/goc/pkg/qiniu"
 )
 
 var diffCmd = &cobra.Command{

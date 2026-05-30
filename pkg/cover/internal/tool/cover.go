@@ -297,6 +297,12 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 			ast.Walk(f, n.Assign)
 			return nil
 		}
+	case *ast.FuncDecl:
+		// 如果函数名是_或者没有函数体，则无法插桩，跳过即可
+		// 避免在访问n.Body.List时发生空指针异常panic
+		if n.Name.Name == "_" || n.Body == nil {
+			return nil
+		}
 	}
 	return f
 }

@@ -34,7 +34,7 @@ var rootCmd = &cobra.Command{
 	Long: `goc is a comprehensive coverage testing tool for go language.
 
 Find more information at:
- https://github.com/qiniu/goc
+ https://github.com/shuaibizhang/goc
 `,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		log.SetReportCaller(true)
